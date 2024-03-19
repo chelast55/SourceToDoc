@@ -161,3 +161,7 @@ cython_debug/
 
 # external test project for evaluating Sphinx for C++
 coin/
+
+doxygen/
+sphinx/
+exhale/

@@ -1,8 +1,8 @@
 from os import system
 
 # TODO: (through argparse?)
-project_name: str = "coin"
-project_author: str = "coin3d"
+project_name: str = "libavtp"
+project_author: str = "Avnu"
 project_release_version: str = "v4.0.2"
 project_year: str = "2024"
 html_theme: str = "alabaster" # "sphinx_rtd_theme"
@@ -38,7 +38,7 @@ if __name__ == '__main__':
         f"# -- General configuration ---------------------------------------------------\n",
         f"# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration\n",
         f"\n",
-        f'extensions = ["breathe"]\n',
+        f'extensions = ["breathe", "exhale", "sphinx.ext.autosummary", "myst_parser"]\n',
         f"\n",
         f"templates_path = ['_templates']\n",
         f"exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']\n",
@@ -52,23 +52,47 @@ if __name__ == '__main__':
         f"html_static_path = ['_static']\n",
         f'\n',
         f'# -- Breathe configuration ---------------------------------------------------\n',
-        f'breathe_default_project = "{project_name}"\n'
+        "breathe_projects = {\n",
+        f'    "{project_name}": "./{doxygen_path}/xml"\n',
+        "}\n",
+        f'breathe_default_project = "{project_name}"\n',
+        f'\n',
+        f'# -- Exhale configuration ---------------------------------------------------\n',
+        'exhale_args = {\n',
+        f'    # These arguments are required\n',
+        f'    "containmentFolder": "./exhale",\n',
+        f'    "rootFileName": "{project_name}_root.rst",\n',
+        f'    "rootFileTitle": "{project_name}_root",\n',
+        f'    "doxygenStripFromPath": "..",\n',
+        f'    # Suggested optional arguments\n',
+        f'    "createTreeView": True,\n',
+        f'    # TIP: if using the sphinx-bootstrap-theme, you need\n',
+        f'    # "treeViewIsBootstrap": True,\n',
+        f'    "exhaleExecutesDoxygen": True,\n',
+        f'    "exhaleDoxygenStdin": "INPUT = libavtp"\n'
+        '}\n',
+        f'\n',
+        f"# Tell sphinx what the primary language being documented is.\n",
+        f"primary_domain = 'cpp'\n",
+        f'\n',
+        f"# Tell sphinx what the pygments highlight language should be.\n",
+        f"highlight_language = 'cpp'\n"
     ]
     with open("conf.py", 'w+') as conf_file:
         conf_file.writelines(conf_content)
 
     # generate doxygen documentation
-    print("\n--------------------")
-    print("Generate doxygen...")
+    #print("\n--------------------")
+    #print("Generate doxygen...")
     #system("doxygen Doxyfile.in")
 
     # setup RST
-    print("\n--------------------")
-    print("Generate breath-apidoc filelist...")
+    #print("\n--------------------")
+    #print("Generate breath-apidoc filelist...")
     #system(f"breathe-apidoc -o . {doxygen_path}/xml")
 
     # generate sphinx documentation from doxygen output
     print("\n--------------------")
     print("Generate sphinx...")
-    system(f"sphinx-build -b html -Dbreathe_projects.{project_name}={doxygen_path}/xml . {sphinx_path}/")
+    system(f"sphinx-build -b html . {sphinx_path}/")
 

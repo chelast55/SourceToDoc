@@ -10,19 +10,11 @@ Welcome to coin's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   filelist
+   exhale/libavtp_root
 
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
-
-
-
-C++ Classes
-===========
-
-.. doxygenindex::
