@@ -1,98 +1,152 @@
-from os import system
+from os import chdir, system
+from pathlib import Path
+
+from src.helpers import delete_directory_if_exists
 
 # TODO: (through argparse?)
+# configurable variables
 project_name: str = "libavtp"
 project_author: str = "Avnu"
 project_release_version: str = "v4.0.2"
 project_year: str = "2024"
+
 html_theme: str = "alabaster" # "sphinx_rtd_theme"
-doxygen_path: str = "doxygen"
-sphinx_path: str = "sphinx"
+exhale_root_file_name: str = f"root_{project_name}"
 
-if __name__ == '__main__':
-    # setup doxygen
-    #system("doxygen -g Doxyfile.in")
-    # TODO: (automatically) modify Doxyfile.in with min. the following:
-    # PROJECT_NAME = project name (through argparse?)
-    # GENERATE_HTML = NO
-    # GENERATE_XML = YES
-    # INPUT = path to project to document (through argparse?)
-    # RECURSIVE = YES
-    # OUTPUT_DIRECTORY = doxygen or something like temp/doxygen
+# Paths
+sphinx_execution_main_path: Path = Path("out")  # Path conf.py will be placed, everything Sphinx related is rel. to it
+project_path: Path = sphinx_execution_main_path.parent.absolute() / Path(project_name)
 
-    # setup sphinx+breathe config
-    conf_content: list[str] = [
-        f"# Configuration file for the Sphinx documentation builder.\n",
-        f"#\n",
-        f"# For the full list of built-in configuration values, see the documentation:\n",
-        f"# https://www.sphinx-doc.org/en/master/usage/configuration.html\n",
-        f"\n",
-        f"# -- Project information -----------------------------------------------------\n",
-        f"# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information\n",
-        f"\n",
-        f"project = '{project_name}'\n",
-        f"copyright = '{project_year}, {project_author}'\n",
-        f"author = '{project_author}'\n",
-        f"release = '{project_release_version}'\n",
-        f"\n",
-        f"# -- General configuration ---------------------------------------------------\n",
-        f"# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration\n",
-        f"\n",
-        f'extensions = ["breathe", "exhale", "sphinx.ext.autosummary", "myst_parser"]\n',
-        f"\n",
-        f"templates_path = ['_templates']\n",
-        f"exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']\n",
-        f"\n",
-        f"\n",
-        f"\n",
-        f"# -- Options for HTML output -------------------------------------------------\n",
-        f"# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output\n",
-        f"\n",
-        f"html_theme = '{html_theme}'\n",
-        f"html_static_path = ['_static']\n",
-        f'\n',
-        f'# -- Breathe configuration ---------------------------------------------------\n',
-        "breathe_projects = {\n",
-        f'    "{project_name}": "./{doxygen_path}/xml"\n',
-        "}\n",
-        f'breathe_default_project = "{project_name}"\n',
-        f'\n',
-        f'# -- Exhale configuration ---------------------------------------------------\n',
-        'exhale_args = {\n',
-        f'    # These arguments are required\n',
-        f'    "containmentFolder": "./exhale",\n',
-        f'    "rootFileName": "{project_name}_root.rst",\n',
-        f'    "rootFileTitle": "{project_name}_root",\n',
-        f'    "doxygenStripFromPath": "..",\n',
-        f'    # Suggested optional arguments\n',
-        f'    "createTreeView": True,\n',
-        f'    # TIP: if using the sphinx-bootstrap-theme, you need\n',
-        f'    # "treeViewIsBootstrap": True,\n',
-        f'    "exhaleExecutesDoxygen": True,\n',
-        f'    "exhaleDoxygenStdin": "INPUT = libavtp"\n'
-        '}\n',
-        f'\n',
-        f"# Tell sphinx what the primary language being documented is.\n",
-        f"primary_domain = 'cpp'\n",
-        f'\n',
-        f"# Tell sphinx what the pygments highlight language should be.\n",
-        f"highlight_language = 'cpp'\n"
-    ]
-    with open("conf.py", 'w+') as conf_file:
-        conf_file.writelines(conf_content)
+doc_path: Path = Path("doc") / Path(project_name)  # TODO: option to reverse those with a CLI parameter
+doc_path_abs: Path = sphinx_execution_main_path.absolute() / doc_path
+doc_source_path: Path = doc_path / Path("src")
+doc_source_path_abs: Path = doc_path_abs / Path("src")
+doxygen_path: Path = doc_source_path_abs / Path("doxygen")
+sphinx_path: Path = doc_path_abs  # Sphinx (or rather its index.html) is the "main artifact"
+exhale_containment_path: Path = doc_source_path / Path("exhale")
+exhale_containment_path_abs: Path = doc_source_path_abs / Path("exhale")
+exhale_include_path: Path = doc_path / exhale_containment_path
+graphviz_dot_path: Path = Path(r"C:\Program Files\Graphviz\bin\dot.exe")  # TODO: this needs to be addressed
 
-    # generate doxygen documentation
-    #print("\n--------------------")
-    #print("Generate doxygen...")
-    #system("doxygen Doxyfile.in")
+INDEX_RST_CONTENT: str = f"""
+Welcome to {project_name}'s documentation!
+============================{"="*len(project_name)}
 
-    # setup RST
-    #print("\n--------------------")
-    #print("Generate breath-apidoc filelist...")
-    #system(f"breathe-apidoc -o . {doxygen_path}/xml")
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
 
-    # generate sphinx documentation from doxygen output
+   {str(exhale_containment_path).replace('\\', '/') + "/" + exhale_root_file_name}
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`search`
+"""
+
+CONF_PY_CONTENT: str = f"""
+# Configuration file for the Sphinx documentation builder.
+
+# For the full list of built-in configuration values, see the documentation:
+# https://www.sphinx-doc.org/en/master/usage/configuration.html
+
+# -- Project information -----------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+from pathlib import Path
+from exhale import utils as exhale_utils
+
+project = "{project_name}"
+copyright = "{project_year}, {project_author}"
+author = "{project_author}"
+release = "{project_release_version}"
+
+project_path: Path = Path(r"{str(project_path)}")
+doxygen_path: Path = Path(r"{str(doxygen_path)}")
+sphinx_path: Path = Path(r"{str(sphinx_path)}")
+exhale_path: Path = Path(r"{str(exhale_containment_path)}")
+graphviz_dot_path: Path = Path(r"{str(graphviz_dot_path)}")
+
+def specifications_for_kind(kind):
+    \"\"\"
+    For a given input ``kind``, return the list of reStructuredText specifications
+    for the associated Breathe directive.
+    \"\"\"
+    # Change the defaults for .. doxygenclass:: and .. doxygenstruct::
+    if kind == "class" or kind == "struct":
+        print("Doxygencalss or struct encountered and overriting")
+        return [
+            ":members:",
+            ":protected-members:",
+            ":private-members:",
+            ":undoc-members:",
+            ":allow-dot-graphs:"
+        ]
+    # An empty list signals to Exhale to use the defaults
+    else:
+        print("Something not class or struct encountered")
+        return []
+
+# -- General configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+
+extensions = ["breathe", "exhale", "sphinx.ext.graphviz", "sphinx.ext.autodoc", "sphinx.ext.autosummary", "myst_parser"]
+
+templates_path = ["_templates"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
+# -- Options for HTML output -------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
+
+html_theme = "{html_theme}"
+
+# -- Breathe configuration ---------------------------------------------------
+breathe_projects = {{
+    "{project_name}": str(doxygen_path / Path("xml"))
+}}
+breathe_default_project = "{project_name}"
+primary_domain = "cpp"
+highlight_language="cpp"
+
+# -- Exhale configuration ---------------------------------------------------
+exhale_args = {{
+    # These arguments are required
+    "containmentFolder": str(exhale_path.absolute()),
+    "rootFileName": "{exhale_root_file_name}.rst",
+    "rootFileTitle": "{project_name} API",
+    "doxygenStripFromPath": "..",
+    # Suggested optional arguments
+    "createTreeView": True,
+    # TIP: if using the sphinx-bootstrap-theme, you need
+    # "treeViewIsBootstrap": True,
+    "exhaleExecutesDoxygen": True,
+    "exhaleDoxygenStdin": "INPUT = {project_path}",
+    "customSpecificationsMapping": exhale_utils.makeCustomSpecificationsMapping(specifications_for_kind)
+}}
+
+graphviz_output_format = "svg"
+# graphviz_dot_args = ["-Gbgcolor=#FF00FF", "-Ncolor=#ffffff", "-Ecolor=#00ff00"]
+graphviz_dot = str(graphviz_dot_path)
+"""
+
+if __name__ == "__main__":
+    # delete artifacts from prior builds and ensure paths exist TODO: move to end as cleenup, when debugging is done
+    delete_directory_if_exists(doc_path_abs)
+    doc_path_abs.mkdir(parents=True, exist_ok=True)
+    doxygen_path.mkdir(parents=True, exist_ok=True)
+    sphinx_path.mkdir(parents=True, exist_ok=True)
+    exhale_containment_path_abs.mkdir(parents=True, exist_ok=True)
+    if not graphviz_dot_path.exists(): raise OSError("dot.exe not found at given path")
+
+    # generate config files for sphinx+breathe+exhale+doxygen
+    with open(sphinx_execution_main_path / Path("index.rst"), "w+") as index_rst_file:
+        index_rst_file.write(INDEX_RST_CONTENT)
+    with open(sphinx_execution_main_path / Path("conf.py"), "w+") as conf_py_file:
+        conf_py_file.write(CONF_PY_CONTENT)
+
+    # run sphinx+breath+exhale+doxygen
     print("\n--------------------")
     print("Generate sphinx...")
-    system(f"sphinx-build -b html . {sphinx_path}/")
+    chdir(sphinx_execution_main_path)
+    system(f"sphinx-build -b html . {sphinx_path}")
 
