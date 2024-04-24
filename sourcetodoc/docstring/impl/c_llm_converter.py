@@ -1,9 +1,9 @@
 from typing import override
-from sourcetodoc.docstring.common import Comment
-from sourcetodoc.docstring.converter import Converter
+from sourcetodoc.docstring.extractor import Comment
+from sourcetodoc.docstring.converter import Conversion, Converter
 
 
 class CLlmConverter(Converter):
     @override
-    def calc_docstring(self, comment: Comment) -> str:
+    def calc_docstring(self, comment: Comment) -> Conversion:
         ...

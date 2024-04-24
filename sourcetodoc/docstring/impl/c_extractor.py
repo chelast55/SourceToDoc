@@ -1,9 +1,7 @@
 import re
-from typing import Iterator, override
+from typing import Iterator, Optional, override
 
-from sourcetodoc.docstring.common import Comment
-from sourcetodoc.docstring.common import Range
-from sourcetodoc.docstring.docconv import Extractor
+from sourcetodoc.docstring.extractor import Extractor, Comment, Range
 
 
 # Matches single-line comments, e.g. "// ..."
@@ -26,27 +24,31 @@ FUNCTION_COMMENT_PATTERN: str = (fr"(?P<single_comment>{SINGLE_COMMENT_PATTERN})
 
 class CExtractor(Extractor):
 
+    def __init__(self) -> None:
+        self.function_comment_matcher = re.compile(FUNCTION_COMMENT_PATTERN, re.VERBOSE)
+
     @override
     def extract_comments(self, code: str) -> Iterator[Comment]:
-        function_comment_matcher = re.compile(FUNCTION_COMMENT_PATTERN, re.VERBOSE)
-        for matched in function_comment_matcher.finditer(code):
-            
+        last_range: Optional[Range] = None # Keep track of the position of previous match
+        for matched in self.function_comment_matcher.finditer(code):
             function_signature: str = matched.group("function_signature")
 
-            comment_type = self._choose(matched)
+            comment_type = CExtractor._matched_group(matched) # Retrieve "//..." or "/*...*/" comments
 
             comment: str = matched.group(comment_type)
-            start: int = matched.start(comment_type)
-            end: int = matched.end(comment_type)
+            range: Range = Range(matched.start(comment_type), matched.end(comment_type))
 
-            yield Comment(comment, Range(start, end), function_signature, "function")
+            if (last_range is None or range.start > last_range.end): # Assure that matches will not overlap (e.g. "/* /**/" will match "/* /**/" and "/**/")
+                yield Comment(comment, range, function_signature, "function")
+            last_range = range
 
-    def _choose(self, matched: re.Match[str]) -> str:
+    @staticmethod
+    def _matched_group(matched: re.Match[str]) -> str:
         comment_type: str
         if matched.group("single_comment") is not None:
             comment_type = "single_comment"
         elif matched.group("multi_comment") is not None:
             comment_type = "multi_comment"
         else:
-            raise RuntimeError
+            raise RuntimeError # Should never happen
         return comment_type

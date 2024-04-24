@@ -1,11 +1,42 @@
-from typing import Iterable, Iterator, Protocol
+from dataclasses import dataclass
+from typing import Iterable, Iterator, Optional, Protocol
 
-from sourcetodoc.docstring.common import Conversion
-from sourcetodoc.docstring.common import Comment
+from sourcetodoc.docstring.extractor import Comment
+
+
+@dataclass(frozen=True)
+class ConversionSuccess:
+    """
+    Represents a successful conversion.
+    """
+    comment: Comment
+    new_docstring: str
+    message: Optional[str]
+
+
+@dataclass(frozen=True)
+class ConversionNothing:
+    """
+    Represents "no conversion needed" or "comment is already a docstring".
+    """
+    comment: Comment
+    message: Optional[str]
+
+
+@dataclass(frozen=True)
+class ConversionError:
+    """
+    Represents "no conversion found" or "an error occured during conversion".
+    """
+    comment: Comment
+    message: str
+
+
+type Conversion = ConversionSuccess | ConversionNothing | ConversionError
 
 
 class Converter(Protocol):
-    def calc_docstring(self, comment: Comment) -> str:
+    def calc_docstring(self, comment: Comment) -> Conversion:
         """
         Calculates the docstring from a comment.
 
@@ -22,7 +53,7 @@ class Converter(Protocol):
 
     def calc_conversions(self, comments: Iterable[Comment]) -> Iterator[Conversion]:
         """
-        Calculates comments to Conversion objects that contain the new docstring from the comment.
+        Calculates docstrings from comments.
 
         Parameters
         ----------
@@ -32,4 +63,4 @@ class Converter(Protocol):
         ------
         Iterator[Conversion]
         """
-        return (Conversion(e, self.calc_docstring(e)) for e in comments)
+        return (self.calc_docstring(e) for e in comments)

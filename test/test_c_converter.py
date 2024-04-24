@@ -1,5 +1,5 @@
 
-from sourcetodoc.docstring.common import Comment
+from sourcetodoc.docstring.extractor import Comment
 from sourcetodoc.docstring.impl.c_extractor import CExtractor
 
 
