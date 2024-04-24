@@ -1,7 +1,8 @@
 from typing import Iterable, override
-from sourcetodoc.docstring.converter import Conversion, ConversionSuccess, Converter
-from sourcetodoc.docstring.extractor import Extractor, Range
-from sourcetodoc.docstring.parser import Parser
+
+from .converter import Conversion, ConversionSuccess, Converter
+from .extractor import Extractor, Range
+from .parser import Parser
 
 
 def replace_substring(text: str, replacement: str, between: Range) -> str:

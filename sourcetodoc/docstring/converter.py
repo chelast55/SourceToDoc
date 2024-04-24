@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Iterable, Iterator, Optional, Protocol
 
-from sourcetodoc.docstring.extractor import Comment
+from .extractor import Comment
 
 
 @dataclass(frozen=True)

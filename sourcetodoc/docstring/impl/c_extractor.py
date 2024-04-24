@@ -1,7 +1,7 @@
 import re
 from typing import Iterator, Optional, override
 
-from sourcetodoc.docstring.extractor import Extractor, Comment, Range
+from ..extractor import Extractor, Comment, Range
 
 
 # Matches single-line comments, e.g. "// ..."

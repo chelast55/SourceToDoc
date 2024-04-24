@@ -1,6 +1,7 @@
 from typing import override
-from sourcetodoc.docstring.extractor import Comment
-from sourcetodoc.docstring.converter import Conversion, Converter
+
+from ..converter import Conversion, Converter
+from ..extractor import Comment
 
 
 class CLlmConverter(Converter):
