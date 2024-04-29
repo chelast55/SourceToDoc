@@ -1,3 +1,7 @@
+"""
+Collection of general utility/helper functions.
+"""
+
 from shutil import rmtree
 from pathlib import Path
 

@@ -1,7 +1,7 @@
 from os import chdir, system
 from pathlib import Path
 
-from src.helpers import delete_directory_if_exists
+from sourcetodoc.helpers import delete_directory_if_exists
 
 # TODO: (through argparse?)
 # configurable variables
@@ -19,8 +19,8 @@ project_path: Path = sphinx_execution_main_path.parent.absolute() / Path(project
 
 doc_path: Path = Path("doc") / Path(project_name)  # TODO: option to reverse those with a CLI parameter
 doc_path_abs: Path = sphinx_execution_main_path.absolute() / doc_path
-doc_source_path: Path = doc_path / Path("src")
-doc_source_path_abs: Path = doc_path_abs / Path("src")
+doc_source_path: Path = doc_path / Path("sourcetodoc")
+doc_source_path_abs: Path = doc_path_abs / Path("sourcetodoc")
 doxygen_path: Path = doc_source_path_abs / Path("doxygen")
 sphinx_path: Path = doc_path_abs  # Sphinx (or rather its index.html) is the "main artifact"
 exhale_containment_path: Path = doc_source_path / Path("exhale")
