@@ -43,11 +43,14 @@ TODO: this probably deserves it's own file in ``doc``
 │   │       ├───index.html
 │   │       ├───search.html
 │   │       ├───searchindex.js
-│   │       └───...
+│   │       └───<...>
 │   ├───conf.py
 │   └───index.rst
-├───src
+├───sourcetodoc
 │   └───helpers.py
+├───submodules
+│   └───doxygen-awesome-css (submodule)
+|       └───<...>
 └───main.py
 ```
 The `out` directory and all of its contents are automatically generated after running `main.py`. ``out`` 
