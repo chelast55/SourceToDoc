@@ -1,5 +1,6 @@
 from os import chdir, system
 from pathlib import Path
+from argparse import ArgumentParser
 
 from sourcetodoc.helpers import delete_directory_if_exists
 
@@ -16,17 +17,20 @@ exhale_root_file_name: str = f"root_{project_name}"
 # Paths
 sphinx_execution_main_path: Path = Path("out")  # Path conf.py will be placed, everything Sphinx related is rel. to it
 project_path: Path = sphinx_execution_main_path.parent.absolute() / Path(project_name)
+doxygen_awesome_submodule_path: Path \
+    = sphinx_execution_main_path.parent.absolute() / Path("submodules") / Path("doxygen-awesome-css")
 
 doc_path: Path = Path("doc") / Path(project_name)  # TODO: option to reverse those with a CLI parameter
 doc_path_abs: Path = sphinx_execution_main_path.absolute() / doc_path
-doc_source_path: Path = doc_path / Path("sourcetodoc")
-doc_source_path_abs: Path = doc_path_abs / Path("sourcetodoc")
+doc_source_path: Path = doc_path / Path("src")
+doc_source_path_abs: Path = doc_path_abs / Path("src")
 doxygen_path: Path = doc_source_path_abs / Path("doxygen")
 sphinx_path: Path = doc_path_abs  # Sphinx (or rather its index.html) is the "main artifact"
 exhale_containment_path: Path = doc_source_path / Path("exhale")
 exhale_containment_path_abs: Path = doc_source_path_abs / Path("exhale")
 exhale_include_path: Path = doc_path / exhale_containment_path
 graphviz_dot_path: Path = Path(r"C:\Program Files\Graphviz\bin\dot.exe")  # TODO: this needs to be addressed
+stylesheet_path: Path = doxygen_awesome_submodule_path / Path("doxygen-awesome.css")
 
 INDEX_RST_CONTENT: str = f"""
 Welcome to {project_name}'s documentation!
@@ -111,7 +115,7 @@ def specifications_for_kind(kind):
     \"\"\"
     # Change the defaults for .. doxygenclass:: and .. doxygenstruct::
     if kind == "class" or kind == "struct" or kind == "file":
-        print("Doxygencalss or struct encountered and overriting")
+        print("Doxygenclass or struct encountered and overriting")
         return [
             ":members:",
             ":protected-members:",
@@ -130,7 +134,7 @@ exhale_args = {{
     "containmentFolder": str(exhale_path.absolute()),
     "rootFileName": "{exhale_root_file_name}.rst",
     "rootFileTitle": "{project_name} API",
-    "doxygenStripFromPath": "..",
+    "doxygenStripFromPath": str(sphinx_path.absolute()),
     "fullToctreeMaxDepth": 1,
     # Suggested optional arguments
     "createTreeView": True,
@@ -172,7 +176,9 @@ exhale_args = {{
         INTERACTIVE_SVG = YES
         DOT_PATH = {str(graphviz_dot_path).replace('\\', '\\\\') if not graphviz_dot_path is None else ""}
         DOT_MULTI_TARGETS      = YES
-        # DOT_TRANSPARENT = YES
+        DOT_TRANSPARENT = YES
+        HTML_STYLESHEET = {str(stylesheet_path).replace('\\', '\\\\')}
+        HTML_COLORSTYLE = LIGHT  # required with Doxygen >= 1.9.5
     \"\"\",
     "verboseBuild": True, # DEBUG
     "generateBreatheFileDirectives": True, # DEBUG
@@ -213,4 +219,5 @@ if __name__ == "__main__":
         conf_py_file.write(CONF_PY_CONTENT)
 
     # run sphinx again
-    system(f"sphinx-build -b html . {sphinx_path}")
+    # maybe some cleanup is necessary?
+    #system(f"sphinx-build -b html . {sphinx_path}")
