@@ -1,17 +1,26 @@
+import pytest
 
-from sourcetodoc.docstring.extractor import Comment
 from sourcetodoc.docstring.impl.c_extractor import CExtractor
 
 
-def test_simple_function_pattern():
-    extractor: CExtractor = CExtractor()
-    code: str = """\
+@pytest.fixture
+def extractor() -> CExtractor:
+    return CExtractor()
+
+
+@pytest.fixture
+def simple_code() -> str:
+    return """\
 /* Hello World
  */
 void main(void) {}"""
-    comments: list[Comment] = list(extractor.extract_comments(code))
+
+
+def test_simple_function_pattern(extractor: CExtractor, simple_code: str):
+    comments = list(extractor.extract_comments(simple_code))
     assert len(comments) == 1
-    expected: str = """\
+
+    expected = """\
 /* Hello World
  */"""
-    assert comments[0].text == expected
+    assert comments[0].comment_text == expected

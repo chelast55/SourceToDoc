@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Iterator, Protocol
+from typing import Iterator, Protocol
 
 
 @dataclass(frozen=True)
@@ -21,18 +21,18 @@ class Range:
 
 
 @dataclass(frozen=True)
-class Comment:
+class Comment[T]:
     """
-    Represents a comment in a source file.
+    Represents a comment with its context in a source file.
     """
-    text: str # e.g. "/* Hello World /*"
-    range: Range # Start and end of the comment in a string
+    comment_text: str # e.g. "/* Hello World /*"
+    comment_range: Range # Start and end of the comment in a string
     symbol_text: str # e.g. "void main(void)"
-    symbol_type: Any # e.g. "function"
+    symbol_type: T # e.g. "function"
 
 
-class Extractor(Protocol):
-    def extract_comments(self, code: str) -> Iterator[Comment]:
+class Extractor[T](Protocol):
+    def extract_comments(self, code: str) -> Iterator[Comment[T]]:
         """
         Extracts comments from a string.
 
@@ -42,7 +42,7 @@ class Extractor(Protocol):
 
         Yields
         ------
-        Iterator[Comment]
-            The extracted comments.
+        Iterator[Comment[T]]
+            The extracted comments with pairwise disjoint comment_range in ascending order.
         """
         ...

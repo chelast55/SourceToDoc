@@ -1,8 +1,8 @@
 import re
+from enum import Enum, auto
 from typing import Iterator, Optional, override
 
-from ..extractor import Extractor, Comment, Range
-
+from ..extractor import Comment, Extractor, Range
 
 # Matches single-line comments, e.g. "// ..."
 SINGLE_COMMENT_PATTERN: str = r"//.*"
@@ -22,24 +22,29 @@ FUNCTION_COMMENT_PATTERN: str = (fr"(?P<single_comment>{SINGLE_COMMENT_PATTERN})
                                 r"(?:\{[^}]*\}|;)")
 
 
-class CExtractor(Extractor):
+class CType(Enum):
+    FUNCTION = auto()
+
+
+class CExtractor(Extractor[CType]):
 
     def __init__(self) -> None:
         self.function_comment_matcher = re.compile(FUNCTION_COMMENT_PATTERN, re.VERBOSE)
 
     @override
-    def extract_comments(self, code: str) -> Iterator[Comment]:
-        last_range: Optional[Range] = None # Keep track of the position of previous match
+    def extract_comments(self, code: str) -> Iterator[Comment[CType]]:
+        last_range: Optional[Range] = None # Keep track of range of previous match
         for matched in self.function_comment_matcher.finditer(code):
             function_signature: str = matched.group("function_signature")
 
-            comment_type = CExtractor._matched_group(matched) # Retrieve "//..." or "/*...*/" comments
+            # Retrieve "//..." or "/*...*/" comments
+            comment_type = CExtractor._matched_group(matched)
 
             comment: str = matched.group(comment_type)
             range: Range = Range(matched.start(comment_type), matched.end(comment_type))
 
             if (last_range is None or range.start > last_range.end): # Assure that matches will not overlap (e.g. "/* /**/" will match "/* /**/" and "/**/")
-                yield Comment(comment, range, function_signature, "function")
+                yield Comment(comment, range, function_signature, CType.FUNCTION)
             last_range = range
 
     @staticmethod

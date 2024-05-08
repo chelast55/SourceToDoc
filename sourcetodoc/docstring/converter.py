@@ -5,62 +5,62 @@ from .extractor import Comment
 
 
 @dataclass(frozen=True)
-class ConversionSuccess:
+class ConversionPresent[T]:
     """
     Represents a successful conversion.
     """
-    comment: Comment
-    new_docstring: str
-    message: Optional[str]
+    comment: Comment[T]
+    new_comment: str
+    message: Optional[str] = None
 
 
 @dataclass(frozen=True)
-class ConversionNothing:
+class ConversionEmpty[T]:
     """
     Represents "no conversion needed" or "comment is already a docstring".
     """
-    comment: Comment
-    message: Optional[str]
+    comment: Comment[T]
+    message: Optional[str] = None
 
 
 @dataclass(frozen=True)
-class ConversionError:
+class ConversionError[T]:
     """
     Represents "no conversion found" or "an error occured during conversion".
     """
-    comment: Comment
+    comment: Comment[T]
     message: str
 
 
-type Conversion = ConversionSuccess | ConversionNothing | ConversionError
+type ConversionResult[T] = ConversionPresent[T] | ConversionEmpty[T] | ConversionError[T]
 
 
-class Converter(Protocol):
-    def calc_docstring(self, comment: Comment) -> Conversion:
+class Converter[T](Protocol):
+    def calc_docstring(self, comment: Comment[T]) -> ConversionResult[T]:
         """
-        Calculates the docstring from a comment.
+        Calculates a docstring from a comment.
 
         Parameters
         ----------
-        comment : Comment
+        comment : Comment[T]
 
         Returns
         -------
-        str
-            The new docstring.
+        ConversionResult[T]
         """
         ...
 
-    def calc_conversions(self, comments: Iterable[Comment]) -> Iterator[Conversion]:
+    def calc_conversions(self, comments: Iterable[Comment[T]]) -> Iterator[ConversionResult[T]]:
         """
         Calculates docstrings from comments.
 
         Parameters
         ----------
-        comments : Iterable[Comment]
+        comments : Iterable[Comment[T]]
 
         Yields
         ------
-        Iterator[Conversion]
+        Iterator[ConversionResult[T]]
+            ConversionResult objects with comments with pairwise disjoint comment_range in ascending order.
         """
         return (self.calc_docstring(e) for e in comments)
