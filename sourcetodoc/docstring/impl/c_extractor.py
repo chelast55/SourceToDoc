@@ -2,13 +2,13 @@ import re
 from enum import Enum, auto
 from typing import Iterator, Optional, override
 
-from ..extractor import Comment, Extractor, Range
+from ..extractor import BlockComment, Comment, Extractor, Range
 
-# Matches single-line comments, e.g. "// ..."
-SINGLE_COMMENT_PATTERN: str = r"//.*"
+# Matches single-line comments (also over multiple lines), e.g. "// ..."
+SINGLE_COMMENT_PATTERN: str = r"(?://.*\n)*//.*"
 
 # Matches multi-line comments, e.g. "/* ... */"
-MULTI_COMMENT_PATTERN: str = r"/\*(?:.|\n)*?\*/"
+MULTI_COMMENT_PATTERN: str = r"(/\*(?:.|\n)*?\*/)|(?://.*\n)*//.*"
 
 IDENTIFIER_PATTERN: str = r"(_|[a-zA-Z])[a-zA-Z0-9_]+"
 
@@ -16,14 +16,15 @@ IDENTIFIER_PATTERN: str = r"(_|[a-zA-Z])[a-zA-Z0-9_]+"
 FUNCTION_SIGNATURE_PATTERN: str = r"\b(?:\w+\s+){1,2}\w+\s*\([^)]*\)"
 
 # Matches multi-line on function declarations or definitions
-FUNCTION_COMMENT_PATTERN: str = (fr"(?P<single_comment>{SINGLE_COMMENT_PATTERN}) |"
-                                fr"((?P<multi_comment>{MULTI_COMMENT_PATTERN}))"
+FUNCTION_COMMENT_PATTERN: str = (fr"^(?P<indentation>[ \t]*)"
+                                fr"((?P<single_comment>{SINGLE_COMMENT_PATTERN}) |"
+                                fr"(?P<multi_comment>{MULTI_COMMENT_PATTERN}))"
                                 fr"(?P<spacing>\s*)(?P<function_signature>{FUNCTION_SIGNATURE_PATTERN})\s*"
                                 r"(?:\{[^}]*\}|;)")
 
 
 class CType(Enum):
-    FUNCTION = auto()
+    FUNCTION_MULTI_COMMENT = auto()
 
 
 class CExtractor(Extractor[CType]):
@@ -35,17 +36,18 @@ class CExtractor(Extractor[CType]):
     def extract_comments(self, code: str) -> Iterator[Comment[CType]]:
         last_range: Optional[Range] = None # Keep track of range of previous match
         for matched in self.function_comment_matcher.finditer(code):
-            function_signature: str = matched.group("function_signature")
-
             # Retrieve "//..." or "/*...*/" comments
             comment_type = CExtractor._matched_group(matched)
 
-            comment: str = matched.group(comment_type)
-            range: Range = Range(matched.start(comment_type), matched.end(comment_type))
-
-            if (last_range is None or range.start > last_range.end): # Assure that matches will not overlap (e.g. "/* /**/" will match "/* /**/" and "/**/")
-                yield Comment(comment, range, function_signature, CType.FUNCTION)
-            last_range = range
+            comment_text = matched.group(comment_type)
+            comment_range = Range(matched.start(comment_type), matched.end(comment_type))
+            function_signature = matched.group("function_signature")
+            initial_comment_indentation = matched.group("indentation")
+            comment_symbol_spacing = matched.group("spacing")
+            
+            if (last_range is None or comment_range.start > last_range.end): # Assure that matches will not overlap (e.g. "/* /**/" will match "/* /**/" and "/**/")
+                yield BlockComment(comment_text, comment_range, function_signature, CType.FUNCTION_MULTI_COMMENT, initial_comment_indentation, comment_symbol_spacing)
+            last_range = comment_range
 
     @staticmethod
     def _matched_group(matched: re.Match[str]) -> str:

@@ -1,7 +1,7 @@
 from typing import Iterable, Iterator, override
 
 from .converter import ConversionResult, ConversionPresent, Converter
-from .extractor import Extractor
+from .extractor import BlockComment, Extractor
 from .parser import Parser, Replace
 
 
@@ -25,9 +25,13 @@ def append_to_old_comments[T](code: str, conversions: Iterable[ConversionPresent
     end = len(code)
 
     for e in conversions:
-        end = e.comment.comment_range.end
-        result += code[start:end] + "\n" + e.new_comment
-        start = e.comment.comment_range.end
+        match e.comment:
+            case BlockComment() as c:
+                end = c.comment_range.end
+                result += code[start:end] + "\n" + c.initial_comment_indentation + e.new_comment
+                start = c.comment_range.end
+            case _:
+                raise NotImplementedError
 
     result += code[start:]
     return result
