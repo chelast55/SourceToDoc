@@ -30,12 +30,13 @@ class CConverter(Converter[CType]):
     def _convert_comment(self, comment: Comment[CType]) -> Optional[str]:
         match comment:
             case BlockComment() as c:
-                input = c.initial_comment_indentation + c.comment_text + c.comment_symbol_spacing + c.symbol_text
+                input = c.initial_comment_indentation + c.comment_text + "\n" + c.initial_comment_indentation + c.symbol_text
                 input = dedent(input)
                 result = self._call_llm(input)
                 result = self._extract_multi_comment(result)
                 if result is not None:
                     result = indent(result, c.initial_comment_indentation)
+                    result = result.removeprefix(c.initial_comment_indentation)
             case CommentAfterMember() as c:
                 raise NotImplementedError # TODO
                 text = c.comment_text

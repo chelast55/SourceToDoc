@@ -15,11 +15,11 @@ IDENTIFIER_PATTERN: str = r"(_|[a-zA-Z])[a-zA-Z0-9_]+"
 # Matches function declarations or definitions e.g. "void main(void);" or "void main(void) { ... }"
 FUNCTION_SIGNATURE_PATTERN: str = r"\b(?:\w+\s+){1,2}\w+\s*\([^)]*\)"
 
-# Matches multi-line on function declarations or definitions
-FUNCTION_COMMENT_PATTERN: str = (fr"^(?P<indentation>[ \t]*)"
-                                fr"((?P<single_comment>{SINGLE_COMMENT_PATTERN}) |"
-                                fr"(?P<multi_comment>{MULTI_COMMENT_PATTERN}))"
-                                fr"(?P<spacing>\s*)(?P<function_signature>{FUNCTION_SIGNATURE_PATTERN})\s*"
+# Matches multi-line comments with equal indentations on function declarations or definitions
+FUNCTION_COMMENT_PATTERN: str = (r"^(?P<indentation>(?:[ ]{2}|\t)*)"                   # Matches the initial indentation
+                                r"(?:(?P<single_comment>(?://.*\n\1)*//.*)        |"   # Use backreference \1 to match initial indentation
+                                r"   (?P<multi_comment>(?:/\*(?:.*\n\1[ ]\*)*?/)) )"
+                                fr"(?P<spacing>\n\1)(?P<function_signature>{FUNCTION_SIGNATURE_PATTERN})\s*"
                                 r"(?:\{[^}]*\}|;)")
 
 
@@ -43,10 +43,9 @@ class CExtractor(Extractor[CType]):
             comment_range = Range(matched.start(comment_type), matched.end(comment_type))
             function_signature = matched.group("function_signature")
             initial_comment_indentation = matched.group("indentation")
-            comment_symbol_spacing = matched.group("spacing")
             
-            if (last_range is None or comment_range.start > last_range.end): # Assure that matches will not overlap (e.g. "/* /**/" will match "/* /**/" and "/**/")
-                yield BlockComment(comment_text, comment_range, function_signature, CType.FUNCTION_MULTI_COMMENT, initial_comment_indentation, comment_symbol_spacing)
+            if (last_range is None or comment_range.start > last_range.end): # Assure that matches will not overlap (e.g. otherwise "/* /**/" will match "/* /**/" and "/**/")
+                yield BlockComment(comment_text, comment_range, function_signature, CType.FUNCTION_MULTI_COMMENT, initial_comment_indentation)
             last_range = comment_range
 
     @staticmethod

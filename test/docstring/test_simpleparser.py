@@ -19,7 +19,7 @@ void main(void) {}"""
  */"""
 
     conversions = [ConversionPresent(
-        BlockComment(comment, Range(0, 18), "void main(void)", CType.FUNCTION_MULTI_COMMENT, "", "\n"),
+        BlockComment(comment, Range(0, 18), "void main(void)", CType.FUNCTION_MULTI_COMMENT, ""),
         new_comment)]
     
     actual = replace_old_comments(code, conversions)

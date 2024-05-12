@@ -1,11 +1,15 @@
-from typing import Iterable, Iterator, override
+from itertools import chain
+from typing import Iterable, Iterator, Optional, override
 
-from .converter import ConversionResult, ConversionPresent, Converter
-from .extractor import BlockComment, Extractor
+from .converter import ConversionResult, ConversionPresent, ConversionUnsupported, Converter
+from .extractor import Comment, BlockComment, Extractor
 from .parser import Parser, Replace
 
 
 def replace_old_comments[T](code: str, conversions: Iterable[ConversionPresent[T]]) -> str:
+    """
+    Replaces old comments with new comments.
+    """
     result: str = ""
     start = 0
     end = len(code)
@@ -20,6 +24,9 @@ def replace_old_comments[T](code: str, conversions: Iterable[ConversionPresent[T
 
 
 def append_to_old_comments[T](code: str, conversions: Iterable[ConversionPresent[T]]) -> str:
+    """
+    Places new comments from conversions under old comments.
+    """
     result: str = ""
     start = 0
     end = len(code)
@@ -38,14 +45,40 @@ def append_to_old_comments[T](code: str, conversions: Iterable[ConversionPresent
 
 
 class SimpleParser[T](Parser):
-    def __init__(self, extractor: Extractor[T], converter: Converter[T]) -> None:
+    """
+    Extracts comments with an `Extractor` object and converts them with `Converter` objects.
+
+    1. This parser uses an extractor that outputs `Comment` objects.
+    2. The first converter outputs a `ConversionResult` object from every `Comment` object.
+    3. If a `ConversionResult` object is a `ConversionUnsupported` object,
+      it will be converted to a `Comment` object for the second converter.
+    4. The second converter outputs a `ConversionResult` object from every `Comment` object.
+    5. Repeat 3., but for the third converter, and so on.
+
+    - The comments in the code will be converted for every `ConversionPresent` object.
+    - Use last_conversions to get all the `ConversionResult` objects.
+
+    Attributes
+    ----------
+    extractor: Extractor[T]
+    converters: tuple[Converter[T]]
+    last_conversions: Optional[Iterable[ConversionResult[T]]] = None
+    """
+    def __init__(self, extractor: Extractor[T], *converters: Converter[T]) -> None:
         self.extractor = extractor
-        self.converter = converter
+        self.converters = converters
+        self.last_conversions: Optional[Iterable[ConversionResult[T]]] = None
 
     @override
     def convert_string(self, code: str, replace: Replace) -> str:
         comments = self.extractor.extract_comments(code)
-        conversions = self.converter.calc_conversions(comments)
+
+        conversions = self._empty_iter()
+        for converter in self.converters:
+            conversions = chain(conversions, converter.calc_conversions(comments))
+            comments, conversions = self._convert_unsupported_to_comments(conversions)
+
+        self.last_conversions = conversions
         conversions = self._filter_conversion_present(conversions)
         match replace:
             case Replace.REPLACE_OLD_COMMENTS:
@@ -55,3 +88,10 @@ class SimpleParser[T](Parser):
     
     def _filter_conversion_present(self, conversions: Iterable[ConversionResult[T]]) -> Iterator[ConversionPresent[T]]:
         return (e for e in conversions if isinstance(e, ConversionPresent))
+
+    def _convert_unsupported_to_comments(self, conversions: Iterable[ConversionResult[T]]) -> tuple[Iterator[Comment[T]], Iterator[ConversionResult[T]]]:
+        return ((e.comment for e in conversions if isinstance(e, ConversionUnsupported)),
+                (e for e in conversions if not isinstance(e, ConversionUnsupported)))
+
+    def _empty_iter(self) -> Iterable[ConversionResult[T]]:
+        yield from ()

@@ -5,7 +5,7 @@ from typing import Iterator, Protocol
 @dataclass(frozen=True)
 class Range:
     """
-    Represent the start and end of a string.
+    Represents the start and end of a string.
 
     Raises
     ------
@@ -23,37 +23,44 @@ class Range:
 @dataclass(frozen=True)
 class BlockComment[T]:
     """
-    Example:
+    Represents a comment in form of a block.
 
+    All indentations on a block comment must be equal.
+
+    Example:
     ```
-    ^^^^/*
-         * comment
-         */
+    ␣␣␣␣/*
+    ␣␣␣␣ * abc
+    ␣␣␣␣ */
         int f(void);
     ```
-
     where:
-    "^^^^" is the initial_comment_indentation and
-    "\n    " is the comment_symbol_spacing.
+    - `"␣␣␣␣"`                      is the initial_comment_indentation,
+    - `"/*\\n␣␣␣␣ * abc\\n␣␣␣␣ */"` is the comment_text, and
+    - `"int f(void)"`               is the symbol_text.
     """
     comment_text: str # e.g. "/* ... /*" (without initial_comment_indentation)
     comment_range: Range #    ^       ^ Start and end of the comment in a string
     symbol_text: str # e.g. "void main(void)"
     symbol_type: T # e.g. "function"
     initial_comment_indentation: str # e.g. "    " for "    /* Hello World /*"
-    comment_symbol_spacing: str # The string between the comment and symbol
 
 
 @dataclass(frozen=True)
 class CommentAfterMember[T]:
     """
+    Represents a comment after a member variable.
+
     Example:
-
     ```
-    int x;  // comment
+    int x;␣␣// a
+    ␣␣␣␣␣␣␣␣// b
     ```
+    within a struct, where:
 
-    within a struct.
+    - `"// a\\n␣␣␣␣␣␣␣␣b"` is the comment_text,
+    - `"int x;"`           is the symbol_text, and
+    - `"␣␣"`               is the symbol_comment_spacing.
     """
     comment_text: str # e.g. "// Hello World"
     comment_range: Range # Start and end of the comment in a string

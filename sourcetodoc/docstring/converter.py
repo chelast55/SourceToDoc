@@ -22,6 +22,13 @@ class ConversionEmpty[T]:
     comment: Comment[T]
     message: Optional[str] = None
 
+@dataclass(frozen=True)
+class ConversionUnsupported[T]:
+    """
+    Represents "Comment type is not supported by this Converter".
+    """
+    comment: Comment[T]
+
 
 @dataclass(frozen=True)
 class ConversionError[T]:
@@ -32,7 +39,7 @@ class ConversionError[T]:
     message: str
 
 
-type ConversionResult[T] = ConversionPresent[T] | ConversionEmpty[T] | ConversionError[T]
+type ConversionResult[T] = ConversionPresent[T] | ConversionEmpty[T] | ConversionUnsupported[T] | ConversionError[T]
 
 
 class Converter[T](Protocol):
