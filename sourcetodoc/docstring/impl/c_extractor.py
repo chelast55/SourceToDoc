@@ -30,7 +30,7 @@ class CType(Enum):
 class CExtractor(Extractor[CType]):
 
     def __init__(self) -> None:
-        self.function_comment_matcher = re.compile(FUNCTION_COMMENT_PATTERN, re.VERBOSE)
+        self.function_comment_matcher = re.compile(FUNCTION_COMMENT_PATTERN, re.VERBOSE | re.MULTILINE)
 
     @override
     def extract_comments(self, code: str) -> Iterator[Comment[CType]]:
