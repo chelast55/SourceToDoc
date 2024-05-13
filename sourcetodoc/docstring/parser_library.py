@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum, unique
 from pathlib import Path
-from typing import Iterator, Mapping
+from typing import Iterator, Mapping, Optional, overload
 
 from openai import OpenAI
 
@@ -61,9 +61,15 @@ class ParserLibrary:
         self.language_map = language_map
         self.parser_map = parser_map
 
-    def find_parser(self, selection: Selection) -> Selection | Parser:
+    @overload
+    def find_parser(self, selection: Path | FileExtension) -> Optional[Language | Parser]: ...
+
+    @overload
+    def find_parser(self, selection: Language | ParserName) -> Optional[Parser]: ...
+
+    def find_parser(self, selection: Selection) -> Optional[Language | Parser]:
         """
-        Returns a Parser object if one is found for the given selection.
+        Returns a Parser or Language object if one is found for the given selection.
 
         This method traverses (Path | FileExtension) -> (Parser | Language) -> (Parser) and
         (ParserName) -> (Parser) chains to find a parser.
@@ -72,30 +78,34 @@ class ParserLibrary:
         Parameters
         ----------
         selection : Path | FileExtension | Language | ParserName
-            Either a file (e.g. main.c), a file extension (e.g. ".c"), or a Language (e.g. Language.C).
+            Either a file (e.g. Path("main.c")), a file extension (e.g. FileExtension(".c")),
+            a language (e.g. Language("C")), or a the name of a parser (e.g. ParserName("c_parser")).
 
         Returns
         -------
-        Path | FileExtension | Language | ParserName | Parser
-            A matching Parser object, a Language object, or selection
+        Language | Parser | None
+            A matching Parser object, a Language object, or None.
         """
-        result = selection
-
-        match result:
-             # If result is Path (e.g. main.c) or FileExtension, then try to find matching Parser, then Language
+        result = None
+        match selection:
+             # If selection is Path (e.g. main.c) or FileExtension (e.g. FileExtension(".c")),
+             # try to find matching Parser, then try to find matching Language of no Parser was found
             case Path() | FileExtension():
-                if result in self.parser_map:
-                    result = self.parser_map[result]
-                elif result in self.language_map:
-                    result = self.language_map[result]
+                if selection in self.parser_map:
+                    result = self.parser_map[selection]
+                elif selection in self.language_map:
+                    result = self.language_map[selection]
             case Language() | ParserName():
-                pass
+                result = selection
 
-        # If result is Language (e.g. Language.C) or ParserName, then try to find matching Parser
+        # If result is Language (e.g. Language.C) or ParserName (e.g. ParserName("c_parser")),
+        # try to find matching Parser
         match result:
             case Language() | ParserName():
                 if result in self.parser_map:
                     result = self.parser_map[result]
+                else:
+                    result = None
             case _:
                 pass
 
