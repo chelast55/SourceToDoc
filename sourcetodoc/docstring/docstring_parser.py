@@ -45,6 +45,11 @@ class DocstringParser:
         Converts comments in a file.
 
         The file will be updated.
+        - If None is passed, it will first use the file, and then the file extension to
+          find a suitable Parser object from the parser_lib attribute.
+        - If a Language object is passed, it will try to find a suitable Parser object
+          from the parser_lib attribute.
+        - If a Parser object is passed, it will use it.
 
         Parameters
         ----------
@@ -52,10 +57,8 @@ class DocstringParser:
             The file.
         replace : Replace
             Specifies how to replace the comments.
-        selection : Optional[Language  |  Parser], optional
-            If None is passed, it will use the file and the file extension to find a suitable Parser object.
-            If a Language object is passed, it will try to find a suitable Parser object.
-            If a Parser object is passed, it will use it.
+        selection : Optional[Language  |  Parser]
+            Specifies how to convert the comments.
 
         Raises
         ------
@@ -63,7 +66,7 @@ class DocstringParser:
             If no parser is found.
         """
         if selection is None:
-            result = self._find_parser_by_file_then_by_file_extension(file)
+            result = self._find_parser_by_file_or_else_by_file_extension(file)
         else:
             result = self._find_parser_if_not_parser(selection)
 
@@ -72,16 +75,30 @@ class DocstringParser:
         result = parser.convert_string(code, replace)
         file.write_text(result)
 
-    def parse_dir(self, dir: Path) -> None:
+    def parse_dir(self, dir: Path, glob_pattern: str, replace: Replace) -> None:
         """
-        TODO
+        Converts comments in all files in a directory recursively.
+
+        The Parser object is choosen based on the file, and then the file extension.
 
         Parameters
         ----------
         dir : Path
             The directory.
+        glob_pattern : str
+            Same pattern as for Path.glob.
+        replace : Replace
+            Specifies how to replace the comments.
         """
-        pass
+        for path in dir.glob(glob_pattern):
+            if path.is_dir():
+                continue
+            parser = self._find_parser_by_file_or_else_by_file_extension(path)
+            if not isinstance(parser, Parser):
+                continue
+            code = path.read_text()
+            result = parser.convert_string(code, replace)
+            path.write_text(result)
 
     def is_supported(self, selection: Path | FileExtension | Language | ParserName) -> bool:
         """
@@ -99,21 +116,20 @@ class DocstringParser:
         """
         return isinstance(self.parser_lib.find_parser(selection), Parser)
 
-    def _find_parser_if_not_parser(self, selection: Any):
-        if isinstance(selection, Parser):
-            return selection  # Return parser if selection is a parser
+    def _find_parser_if_not_parser(self, input: Any):
+        if isinstance(input, Parser):
+            return input  # Return parser if selection is a parser
         else:
-            return self.parser_lib.find_parser(selection) # Else find parser
+            return self.parser_lib.find_parser(input) # Else find parser
 
-    def _find_parser_by_file_then_by_file_extension(self, file: Path) -> Path | FileExtension | Language | Parser:
+    def _find_parser_by_file_or_else_by_file_extension(self, file: Path) -> Optional[Language | Parser]:
         result = self.parser_lib.find_parser(file) # Find parser by Path
         if not isinstance(result, Parser):
             result = self.parser_lib.find_parser(FileExtension(file.suffix)) # Find parser by file extension
-        return result # type: ignore (here, find_parser can never return ParserName)
+        return result
 
-    def _check_is_parser(self, result: Any) -> Parser:
-        if not isinstance(result, Parser):
+    def _check_is_parser(self, input: Any) -> Parser:
+        if not isinstance(input, Parser):
             raise ValueError
         else:
-            parser = result
-        return parser
+            return input
