@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any, Optional
 
-from sourcetodoc.docstring.parser_library import Language, ParserLibrary
+from sourcetodoc.docstring.parser_library import FileExtension, Language, ParserLibrary, ParserName
 from .parser import Parser, Replace
 
 class DocstringParser:
@@ -11,7 +11,7 @@ class DocstringParser:
     def __init__(self, parser_lib: ParserLibrary) -> None:
         self.parser_lib = parser_lib
 
-    def parse_string(self, code: str, replace: Replace, selection: Language | Parser) -> str:
+    def parse_string(self, code: str, replace: Replace, selection: Language | ParserName | Parser) -> str:
         """
         Converts comments.
 
@@ -40,7 +40,7 @@ class DocstringParser:
         parser = self._check_is_parser(result)
         return parser.convert_string(code, replace)
 
-    def parse_file(self, file: Path, replace: Replace, selection: Optional[Language | Parser] = None) -> None:
+    def parse_file(self, file: Path, replace: Replace, selection: Optional[Language | ParserName | Parser] = None) -> None:
         """
         Converts comments in a file.
 
@@ -83,7 +83,7 @@ class DocstringParser:
         """
         pass
 
-    def is_supported(self, selection: Path | str | Language) -> bool:
+    def is_supported(self, selection: Path | FileExtension | Language | ParserName) -> bool:
         """
         Checks if a parser exists for the given file, file extension, or language.
 
@@ -105,15 +105,15 @@ class DocstringParser:
         else:
             return self.parser_lib.find_parser(selection) # Else find parser
 
-    def _find_parser_by_file_then_by_file_extension(self, file: Path):
+    def _find_parser_by_file_then_by_file_extension(self, file: Path) -> Path | FileExtension | Language | Parser:
         result = self.parser_lib.find_parser(file) # Find parser by Path
         if not isinstance(result, Parser):
-            result = self.parser_lib.find_parser(file.suffix) # Find parser by file extension
-        return result
+            result = self.parser_lib.find_parser(FileExtension(file.suffix)) # Find parser by file extension
+        return result # type: ignore (here, find_parser can never return ParserName)
 
     def _check_is_parser(self, result: Any) -> Parser:
         if not isinstance(result, Parser):
-            raise ValueError # No parser was found
+            raise ValueError
         else:
             parser = result
         return parser

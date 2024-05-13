@@ -8,6 +8,8 @@ from .extractor import Comment
 class ConversionPresent[T]:
     """
     Represents a successful conversion.
+
+    new_comment has the same form as Comment#comment_text.
     """
     comment: Comment[T]
     new_comment: str
