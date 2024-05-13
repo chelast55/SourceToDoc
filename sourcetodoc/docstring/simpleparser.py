@@ -48,6 +48,7 @@ class SimpleParser[T](Parser):
     """
     Extracts comments with an `Extractor` object and converts them with `Converter` objects.
 
+    When `convert_string` is called:
     1. This parser uses an extractor that outputs `Comment` objects.
     2. The first converter outputs a `ConversionResult` object from every `Comment` object.
     3. If a `ConversionResult` object is a `ConversionUnsupported` object,
@@ -56,7 +57,7 @@ class SimpleParser[T](Parser):
     5. Repeat 3., but for the third converter, and so on.
 
     - The comments in the code will be converted for every `ConversionPresent` object.
-    - Use last_conversions to get all the `ConversionResult` objects.
+    - Use last_conversions to get all the `ConversionResult` objects from the last `convert_string` call.
 
     Attributes
     ----------

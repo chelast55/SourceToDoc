@@ -13,7 +13,7 @@ class Language(Enum):
     """
     Represents a programming language.
 
-    Example: Language("C") is Language.C.
+    Example: `Language("C")` is `Language.C`.
     """
     C = "C"
     CPP = "C++"
@@ -21,22 +21,28 @@ class Language(Enum):
 
 class ParserLibrary:
     """
-    Contains a collection of parsers.
+    Contains a collection of Parser objects.
 
-    Use find_parser(self, selection: Path | str | Language) to find a parser.
+    Use the method find_parser to find a parser.
+    The attributes language_map and parser_map determine its return value.
+
+    Attributes
+    ----------
+    language_map : Mapping[Path  |  str, Language]
+        Intermediate mapping to find a Parser object.
+    parser_map : Mapping[Path  |  str  |  Language, Parser]
+        A mapping that contains Parser objects.
     """
     def __init__(self,
                  language_map: Mapping[Path | str, Language],
                  parser_map: Mapping[Path | str | Language, Parser]) -> None:
         """
-        Constructs a Parsers object.
+        Constructs a ParserLibrary object.
 
         Parameters
         ----------
         language_map : Mapping[Path  |  str, Language]
-            A (file | file extension) -> (Language) mapping
         parser_map : Mapping[Path  |  str  |  Language, Parser]
-            A (file | file extension | Language) -> (Parser) mapping
         """
         self.language_map = language_map
         self.parser_map = parser_map
@@ -45,7 +51,8 @@ class ParserLibrary:
         """
         Returns a Parser object if one is found for the given selection.
 
-        This method traverses a (Path | str) -> (Parser | Language) -> (Parser) chain to find a parser for selection. It checks for the leftmost matching type first (e.g. Path -> Parser, then Path -> Language).
+        This method traverses a (Path | str) -> (Parser | Language) -> (Parser) chain to find a parser for selection.
+        It checks for the leftmost matching type first (e.g. Path -> Parser, then Path -> Language).
 
         Parameters
         ----------
