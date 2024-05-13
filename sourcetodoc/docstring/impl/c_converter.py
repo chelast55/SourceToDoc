@@ -35,8 +35,9 @@ class CConverter(Converter[CType]):
                 result = self._call_llm(input)
                 result = self._extract_multi_comment(result)
                 if result is not None:
-                    result = indent(result, c.initial_comment_indentation)
-                    result = result.removeprefix(c.initial_comment_indentation)
+                    result = indent(result, c.initial_comment_indentation) # Add indentation
+                    result = result.removeprefix(c.initial_comment_indentation) # Remove initial indentation
+                    result = result.replace("/**", "/** AI_GENERATED", 1) # Adds "AI_GENERATED" to the beginning of the new comment
             case CommentAfterMember() as c:
                 raise NotImplementedError # TODO
                 text = c.comment_text
