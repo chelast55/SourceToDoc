@@ -58,9 +58,9 @@ class CommentAfterMember[T]:
     ```
     within a struct, where:
 
-    - `"// a\\n␣␣␣␣␣␣␣␣b"` is the comment_text,
-    - `"int x;"`           is the symbol_text, and
-    - `"␣␣"`               is the symbol_comment_spacing.
+    - `"// a\\␣␣␣␣␣␣␣␣ // b"` is the comment_text,
+    - `"int x;"`              is the symbol_text, and
+    - `"␣␣"`                  is the symbol_comment_spacing.
     """
     comment_text: str # e.g. "// Hello World"
     comment_range: Range # Start and end of the comment in a string

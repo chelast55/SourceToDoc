@@ -76,7 +76,8 @@ class SimpleParser[T](Parser):
 
         conversions = self._empty_iter()
         for converter in self.converters:
-            conversions = chain(conversions, converter.calc_conversions(comments))
+            new_conversions = converter.calc_conversions(comments)
+            conversions = chain(conversions, new_conversions)
             comments, conversions = self._convert_unsupported_to_comments(conversions)
 
         self.last_conversions = conversions
