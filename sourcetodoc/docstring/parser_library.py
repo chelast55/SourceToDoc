@@ -5,8 +5,10 @@ from typing import Iterator, Mapping, Optional, overload
 
 from openai import OpenAI
 
-from .impl.c_parser import CParser
+from .impl.c_converter import CConverter
+from .impl.c_extractor import CExtractor
 from .parser import Parser
+from .simpleparser import SimpleParser
 
 
 @unique
@@ -122,9 +124,10 @@ class ParserLibrary:
 
     @staticmethod
     def create_default_parser_map(client: OpenAI) -> Mapping[Selection, Parser]:
+        c_parser = SimpleParser(CExtractor(), CConverter(client))
         return {
-            Language.C: CParser(client),
-            ParserName("c_parser"): CParser(client)
+            Language.C: c_parser,
+            ParserName("c_parser"): c_parser
         }
 
     @staticmethod

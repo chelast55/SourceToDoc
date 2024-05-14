@@ -1,47 +1,10 @@
 from itertools import chain
 from typing import Iterable, Iterator, Optional, override
 
-from .converter import ConversionResult, ConversionPresent, ConversionUnsupported, Converter
-from .extractor import Comment, BlockComment, Extractor
+from .converter import ConversionResult, ConversionUnsupported, Converter
+from .extractor import Comment, Extractor
 from .parser import Parser, Replace
-
-
-def replace_old_comments[T](code: str, conversions: Iterable[ConversionPresent[T]]) -> str:
-    """
-    Replaces old comments with new comments.
-    """
-    result: str = ""
-    start = 0
-    end = len(code)
-
-    for e in conversions:
-        end = e.comment.comment_range.start
-        result += code[start:end] + e.new_comment
-        start = e.comment.comment_range.end
-
-    result += code[start:]
-    return result
-
-
-def append_to_old_comments[T](code: str, conversions: Iterable[ConversionPresent[T]]) -> str:
-    """
-    Places new comments from conversions under old comments.
-    """
-    result: str = ""
-    start = 0
-    end = len(code)
-
-    for e in conversions:
-        match e.comment:
-            case BlockComment() as c:
-                end = c.comment_range.end
-                result += code[start:end] + "\n" + c.initial_comment_indentation + e.new_comment
-                start = c.comment_range.end
-            case _:
-                raise NotImplementedError
-
-    result += code[start:]
-    return result
+from .replacer import Replacer
 
 
 class SimpleParser[T](Parser):
@@ -65,9 +28,13 @@ class SimpleParser[T](Parser):
     converters: tuple[Converter[T]]
     last_conversions: Optional[Iterable[ConversionResult[T]]] = None
     """
-    def __init__(self, extractor: Extractor[T], *converters: Converter[T]) -> None:
+    def __init__(self, extractor: Extractor[T], *converters: Converter[T], replacer: Optional[Replacer] = None) -> None:
         self.extractor = extractor
         self.converters = converters
+        if replacer is None:
+            replacer = Replacer()
+        self.replacer = replacer
+
         self.last_conversions: Optional[Iterable[ConversionResult[T]]] = None
 
     @override
@@ -79,17 +46,13 @@ class SimpleParser[T](Parser):
             new_conversions = converter.calc_conversions(comments)
             conversions = chain(conversions, new_conversions)
             comments, conversions = self._convert_unsupported_to_comments(conversions)
-
         self.last_conversions = conversions
-        conversions = self._filter_conversion_present(conversions)
+
         match replace:
             case Replace.REPLACE_OLD_COMMENTS:
-                return replace_old_comments(code, conversions)
+                return self.replacer.replace_old_comments(code, conversions)
             case Replace.APPEND_TO_OLD_COMMENTS:
-                return append_to_old_comments(code, conversions)
-    
-    def _filter_conversion_present(self, conversions: Iterable[ConversionResult[T]]) -> Iterator[ConversionPresent[T]]:
-        return (e for e in conversions if isinstance(e, ConversionPresent))
+                return self.replacer.append_to_old_comments(code, conversions)
 
     def _convert_unsupported_to_comments(self, conversions: Iterable[ConversionResult[T]]) -> tuple[Iterator[Comment[T]], Iterator[ConversionResult[T]]]:
         return ((e.comment for e in conversions if isinstance(e, ConversionUnsupported)),

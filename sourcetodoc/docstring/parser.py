@@ -12,6 +12,9 @@ class Replace(Enum):
 
 @runtime_checkable
 class Parser(Protocol):
+    """
+    Converts comments.
+    """
     def convert_string(self, code: str, replace: Replace) -> str:
         """
         Converts comments.

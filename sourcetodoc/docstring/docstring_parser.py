@@ -73,7 +73,8 @@ class DocstringParser:
         parser = self._check_is_parser(result)
         code = file.read_text()
         result = parser.convert_string(code, replace)
-        file.write_text(result)
+        if result != code:
+            file.write_text(result)
 
     def parse_dir(self, dir: Path, glob_pattern: str, replace: Replace) -> None:
         """

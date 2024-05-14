@@ -27,7 +27,7 @@ class ConversionEmpty[T]:
 @dataclass(frozen=True)
 class ConversionUnsupported[T]:
     """
-    Represents "Comment type is not supported by this Converter".
+    Represents "comment is not supported by this converter".
     """
     comment: Comment[T]
 

@@ -2,10 +2,10 @@ import re
 from textwrap import dedent, indent
 from typing import Optional, override
 
-from openai import OpenAI
+from openai import APIError, OpenAI
 
-from ..converter import (ConversionResult, ConversionEmpty, ConversionError,
-                         ConversionPresent, Converter)
+from ..converter import (ConversionEmpty, ConversionError, ConversionPresent,
+                         ConversionResult, ConversionUnsupported, Converter)
 from ..extractor import BlockComment, Comment, CommentAfterMember
 from .c_extractor import MULTI_COMMENT_PATTERN, CType
 
@@ -17,38 +17,31 @@ class CConverter(Converter[CType]):
 
     @override
     def calc_docstring(self, comment: Comment[CType]) -> ConversionResult[CType]:
-        if type(comment) is BlockComment and comment.comment_text.startswith("/**"):
-            return ConversionEmpty(comment)
-        
-        result = self._convert_comment(comment)
-
-        if result is not None:
-            return ConversionPresent(comment, new_comment=result)
-        else:
-            return ConversionError(comment, message="Error")
-    
-    def _convert_comment(self, comment: Comment[CType]) -> Optional[str]:
         match comment:
-            case BlockComment() as c:
-                input = c.initial_comment_indentation + c.comment_text + "\n" + c.initial_comment_indentation + c.symbol_text
+            case BlockComment() as bc:
+                if bc.comment_text.startswith("/**"):
+                    return ConversionEmpty(bc)
+
+                # Remove indentation
+                input = bc.initial_comment_indentation + bc.comment_text + "\n" + bc.initial_comment_indentation + bc.symbol_text 
                 input = dedent(input)
-                result = self._call_llm(input)
-                result = self._extract_multi_comment(result)
+
+                try:
+                    result = self._call_llm(input)
+                except APIError as e:
+                    return ConversionError(bc, e.message)
+
+                result = self._extract_multi_comment(result) # Extract only the "/** ... /*" part
                 if result is not None:
-                    result = indent(result, c.initial_comment_indentation) # Add indentation
-                    result = result.removeprefix(c.initial_comment_indentation) # Remove initial indentation
+                    result = indent(result, bc.initial_comment_indentation) # Add indentation
+                    result = result.removeprefix(bc.initial_comment_indentation) # Remove initial indentation
                     result = result.replace("/**", "/** AI_GENERATED", 1) # Adds "AI_GENERATED" to the beginning of the new comment
-            case CommentAfterMember() as c:
-                raise NotImplementedError # TODO
-                text = c.comment_text
-                if text.startswith("/**"):
-                    result = text.replace("/**", "/**<")
-                elif text.startswith("/*"):
-                    result = text.replace("/*", "/**<")
-                elif text.startswith("//"):
-                    result = text.replace("//", "///<")
-            
-        return result
+                    return ConversionPresent(bc, result)
+                else:
+                    return ConversionError(bc, "No '/** ... /*' found in output of LLM")
+
+            case CommentAfterMember() as cm:
+                return ConversionUnsupported(cm)
 
     def _call_llm(self, input: str) -> str:
         response = self.client.chat.completions.create(
@@ -62,7 +55,7 @@ class CConverter(Converter[CType]):
         if result is not None:
             return result
         else:
-            raise Exception
+            raise RuntimeError
 
     def _extract_multi_comment(self, result: str) -> Optional[str]:
         match = self.multi_comment_matcher.search(result)
