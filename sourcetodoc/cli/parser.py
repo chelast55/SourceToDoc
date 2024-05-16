@@ -1,5 +1,5 @@
 """
-Contains a CLI argument parser class that automatically supports the functionality defined in args_base.yaml
+Contains a CLI argument parser class that automatically supports the functionality defined in various YAML files.
 """
 
 from argparse import ArgumentParser
@@ -46,12 +46,27 @@ More obscure:
 class ConfiguredParser(ArgumentParser):
     def __init__(self):
         """
-        TODO: document!
+        CLI argument parser class that is preconfigured to support the functionality defined in various YAML files.
+
         Additional files can be added by (statically) expanding ARGS_YAML_PATHS.
+        The content of each file is thoroughly checked (for wrong syntax, wrong structure, duplicate arguments, etc.)
+        before registering arguments.
+        Bools are automatically handled as flags that enable by default.
+        The YAML loading/parsing fucntionality can be accessed statically.
+
+        Intended optional keyword arguments:
+            - prog -- The name of the program (default: ``os.path.basename(sys.argv[0])``)
+            - usage -- A usage message (default: auto-generated from arguments)
+            - description -- A description of what the program does
+            - epilog -- Text following the argument descriptions
+            - parents -- Parsers whose arguments should be copied into this one
+            - formatter_class -- HelpFormatter class for printing help messages
+            - conflict_handler -- String indicating how to handle conflicts
+            - exit_on_error -- Determines whether or not ArgumentParser exits with error info when an error occurs
         """
         ArgumentParser.__init__(self)
-        self.__args: list[dict[str, dict[str, Any]]] = self.load_yamls_combined_and_check_structure(ARGS_YAML_PATHS)
-        self.__add_arguments_from_dict()
+        self._args: list[dict[str, dict[str, Any]]] = self.load_yamls_combined_and_check_structure(ARGS_YAML_PATHS)
+        self._add_arguments_from_dict()
 
     def get_cli_args(self) -> list[dict[str, dict[str, Any]]]:
         """
@@ -64,7 +79,7 @@ class ConfiguredParser(ArgumentParser):
         list[dict[str, dict[str, Any]]]
             List of all CLI args supported by this ConfiguredParser.
         """
-        return self.__args
+        return self._args
 
     @staticmethod
     def load_yaml_and_check_structure(args_yaml_path: Path) -> list[dict[str, dict[str, Any]]]:
@@ -102,7 +117,7 @@ class ConfiguredParser(ArgumentParser):
                 for arg in yaml_content:
                     if not isinstance(arg, dict):  # check for all entries being dicts
                         raise TypeError(f"{arg} in {args_yaml_path} is not a dictionary.")
-                    if not len(arg.keys()) == 1 and isinstance(list(arg.keys())[0], str):
+                    if not len(arg.keys()) == 1 and isinstance(list(arg.keys())[0], str):  # check for 1 string beeing the only key
                         raise KeyError(
                             f"Entry with Key {list(arg.keys())} does not contain exactly 1 key of type str.\n"
                             f"The single key acts a the arg's name."
@@ -123,7 +138,7 @@ class ConfiguredParser(ArgumentParser):
                                 f"\"{key}\" in \"{arg_name}\" ({args_yaml_path}) is not a supported parameter for a CLI argument.\n"
                                 f"Supported parameters: {REQUIRED_ARG_PARAMS + OPTIONAL_ARG_PARAMS}"
                         )
-            # TODO: check for duplicate names and shorts (helper?)
+            ConfiguredParser.check_for_duplucate_argument_names(yaml_content)
             return yaml_content
 
     @staticmethod
@@ -157,10 +172,19 @@ class ConfiguredParser(ArgumentParser):
         for args_yaml_path in args_yaml_paths:
             combined_yaml_content += ConfiguredParser.load_yaml_and_check_structure(args_yaml_path)
 
-        # TODO: check for duplicate names and shorts (helper?)
+        ConfiguredParser.check_for_duplucate_argument_names(combined_yaml_content)
         return combined_yaml_content
 
-    def __add_arguments_from_dict(self):
+    @staticmethod
+    def check_for_duplucate_argument_names(args_list: list[dict[str, Any]]):
+        seen_arg_names: set[str] = set()
+        for arg in args_list:
+            arg_name: str = list(arg.keys())[0]
+            if arg_name in seen_arg_names:
+                raise KeyError(f"Duplicate CLI argument name found: \"{arg_name}\"")
+            seen_arg_names.add(arg_name)
+
+    def _add_arguments_from_dict(self):
         """
         Iterates over self.__args and registers (self.add_argument) all CLI args (stored as dicts) as actions.
 
@@ -168,7 +192,7 @@ class ConfiguredParser(ArgumentParser):
         When the type of the parameter is bool, additional steps are performed, to make it behave correctly as a flag.
         This does not check if the dict's content is valid, as this is expected to be done while generating the dict.
         """
-        for arg in self.__args:
+        for arg in self._args:
             arg_name: str = list(arg.keys())[0]
             arg_params: dict[str, Any] = arg[arg_name]
 
@@ -180,10 +204,18 @@ class ConfiguredParser(ArgumentParser):
             add_argument_kwargs: dict[str, Any] = {"help": arg_params["help"]}
 
             if not arg_params["type"] == "bool":  # having any type set causes store_true/store_false to fail
-                add_argument_kwargs["type"] = arg_params["type"]
+                add_argument_kwargs["type"] = eval(arg_params["type"])
 
             if "default" in arg_params.keys():
-                add_argument_kwargs["default"] = add_argument_kwargs["type"](arg_params["default"])
+                if arg_params["default"] == "None":
+                    add_argument_kwargs["default"] = None
+                elif arg_params["default"] == "True":
+                    add_argument_kwargs["default"] = True
+                elif arg_params["default"] == "False":
+                    add_argument_kwargs["default"] = False
+                else:
+                    # perform "dynamic cast" to the type specified in arg_params["type"]
+                    add_argument_kwargs["default"] = eval(arg_params["type"])(arg_params["default"])
             elif arg_params["type"] == "bool":
                 add_argument_kwargs["default"] = False
 
@@ -213,7 +245,6 @@ class ConfiguredParser(ArgumentParser):
             if "nargs" in arg_params.keys():
                 add_argument_kwargs["nargs"] = arg_params["nargs"]
 
-            #self.add_argument(*add_argument_args)
             self.add_argument(*add_argument_args, **add_argument_kwargs)
 
 if __name__ == "__main__":
