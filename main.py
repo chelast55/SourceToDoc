@@ -1,8 +1,8 @@
 from os import chdir, system
 from pathlib import Path
-from argparse import ArgumentParser
 
 from sourcetodoc.helpers import delete_directory_if_exists
+from sourcetodoc.cli.parser import ConfiguredParser
 
 # TODO: (through argparse?)
 # configurable variables
@@ -188,6 +188,9 @@ exhale_args = {{
 """
 
 if __name__ == "__main__":
+    # parse arguments
+    args = ConfiguredParser().parse_args()
+
     # delete artifacts from prior builds and ensure paths exist TODO: move to end as cleenup, when debugging is done
     delete_directory_if_exists(doc_path_abs)
     doc_path_abs.mkdir(parents=True, exist_ok=True)
