@@ -3,7 +3,6 @@
     type: str
     choices: [sphinx-based, doxygen-only]
     default: doxygen-only
-- torben:
-    help: Test123
+- wizard:
+    help: Planned feature. Not implemented yet :/
     type: bool
-    default: True

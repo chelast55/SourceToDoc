@@ -30,18 +30,17 @@ Keys that have an effect on an argument, but are not mandatory.
 
 Recommended:
     - "short":      short version of argument (later accessed via "-short", should be no more than a single letter)
-    - "default":    default value when no argument is present (defaults to None)
+    - "default":    default value when no argument is present (defaults to None, except bool, where it defaults to False)
     - "required":   indicator of whether argument is required (should be "false" if not absolutely necessary)
     - "choices":    limit acceptable value range (either a list, range or other container in string representation)
 
 More obscure:
     - "action":     one of ["store", "store_const", "store_true", "append", "append_const", "count", "help", 'version"]
-                    "store_true" is automatically added when type is "bool"
+                    defaults to "store_true" when type is "bool" and not specified otherwise
     - "const":      store a const value
     - "dest":       specify the attribute name used in the result namespace
     - "metavar":    alternate display name for the argument as shown in help
     - "nargs":      number of times the argument can be used
-
 """
 
 class ConfiguredParser(ArgumentParser):
@@ -52,7 +51,7 @@ class ConfiguredParser(ArgumentParser):
         """
         ArgumentParser.__init__(self)
         self.__args: list[dict[str, dict[str, Any]]] = self.load_yamls_combined_and_check_structure(ARGS_YAML_PATHS)
-        # TODO: add args (special consideration for name and short)
+        self.__add_arguments_from_dict()
 
     def get_cli_args(self) -> list[dict[str, dict[str, Any]]]:
         """
@@ -95,7 +94,7 @@ class ConfiguredParser(ArgumentParser):
         KeyError
             when the YAML file contains unexpected values or is missing required values.
         """
-        with open(args_yaml_path, 'r') as yaml_file:  # (indirect)
+        with open(Path(__file__).parent / args_yaml_path, 'r') as yaml_file:  # (indirect)
             yaml_content = yaml_safe_load(yaml_file)
             if not isinstance(yaml_content, list):  # check for list on top level
                 raise TypeError(f"Content of {args_yaml_path} does not contain a list at top level.")
@@ -124,6 +123,7 @@ class ConfiguredParser(ArgumentParser):
                                 f"\"{key}\" in \"{arg_name}\" ({args_yaml_path}) is not a supported parameter for a CLI argument.\n"
                                 f"Supported parameters: {REQUIRED_ARG_PARAMS + OPTIONAL_ARG_PARAMS}"
                         )
+            # TODO: check for duplicate names and shorts (helper?)
             return yaml_content
 
     @staticmethod
@@ -156,9 +156,70 @@ class ConfiguredParser(ArgumentParser):
         combined_yaml_content: list[dict[str, dict[str, Any]]] = []
         for args_yaml_path in args_yaml_paths:
             combined_yaml_content += ConfiguredParser.load_yaml_and_check_structure(args_yaml_path)
+
+        # TODO: check for duplicate names and shorts (helper?)
         return combined_yaml_content
+
+    def __add_arguments_from_dict(self):
+        """
+        Iterates over self.__args and registers (self.add_argument) all CLI args (stored as dicts) as actions.
+
+        Optional parameters are only cosidered when they are present.
+        When the type of the parameter is bool, additional steps are performed, to make it behave correctly as a flag.
+        This does not check if the dict's content is valid, as this is expected to be done while generating the dict.
+        """
+        for arg in self.__args:
+            arg_name: str = list(arg.keys())[0]
+            arg_params: dict[str, Any] = arg[arg_name]
+
+            add_argument_args: list[str] = [f'--{arg_name}']
+
+            if "short" in arg_params.keys():
+                add_argument_args.insert(0, f'-{arg_params["short"]}')
+
+            add_argument_kwargs: dict[str, Any] = {"help": arg_params["help"]}
+
+            if not arg_params["type"] == "bool":  # having any type set causes store_true/store_false to fail
+                add_argument_kwargs["type"] = arg_params["type"]
+
+            if "default" in arg_params.keys():
+                add_argument_kwargs["default"] = add_argument_kwargs["type"](arg_params["default"])
+            elif arg_params["type"] == "bool":
+                add_argument_kwargs["default"] = False
+
+            if "required" in arg_params.keys():
+                add_argument_kwargs["required"] = arg_params["required"]
+
+            if "choices" in arg_params.keys():
+                add_argument_kwargs["choices"] = arg_params["choices"]
+
+            if "action" in arg_params.keys():
+                add_argument_kwargs["action"] = arg_params["action"]
+            elif arg_params["type"] == "bool":
+                if add_argument_kwargs["default"] is True:
+                    add_argument_kwargs["action"] = "store_false"
+                else:
+                    add_argument_kwargs["action"] = "store_true"
+
+            if "const" in arg_params.keys():
+                add_argument_kwargs["const"] = arg_params["const"]
+
+            if "dest" in arg_params.keys():
+                add_argument_kwargs["dest"] = arg_params["dest"]
+
+            if "metavar" in arg_params.keys():
+                add_argument_kwargs["metavar"] = arg_params["metavar"]
+
+            if "nargs" in arg_params.keys():
+                add_argument_kwargs["nargs"] = arg_params["nargs"]
+
+            #self.add_argument(*add_argument_args)
+            self.add_argument(*add_argument_args, **add_argument_kwargs)
 
 if __name__ == "__main__":
     # short test:
     parser: ConfiguredParser = ConfiguredParser()
     print(parser.get_cli_args())
+    args = parser.parse_args()
+    print(dir(args))
+    parser.print_help()
