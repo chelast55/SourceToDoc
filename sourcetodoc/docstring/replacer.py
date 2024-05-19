@@ -1,15 +1,30 @@
 from typing import Iterable
 
-from .converter import ConversionPresent, ConversionResult
+from .conversion import ConversionPresent
 from .extractor import BlockComment
+from .converter import Replace
 
 
 class Replacer:
     """
     Adds new comments to code.
     """
+    def apply_conversions[T](self, code: str, conversions: Iterable[ConversionPresent[T]], replace: Replace) -> str:
+        """
+        Adds now comments to code given by conversions.
 
-    def replace_old_comments[T](self, code: str, conversions: Iterable[ConversionResult[T]]) -> str:
+        Returns
+        -------
+        str
+            Code with new comments.
+        """
+        match replace:
+            case Replace.REPLACE_OLD_COMMENTS:
+                return self._replace_old_comments(code, conversions)
+            case Replace.APPEND_TO_OLD_COMMENTS:
+                return self._append_to_old_comments(code, conversions)
+
+    def _replace_old_comments[T](self, code: str, conversions: Iterable[ConversionPresent[T]]) -> str:
         """
         Replaces old comments with new comments.
         """
@@ -18,8 +33,6 @@ class Replacer:
         end = len(code)
 
         for e in conversions:
-            if not isinstance(e, ConversionPresent):
-                continue
             end = e.comment.comment_range.start
             result += code[start:end] + e.new_comment
             start = e.comment.comment_range.end
@@ -27,8 +40,7 @@ class Replacer:
         result += code[start:]
         return result
 
-
-    def append_to_old_comments[T](self, code: str, conversions: Iterable[ConversionResult[T]]) -> str:
+    def _append_to_old_comments[T](self, code: str, conversions: Iterable[ConversionPresent[T]]) -> str:
         """
         Places new comments from conversions under old comments.
         """
@@ -37,9 +49,6 @@ class Replacer:
         end = len(code)
 
         for e in conversions:
-            if not isinstance(e, ConversionPresent):
-                continue
-
             match e.comment:
                 case BlockComment() as c:
                     end = c.comment_range.end

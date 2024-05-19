@@ -1,75 +1,34 @@
-from dataclasses import dataclass
-from typing import Iterable, Iterator, Optional, Protocol
-
-from .extractor import Comment
+from enum import Enum, auto
+from typing import Protocol, runtime_checkable
 
 
-@dataclass(frozen=True)
-class ConversionPresent[T]:
+class Replace(Enum):
     """
-    Represents a successful conversion.
-
-    new_comment has the same form as Comment#comment_text.
+    Specifies how the comments should be replaced.
     """
-    comment: Comment[T]
-    new_comment: str
-    message: Optional[str] = None
+    REPLACE_OLD_COMMENTS = auto()
+    APPEND_TO_OLD_COMMENTS = auto()
 
 
-@dataclass(frozen=True)
-class ConversionEmpty[T]:
+@runtime_checkable
+class Converter(Protocol):
     """
-    Represents "no conversion needed" or "comment is already a docstring".
+    Converts comments.
     """
-    comment: Comment[T]
-    message: Optional[str] = None
-
-@dataclass(frozen=True)
-class ConversionUnsupported[T]:
-    """
-    Represents "comment is not supported by this converter".
-    """
-    comment: Comment[T]
-
-
-@dataclass(frozen=True)
-class ConversionError[T]:
-    """
-    Represents "no conversion found" or "an error occured during conversion".
-    """
-    comment: Comment[T]
-    message: str
-
-
-type ConversionResult[T] = ConversionPresent[T] | ConversionEmpty[T] | ConversionUnsupported[T] | ConversionError[T]
-
-
-class Converter[T](Protocol):
-    def calc_docstring(self, comment: Comment[T]) -> ConversionResult[T]:
+    def convert_string(self, code: str, replace: Replace) -> str:
         """
-        Calculates a docstring from a comment.
+        Converts comments.
 
         Parameters
         ----------
-        comment : Comment[T]
+        code : str
+            The code that contains comments.
+        replace : Replace
+            Specifies how the comments should be replaced.
 
         Returns
         -------
-        ConversionResult[T]
+        str
+            The code with converted comments.
         """
         ...
-
-    def calc_conversions(self, comments: Iterable[Comment[T]]) -> Iterator[ConversionResult[T]]:
-        """
-        Calculates docstrings from comments.
-
-        Parameters
-        ----------
-        comments : Iterable[Comment[T]]
-
-        Yields
-        ------
-        Iterator[ConversionResult[T]]
-            ConversionResult objects with comments with pairwise disjoint comment_range in ascending order.
-        """
-        return (self.calc_docstring(e) for e in comments)

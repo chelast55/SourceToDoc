@@ -8,17 +8,17 @@ from ..extractor import BlockComment, Comment, Extractor, Range
 SINGLE_COMMENT_PATTERN: str = r"(?://.*\n)*//.*"
 
 # Matches multi-line comments, e.g. "/* ... */"
-MULTI_COMMENT_PATTERN: str = r"(/\*(?:.|\n)*?\*/)|(?://.*\n)*//.*"
+MULTI_COMMENT_PATTERN: str = r"/\*(?:.|\n)*?\*/"
 
 IDENTIFIER_PATTERN: str = r"(_|[a-zA-Z])[a-zA-Z0-9_]+"
 
 # Matches function declarations or definitions e.g. "void main(void);" or "void main(void) { ... }"
 FUNCTION_SIGNATURE_PATTERN: str = r"\b(?:\w+\s+){1,2}\w+\s*\([^)]*\)"
 
-# Matches multi-line comments with equal indentations on function declarations or definitions
+# Matches block comments with equal indentations on function declarations or definitions
 FUNCTION_COMMENT_PATTERN: str = (r"^(?P<indentation>(?:[ ]{2}|\t)*)"                   # Matches the initial indentation
                                 r"(?:(?P<single_comment>(?://.*\n\1)*//.*)        |"   # Use backreference \1 to match initial indentation
-                                r"   (?P<multi_comment>(?:/\*(?:.*\n\1[ ]\*)*?/)) )"
+                                r"   (?P<multi_comment>(?:/\*(?:(?:.*\n\1[ ]\*)*?|.*?\*)/)) )"
                                 fr"(?P<spacing>\n\1)(?P<function_signature>{FUNCTION_SIGNATURE_PATTERN})\s*"
                                 r"(?:\{[^}]*\}|;)")
 

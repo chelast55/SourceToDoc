@@ -9,18 +9,59 @@ def extractor() -> CExtractor:
 
 
 @pytest.fixture
-def simple_code() -> str:
+def single_line_single_comment() -> str:
+    return """\
+// Hello World
+void f(void) {}"""
+
+
+def test_single_line_comments(extractor: CExtractor, single_line_single_comment: str):
+    comments = list(extractor.extract_comments(single_line_single_comment))
+    assert len(comments) == 1
+    assert comments[0].comment_text == "// Hello World"
+
+
+@pytest.fixture
+def single_line_multi_comment() -> str:
+    return """\
+/* Hello World */
+void f(void) {}"""
+
+
+def test_single_line_multi_comment(extractor: CExtractor, single_line_multi_comment: str):
+    comments = list(extractor.extract_comments(single_line_multi_comment))
+    assert len(comments) == 1
+    assert comments[0].comment_text == "/* Hello World */"
+
+
+@pytest.fixture
+def multi_line_single_comment() -> str:
+    return """\
+// Hello World
+//
+void f(void) {}"""
+
+
+def test_multi_line_single_comment(extractor: CExtractor, multi_line_single_comment: str):
+    comments = list(extractor.extract_comments(multi_line_single_comment))
+    assert len(comments) == 1
+    assert comments[0].comment_text == """\
+// Hello World
+//"""
+
+
+
+@pytest.fixture
+def multi_line_multi_comment() -> str:
     return """\
 /* Hello World
  */
-void main(void) {}"""
+void f(void) {}"""
 
 
-def test_simple_function_pattern(extractor: CExtractor, simple_code: str):
-    comments = list(extractor.extract_comments(simple_code))
+def test_simple_function_pattern(extractor: CExtractor, multi_line_multi_comment: str):
+    comments = list(extractor.extract_comments(multi_line_multi_comment))
     assert len(comments) == 1
-
-    expected = """\
+    assert comments[0].comment_text == """\
 /* Hello World
  */"""
-    assert comments[0].comment_text == expected
