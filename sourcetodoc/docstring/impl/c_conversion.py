@@ -4,15 +4,18 @@ from typing import Optional, override
 
 from openai import APIError, OpenAI
 
-from ..conversion import (ConversionEmpty, ConversionError, ConversionPresent,
-                         ConversionResult, ConversionUnsupported, Conversion)
+from ..conversion import (Conversion, ConversionEmpty, ConversionError,
+                          ConversionPresent, ConversionResult,
+                          ConversionUnsupported)
 from ..extractor import BlockComment, Comment
-from .c_extractor import MULTI_COMMENT_PATTERN, CType
+from .c_extractor import CType
 
 
 class CConversion(Conversion[CType]):
 
-    multi_comment_matcher = re.compile(MULTI_COMMENT_PATTERN, re.VERBOSE)
+    # Matches "/** ... */"
+    COMMENT_PATTERN: str = r"/\*\*(?:.|\n)*?\*/"
+    comment_matcher = re.compile(COMMENT_PATTERN, re.VERBOSE)
 
     def __init__(self, client: OpenAI) -> None:
         self.client = client
@@ -20,7 +23,7 @@ class CConversion(Conversion[CType]):
     @override
     def calc_conversion(self, comment: Comment[CType]) -> ConversionResult[CType]:
         match comment:
-            case BlockComment() as bc if bc.symbol_type is CType.FUNCTION_MULTI_COMMENT:
+            case BlockComment() as bc if bc.symbol_type is CType.FUNCTION:
                 return self.handle_function_block_comment(bc)
             case _:
                 return ConversionUnsupported(comment)
@@ -62,7 +65,7 @@ class CConversion(Conversion[CType]):
 
     @staticmethod
     def _extract_multi_comment(result: str) -> Optional[str]:
-        match = CConversion.multi_comment_matcher.search(result)
+        match = CConversion.comment_matcher.search(result)
         if match is not None:
             return match[0]
         else:

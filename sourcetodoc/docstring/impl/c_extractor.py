@@ -4,57 +4,83 @@ from typing import Iterator, Optional, override
 
 from ..extractor import BlockComment, Comment, Extractor, Range
 
-# Matches single-line comments (also over multiple lines), e.g. "// ..."
-SINGLE_COMMENT_PATTERN: str = r"(?://.*\n)*//.*"
-
-# Matches multi-line comments, e.g. "/* ... */"
-MULTI_COMMENT_PATTERN: str = r"/\*(?:.|\n)*?\*/"
-
 IDENTIFIER_PATTERN: str = r"(_|[a-zA-Z])[a-zA-Z0-9_]+"
 
 # Matches function declarations or definitions e.g. "void main(void);" or "void main(void) { ... }"
 FUNCTION_SIGNATURE_PATTERN: str = r"\b(?:\w+\s+){1,2}\w+\s*\([^)]*\)"
 
-# Matches block comments with equal indentations on function declarations or definitions
-FUNCTION_COMMENT_PATTERN: str = (r"^(?P<indentation>(?:[ ]{2}|\t)*)"                   # Matches the initial indentation
-                                r"(?:(?P<single_comment>(?://.*\n\1)*//.*)        |"   # Use backreference \1 to match initial indentation
-                                r"   (?P<multi_comment>(?:/\*(?:(?:.*\n\1[ ]\*)*?|.*?\*)/)) )"
-                                fr"(?P<spacing>\n\1)(?P<function_signature>{FUNCTION_SIGNATURE_PATTERN})\s*"
-                                r"(?:\{[^}]*\}|;)")
+# Matches block comments with equal indentations
+BLOCK_COMMENT_PATTERN: str = (r"^(?P<indentation>(?:[ ]{2}|\t)*)"             # Match the initial indentation
+                                r"(?P<comment>(?://.*\n\1)*//.*               |" # Match "// ..." , or
+                                r"            /\*(?:(?:.*\n\1[ ]\*)*?|.*?\*)/ )" # match "/* ... */"
+                                r"\n\1"
+                                r"(" # Match function declaration or definition
+                                fr"(?P<function>{FUNCTION_SIGNATURE_PATTERN})" r"\s*(\{[^}]*\}|;)"
+                                r"|" # match member variable
+                                fr"(?P<variable>{IDENTIFIER_PATTERN}\s+{IDENTIFIER_PATTERN})" r"\s*?;"
+                                r"|" # match struct
+                                fr"(?P<struct>struct\s+{IDENTIFIER_PATTERN})" r"\s*?\{"
+                                r"|" # match enum
+                                fr"(?P<enum>enum\s+{IDENTIFIER_PATTERN})" r"\s*?\{"
+                                r")")
 
 
 class CType(Enum):
-    FUNCTION_MULTI_COMMENT = auto()
+    FUNCTION = auto()
+    VARIABLE = auto()
+    STRUCT = auto()
+    ENUM = auto()
 
 
 class CExtractor(Extractor[CType]):
+    """
+    Extracts comments from C source code.
+
+    Extracts comments of the form:
+    ```
+    /*
+     *
+     */
+    symbol
+    ```
+
+    where `symbol` has one of the following forms:
+    - `function declaration {...} | ;`
+    - `identifier identifier;` e.g. a member in a struct
+    - `struct identifier {`
+    - `enum identifier {`
+
+    where `identifier` matches `(_|[a-zA-Z])[a-zA-Z0-9_]+`.
+    """
 
     def __init__(self) -> None:
-        self.function_comment_matcher = re.compile(FUNCTION_COMMENT_PATTERN, re.VERBOSE | re.MULTILINE)
+        self.comment_matcher = re.compile(BLOCK_COMMENT_PATTERN, re.VERBOSE | re.MULTILINE)
 
     @override
     def extract_comments(self, code: str) -> Iterator[Comment[CType]]:
         last_range: Optional[Range] = None # Keep track of range of previous match
-        for matched in self.function_comment_matcher.finditer(code):
-            # Retrieve "//..." or "/*...*/" comments
-            comment_type = CExtractor._matched_group(matched)
-
-            comment_text = matched.group(comment_type)
-            comment_range = Range(matched.start(comment_type), matched.end(comment_type))
-            function_signature = matched.group("function_signature")
+        for matched in self.comment_matcher.finditer(code):
             initial_comment_indentation = matched.group("indentation")
+            comment_text = matched.group("comment")
+            comment_range = Range(matched.start("comment"), matched.end("comment"))
+            symbol_text, symbol_type = CExtractor._matched_group(matched)
             
-            if (last_range is None or comment_range.start > last_range.end): # Assure that matches will not overlap (e.g. otherwise "/* /**/" will match "/* /**/" and "/**/")
-                yield BlockComment(comment_text, comment_range, function_signature, CType.FUNCTION_MULTI_COMMENT, initial_comment_indentation)
+            if (last_range is None or comment_range.start > last_range.end): # Assure that matches will not overlap (e.g. otherwise "/* /**/" can match "/* /**/" and "/**/")
+                yield BlockComment(comment_text, comment_range, symbol_text, symbol_type, initial_comment_indentation)
             last_range = comment_range
 
     @staticmethod
-    def _matched_group(matched: re.Match[str]) -> str:
-        comment_type: str
-        if matched.group("single_comment") is not None:
-            comment_type = "single_comment"
-        elif matched.group("multi_comment") is not None:
-            comment_type = "multi_comment"
+    def _matched_group(matched: re.Match[str]) -> tuple[str, CType]:
+        groupdict = matched.groupdict()
+        if "function" in groupdict and groupdict["function"] is not None:
+            symbol_text = groupdict["function"]
+            symbol_type = CType.FUNCTION
+        elif "struct" in groupdict and groupdict["struct"] is not None:
+            symbol_text = groupdict["struct"]
+            symbol_type = CType.STRUCT
+        elif "enum" in groupdict and groupdict["enum"] is not None:
+            symbol_text = groupdict["enum"]
+            symbol_type = CType.ENUM
         else:
-            raise RuntimeError # Should never happen
-        return comment_type
+            raise RuntimeError
+        return symbol_text, symbol_type

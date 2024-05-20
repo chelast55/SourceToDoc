@@ -18,6 +18,7 @@ class PrintConverter[T](SimpleConverter[T]):
     @override
     def convert_string(self, code: str, replace: Replace) -> str:
         # Extract comments
+        print("Extracting comments ...")
         comments = list(self.extractor.extract_comments(code))
         comments_count = len(comments)
         print(f"{comments_count} comments were found")
@@ -25,15 +26,10 @@ class PrintConverter[T](SimpleConverter[T]):
         # Calculate new comments
         conversions: list[ConversionResult[T]] = []
         for i, comment in enumerate(comments):
-            print(f"Processing comment {i}")
+            print(f"Processing {i} of {comments_count}")
             conversion = self.conversion.calc_conversion(comment)
             conversions.append(conversion)
             self.if_error_print_message(conversion)
-
-        # Apply new comments
-        conversions_present = [e for e in conversions if isinstance(e, ConversionPresent)]
-        print(f"Converting {len(conversions_present)} of {comments_count} comments ...")
-        result = self.replacer.apply_conversions(code, conversions_present, replace)
 
         conversions_empty = [e for e in conversions if isinstance(e, ConversionEmpty)]
         print(f"{len(conversions_empty)} of {comments_count} comments don't have to be converted")
@@ -41,8 +37,13 @@ class PrintConverter[T](SimpleConverter[T]):
         conversions_unsupported = [e for e in conversions if isinstance(e, ConversionUnsupported)]
         conversions_error = [e for e in conversions if isinstance(e, ConversionError)]
         print(f"{len(conversions_unsupported) + len(conversions_error)} of {comments_count} comments can't be converted:")
-        print(f"{len(conversions_unsupported)} comments are not supported")
-        print(f"{len(conversions_error)} comments raised an error")
+        print(f"{len(conversions_unsupported)} are not supported")
+        print(f"{len(conversions_error)} raised an error")
+
+        # Apply new comments
+        conversions_present = [e for e in conversions if isinstance(e, ConversionPresent)]
+        print(f"Converting {len(conversions_present)} of {comments_count} comments ...")
+        result = self.replacer.apply_conversions(code, conversions_present, replace)
         return result
 
     def if_error_print_message(self, conversion: ConversionResult[T]) -> None:
