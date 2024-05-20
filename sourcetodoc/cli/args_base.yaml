@@ -6,3 +6,4 @@
 - wizard:
     help: Planned feature. Not implemented yet :/
     type: bool
+    short: W

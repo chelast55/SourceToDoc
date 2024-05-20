@@ -138,7 +138,7 @@ class ConfiguredParser(ArgumentParser):
                                 f"\"{key}\" in \"{arg_name}\" ({args_yaml_path}) is not a supported parameter for a CLI argument.\n"
                                 f"Supported parameters: {REQUIRED_ARG_PARAMS + OPTIONAL_ARG_PARAMS}"
                         )
-            ConfiguredParser.check_for_duplucate_argument_names(yaml_content)
+            ConfiguredParser.check_for_duplicate_argument_names(yaml_content)
             return yaml_content
 
     @staticmethod
@@ -172,17 +172,22 @@ class ConfiguredParser(ArgumentParser):
         for args_yaml_path in args_yaml_paths:
             combined_yaml_content += ConfiguredParser.load_yaml_and_check_structure(args_yaml_path)
 
-        ConfiguredParser.check_for_duplucate_argument_names(combined_yaml_content)
+        ConfiguredParser.check_for_duplicate_argument_names(combined_yaml_content)
         return combined_yaml_content
 
     @staticmethod
-    def check_for_duplucate_argument_names(args_list: list[dict[str, Any]]):
+    def check_for_duplicate_argument_names(args_list: list[dict[str, Any]]):
         seen_arg_names: set[str] = set()
+        seen_arg_shorts: set[str] = set()
         for arg in args_list:
             arg_name: str = list(arg.keys())[0]
             if arg_name in seen_arg_names:
                 raise KeyError(f"Duplicate CLI argument name found: \"{arg_name}\"")
             seen_arg_names.add(arg_name)
+            if "short" in arg[arg_name].keys():
+                if arg[arg_name]["short"] in seen_arg_shorts:
+                    raise KeyError(f"Duplicate CLI argument short form found: \"{arg[arg_name]["short"]}\"")
+                seen_arg_shorts.add(arg[arg_name]["short"])
 
     def _add_arguments_from_dict(self):
         """
@@ -207,11 +212,11 @@ class ConfiguredParser(ArgumentParser):
                 add_argument_kwargs["type"] = eval(arg_params["type"])
 
             if "default" in arg_params.keys():
-                if arg_params["default"] == "None":
+                if arg_params["default"].upper() in ["NONE", "NULL"]:
                     add_argument_kwargs["default"] = None
-                elif arg_params["default"] == "True":
+                elif arg_params["default"].upper() == "TRUE":
                     add_argument_kwargs["default"] = True
-                elif arg_params["default"] == "False":
+                elif arg_params["default"].upper() == "FALSE":
                     add_argument_kwargs["default"] = False
                 else:
                     # perform "dynamic cast" to the type specified in arg_params["type"]

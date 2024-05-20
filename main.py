@@ -2,7 +2,7 @@ from os import chdir, system
 from pathlib import Path
 
 from sourcetodoc.helpers import delete_directory_if_exists
-from sourcetodoc.cli.parser import ConfiguredParser
+from sourcetodoc.cli.ConfiguredParser import ConfiguredParser
 
 # TODO: (through argparse?)
 # configurable variables
