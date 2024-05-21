@@ -30,6 +30,7 @@ class ConversionUnsupported[T]:
     Represents "comment is not supported by this converter".
     """
     comment: Comment[T]
+    message: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,7 @@ class ConversionError[T]:
     """
     comment: Comment[T]
     message: str
+    new_comment: Optional[str] = None
 
 
 type ConversionResult[T] = ConversionPresent[T] | ConversionEmpty[T] | ConversionUnsupported[T] | ConversionError[T]

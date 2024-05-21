@@ -26,28 +26,28 @@ class CConversion(Conversion[CType]):
             case BlockComment() as bc if bc.symbol_type is CType.FUNCTION:
                 return self.handle_function_block_comment(bc)
             case _:
-                return ConversionUnsupported(comment)
+                return ConversionUnsupported(comment, "Not a block comment on a function")
 
     def handle_function_block_comment(self, bc: BlockComment[CType]) -> ConversionResult[CType]:
         if bc.comment_text.startswith("/**"):
-            return ConversionEmpty(bc)
+            return ConversionEmpty(bc, "Comment starts with \"/**\"")
         
         # Remove indentation
         input = (bc.initial_comment_indentation + bc.comment_text + "\n" +
                  bc.initial_comment_indentation + bc.symbol_text)
         input = dedent(input)
         try:
-            result = self._call_llm(input)
+            llm_output = self._call_llm(input)
         except APIError as e:
             return ConversionError(bc, e.message)
-        result = self._extract_multi_comment(result) # Extract only the "/** ... /*" part
-        if result is not None:
-            result = indent(result, bc.initial_comment_indentation) # Add indentation
-            result = result.removeprefix(bc.initial_comment_indentation) # Remove initial indentation
-            result = result.replace("/**", "/** AI_GENERATED", 1) # Adds "AI_GENERATED" after "/**"
-            return ConversionPresent(bc, result)
+        new_comment = self._extract_multi_comment(llm_output) # Extract only the "/** ... /*" part
+        if new_comment is not None:
+            new_comment = indent(new_comment, bc.initial_comment_indentation) # Add indentation
+            new_comment = new_comment.removeprefix(bc.initial_comment_indentation) # Remove initial indentation
+            new_comment = new_comment.replace("/**", "/** AI_GENERATED", 1) # Adds "AI_GENERATED" after "/**"
+            return ConversionPresent(bc, new_comment)
         else:
-            return ConversionError(bc, "No '/** ... /*' found in output of LLM")
+            return ConversionError(bc, "No '/** ... /*' found in output of LLM", llm_output)
 
     def _call_llm(self, input: str) -> str:
         response = self.client.chat.completions.create(

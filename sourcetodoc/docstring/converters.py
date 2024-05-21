@@ -8,12 +8,12 @@ from .converter import Converter
 from .printconverter import PrintConverter
 
 
-def get_print_parsers(client: OpenAI) -> Mapping[str, Converter]:
+def get_print_converters(client: OpenAI) -> Mapping[str, Converter]:
     return {
-        "c_converter": PrintConverter(CExtractor(), CConversion(client))
+        "c_function_blockcomment_llm": PrintConverter(CExtractor(), CConversion(client))
     }
 
 def get_default_file_extensions() -> Mapping[str, set[str]]:
     return {
-        "c_converter": {".c", ".h"}
+        "c_function_blockcomment_llm": {".c", ".h"}
     }
