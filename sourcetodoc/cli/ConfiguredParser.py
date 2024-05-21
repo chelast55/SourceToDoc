@@ -23,7 +23,7 @@ Keys considered mandatory for an argument to be "valid".
 """
 
 OPTIONAL_ARG_PARAMS: list[str] = [
-    "short", "default", "required", "action", "choices", "const", "dest", "metavar", "nargs"
+    "short", "default", "required", "action", "choices", "const", "dest", "metavar", "nargs", "subparser"
 ]
 """
 Keys that have an effect on an argument, but are not mandatory.
@@ -41,6 +41,9 @@ More obscure:
     - "dest":       specify the attribute name used in the result namespace
     - "metavar":    alternate display name for the argument as shown in help
     - "nargs":      number of times the argument can be used
+    - "subparser":  subparser to have this arg live in instead of the "regular" parser.
+                    Could either be a single string or a list of strings (hierarchy of subparsers)
+                    Note, that only one subparser can be "active" at a time.
 """
 
 class ConfiguredParser(ArgumentParser):
@@ -138,6 +141,17 @@ class ConfiguredParser(ArgumentParser):
                                 f"\"{key}\" in \"{arg_name}\" ({args_yaml_path}) is not a supported parameter for a CLI argument.\n"
                                 f"Supported parameters: {REQUIRED_ARG_PARAMS + OPTIONAL_ARG_PARAMS}"
                         )
+                        if key == "subparser":
+                            if isinstance(arg_params["subparser"], str): # single subparser as a string
+                                arg_params["subparser"] = [
+                                    arg_params["subparser"]]  # easiest, if it is always a list internally
+                            elif not isinstance(arg_params["subparser"], list):
+                                raise TypeError(f"Subparser(s) for {arg_name} is neither of type or or list[str]: {arg_params["subparser"]}")
+                            else:  # case: subparser hierarchy given as a list
+                                for subparser in arg_params["subparser"]:
+                                    if not isinstance(subparser, str):
+                                        raise TypeError(
+                                            f"Subparser(s) for {arg_name} is list, but contains non-string elements: {arg_params["subparser"]}")
             ConfiguredParser.check_for_duplicate_argument_names(yaml_content)
             return yaml_content
 
@@ -162,7 +176,7 @@ class ConfiguredParser(ArgumentParser):
         Raises
         ------
         FileNotFoundError
-            when one or more of the YAMl file paths are invalid.
+            when one or more of the YAML file paths are invalid.
         TypeError
             when one or more of the YAML files contain values of the wrong type at expected locations.
         KeyError
@@ -188,6 +202,7 @@ class ConfiguredParser(ArgumentParser):
                 if arg[arg_name]["short"] in seen_arg_shorts:
                     raise KeyError(f"Duplicate CLI argument short form found: \"{arg[arg_name]["short"]}\"")
                 seen_arg_shorts.add(arg[arg_name]["short"])
+        # TODO: allow duplicate arg names if they are not within the same subparser
 
     def _add_arguments_from_dict(self):
         """
@@ -250,7 +265,16 @@ class ConfiguredParser(ArgumentParser):
             if "nargs" in arg_params.keys():
                 add_argument_kwargs["nargs"] = arg_params["nargs"]
 
-            self.add_argument(*add_argument_args, **add_argument_kwargs)
+            # add argument (while considering and handling subparsers)
+            target_parser: ArgumentParser = self
+            if "subparser" in arg_params.keys():
+                # TODO: probably need to check if subparser/parser already exists
+                target_subparser = self.add_subparsers(dest="subparser", parser_class=ArgumentParser)
+                for i in range(len(arg_params["subparser"])):  # add subparser to parser until "lowest level parser" or "leaf parser"
+                    target_parser = target_subparser.add_parser(arg_params["subparser"][i])
+                    if not i == len(arg_params["subparser"]) - 1:
+                        target_subparser = target_parser.add_subparsers(dest=arg_params["subparser"][i])
+            target_parser.add_argument(*add_argument_args, **add_argument_kwargs)
 
 if __name__ == "__main__":
     # short test:
