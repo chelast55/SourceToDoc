@@ -52,7 +52,7 @@ class Replacer:
             match e.comment:
                 case BlockComment() as c:
                     end = c.comment_range.end
-                    result += code[start:end] + "\n" + c.initial_comment_indentation + e.new_comment
+                    result += code[start:end] + "\n" + c.indentation + e.new_comment
                     start = c.comment_range.end
                 case _:
                     raise NotImplementedError

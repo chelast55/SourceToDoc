@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from textwrap import dedent
 from typing import Iterator, Protocol
 
 
@@ -23,7 +24,7 @@ class Range:
 @dataclass(frozen=True)
 class BlockComment[T]:
     """
-    Represents a comment in form of a block.
+    Represents a block comment above a symbol.
 
     All indentations on a block comment must be equal.
 
@@ -32,18 +33,24 @@ class BlockComment[T]:
     ␣␣␣␣/*
     ␣␣␣␣ * abc
     ␣␣␣␣ */
-        int f(void);
+    ␣␣␣␣int f(void);
     ```
     where:
-    - `"␣␣␣␣"`                      is the initial_comment_indentation,
+    - `"␣␣␣␣"`                      is the indentation,
     - `"/*\\n␣␣␣␣ * abc\\n␣␣␣␣ */"` is the comment_text, and
     - `"int f(void)"`               is the symbol_text.
     """
-    comment_text: str # e.g. "/* ... /*" (without initial_comment_indentation)
+    comment_text: str # e.g. "/* ... /*" (without the initial indentation)
     comment_range: Range #    ^       ^ Start and end of the comment in a string
-    symbol_text: str # e.g. "void main(void)"
+    symbol_text: str # e.g. "void f(void)"
     symbol_type: T # e.g. "function"
-    initial_comment_indentation: str # e.g. "    " for "    /* Hello World /*"
+    indentation: str
+
+    def comment_unindented(self) -> str:
+        return dedent(self.indentation + self.comment_text)
+    
+    def comment_with_symbol_unindented(self) -> str:
+        return self.comment_unindented() + "\n" + self.symbol_text
 
 
 @dataclass(frozen=True)
@@ -58,7 +65,7 @@ class CommentAfterMember[T]:
     ```
     within a struct, where:
 
-    - `"// a\\␣␣␣␣␣␣␣␣ // b"` is the comment_text,
+    - `"// a\\n␣␣␣␣␣␣␣␣// b"` is the comment_text,
     - `"int x;"`              is the symbol_text, and
     - `"␣␣"`                  is the symbol_comment_spacing.
     """

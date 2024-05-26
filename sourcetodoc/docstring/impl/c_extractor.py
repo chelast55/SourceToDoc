@@ -16,20 +16,20 @@ BLOCK_COMMENT_PATTERN: str = (r"^(?P<indentation>(?:[ ]{2}|\t)*)"             # 
                                 r"\n\1"
                                 r"(" # Match function declaration or definition
                                 fr"(?P<function>{FUNCTION_SIGNATURE_PATTERN})" r"\s*(\{[^}]*\}|;)"
-                                r"|" # match member variable
-                                fr"(?P<variable>{IDENTIFIER_PATTERN}\s+{IDENTIFIER_PATTERN})" r"\s*?;"
                                 r"|" # match struct
                                 fr"(?P<struct>struct\s+{IDENTIFIER_PATTERN})" r"\s*?\{"
                                 r"|" # match enum
                                 fr"(?P<enum>enum\s+{IDENTIFIER_PATTERN})" r"\s*?\{"
+                                r"|" # match member variable
+                                fr"(?P<variable>{IDENTIFIER_PATTERN}\s+{IDENTIFIER_PATTERN})" r"\s*?;"
                                 r")")
 
 
 class CType(Enum):
     FUNCTION = auto()
-    VARIABLE = auto()
     STRUCT = auto()
     ENUM = auto()
+    VARIABLE = auto()
 
 
 class CExtractor(Extractor[CType]):
