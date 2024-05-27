@@ -48,7 +48,7 @@ More obscure:
 
 class ConfiguredParser(ArgumentParser):
 
-    class _SubparserReference:
+    class SubparserReference:
         """
         Data structure to keep track of subparsers (of subparsers) without accessing protected members.
 
@@ -58,7 +58,7 @@ class ConfiguredParser(ArgumentParser):
             name the referenced subparser is called with
         reference: ArgumentParser
             reference to an ArgumentParser object
-        subparsers: dict[str, Optional[ConfiguredParser._SubparserReference]]
+        subparsers: dict[str, Optional[ConfiguredParser.SubparserReference]]
             dictionary to keep track of a subparser's subparsers in recursive structure
         """
         def __init__(self, name: str, reference: ArgumentParser):
@@ -74,7 +74,13 @@ class ConfiguredParser(ArgumentParser):
             """
             self.name: Final[str] = name
             self.reference: Final[ArgumentParser] = reference
-            self.subparsers: dict[str, Optional[ConfiguredParser._SubparserReference]] = {}
+            self.subparsers: dict[str, Optional[ConfiguredParser.SubparserReference]] = {}
+
+        def __str__(self):
+            return f"{{name: {self.name}, reference: {self.reference}, subparsers: {self.subparsers}}}"
+
+        def __repr__(self):
+            return str(self)
 
     def __init__(self):
         """
@@ -98,7 +104,7 @@ class ConfiguredParser(ArgumentParser):
         """
         ArgumentParser.__init__(self)
         self._args: list[dict[str, dict[str, Any]]] = self.load_yamls_combined_and_check_structure(ARGS_YAML_PATHS)
-        self._subparsers_lookup: dict[str, Optional[ConfiguredParser._SubparserReference]] = {}  # workaround for no public way to access subparsers of a parser
+        self._subparsers_lookup: dict[str, Optional[ConfiguredParser.SubparserReference]] = {}  # workaround for no public way to access subparsers of a parser
         self._add_arguments_from_dict()
 
     def get_cli_args(self) -> list[dict[str, dict[str, Any]]]:
@@ -112,7 +118,18 @@ class ConfiguredParser(ArgumentParser):
         list[dict[str, dict[str, Any]]]
             List of all CLI args supported by this ConfiguredParser.
         """
-        return self._args
+        return list(self._args)
+
+    def get_subparser_hierarchy(self) -> dict[str, Optional[SubparserReference]]:
+        """
+        Get hierarchy of subparsers supported by this ConfiguredParser.
+
+        Returns
+        -------
+         dict[str, Optional[SubparserReference]]
+            Hierarchy of subparsers supported by this ConfiguredParser.
+        """
+        return dict(self._subparsers_lookup)
 
     @staticmethod
     def load_yaml_and_check_structure(args_yaml_path: Path) -> list[dict[str, dict[str, Any]]]:
@@ -323,7 +340,7 @@ class ConfiguredParser(ArgumentParser):
                 target_subparser = self._top_level_subparser_reference
 
                 # add subparser to parser until "lowest level parser" or "leaf parser"
-                target_subparser_lookup: dict[str, Optional[ConfiguredParser._SubparserReference]] = self._subparsers_lookup
+                target_subparser_lookup: dict[str, Optional[ConfiguredParser.SubparserReference]] = self._subparsers_lookup
                 for i in range(len(arg_params["subparser"])):
                     subparser_name: str = arg_params["subparser"][i]  # +readability
 
@@ -331,7 +348,7 @@ class ConfiguredParser(ArgumentParser):
                     if not subparser_name in target_subparser_lookup.keys():
                         target_parser = target_subparser.add_parser(subparser_name)
                         target_subparser_lookup[subparser_name] \
-                            = ConfiguredParser._SubparserReference(subparser_name, target_parser)
+                            = ConfiguredParser.SubparserReference(subparser_name, target_parser)
                     else:
                         target_parser = target_subparser_lookup[subparser_name].reference
 
@@ -347,6 +364,7 @@ if __name__ == "__main__":
     # short test:
     parser: ConfiguredParser = ConfiguredParser()
     print(parser.get_cli_args())
+    print(parser.get_subparser_hierarchy())
     args = parser.parse_args()
     print(dir(args))
     parser.print_help()
