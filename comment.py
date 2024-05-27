@@ -23,6 +23,7 @@ def main():
     converters = get_print_converters(llm)
     comment_subparser.add_argument("--converter", choices=converters.keys())
     comment_subparser.add_argument("--replace", action="store_true", default=False, help="If set, the comments will be replaced")
+    comment_subparser.add_argument("--inline", action="store_true", default=False)
     comment_subparser.add_argument("--filter", help="Overrides the default filter of the converter (Only matters if the path is a directory) (Python RegEx)")
 
     args = parser.parse_args()
@@ -31,6 +32,9 @@ def main():
         converter = converters[args.converter]
 
         replace = Replace.REPLACE_OLD_COMMENTS if args.replace else Replace.APPEND_TO_OLD_COMMENTS
+        
+        if replace is Replace.APPEND_TO_OLD_COMMENTS and args.inline:
+            replace = Replace.APPEND_TO_OLD_COMMENTS_INLINE
 
         path: Path = Path(args.path)
         if path.is_file():
