@@ -49,10 +49,28 @@ More obscure:
 class ConfiguredParser(ArgumentParser):
 
     class _SubparserReference:
+        """
+        Data structure to keep track of subparsers (of subparsers) without accessing protected members.
+
+        Attributes
+        ----------
+        name: str
+            name the referenced subparser is called with
+        reference: ArgumentParser
+            reference to an ArgumentParser object
+        subparsers: dict[str, Optional[ConfiguredParser._SubparserReference]]
+            dictionary to keep track of a subparser's subparsers in recursive structure
+        """
         def __init__(self, name: str, reference: ArgumentParser):
             """
             Data structure to keep track of subparsers (of subparsers) without accessing protected members.
-            TODO: document
+
+            Attributes
+            ----------
+            name: str
+                name the referenced subparser is called with
+            reference: ArgumentParser
+                reference to an ArgumentParser object
             """
             self.name: Final[str] = name
             self.reference: Final[ArgumentParser] = reference
@@ -203,18 +221,37 @@ class ConfiguredParser(ArgumentParser):
 
     @staticmethod
     def check_for_duplicate_argument_names(args_list: list[dict[str, Any]]):
-        seen_arg_names: set[str] = set()
-        seen_arg_shorts: set[str] = set()
+        # duplicate allowed if not within the same parser
+        seen_arg_names: dict[str, set[Optional[str]]] = {}  # key: arg name, value: subparsers the name appeared in
+        seen_arg_shorts: dict[str, set[Optional[str]]] = {}  # key: arg short, value: subparsers the short appeared in
         for arg in args_list:
             arg_name: str = list(arg.keys())[0]
-            if arg_name in seen_arg_names:
-                raise KeyError(f"Duplicate CLI argument name found: \"{arg_name}\"")
-            seen_arg_names.add(arg_name)
+            arg_params: dict[str, Any] = arg[arg_name]
+
+            # full name
+            if not arg_name in seen_arg_names.keys():
+                seen_arg_names[arg_name] = set()
+            if not "subparser" in arg_params.keys(): # case: top level arg
+                if arg_name in seen_arg_names.keys() and None in seen_arg_names[arg_name]:
+                    raise KeyError(f"Duplicate CLI argument name found: \"{arg_name}\"")
+                seen_arg_names[arg_name].add(None)
+            else:  # case: arg inside subparser
+                if arg_name in seen_arg_names.keys() and str(arg_params["subparser"]) in seen_arg_names[arg_name]:
+                    raise KeyError(f"Duplicate CLI argument name in subparser {arg_params["subparser"]} found: \"{arg_name}\".")
+                seen_arg_names[arg_name].add(str(arg_params["subparser"]))
+
+            # short name
             if "short" in arg[arg_name].keys():
-                if arg[arg_name]["short"] in seen_arg_shorts:
-                    raise KeyError(f"Duplicate CLI argument short form found: \"{arg[arg_name]["short"]}\"")
-                seen_arg_shorts.add(arg[arg_name]["short"])
-        # TODO: allow duplicate arg names if they are not within the same subparser
+                if not arg_params["short"] in seen_arg_shorts.keys():
+                    seen_arg_shorts[arg_params["short"]] = set()
+                if not "subparser" in arg_params.keys(): # case: top level arg
+                    if arg_params["short"] in seen_arg_shorts.keys() and None in seen_arg_shorts[arg_params["short"]]:
+                        raise KeyError(f"Duplicate CLI argument short form found: \"{arg_params["short"]}\"")
+                    seen_arg_shorts[arg_params["short"]].add(None)
+                else:  # case: arg inside subparser
+                    if arg_params["short"] in seen_arg_shorts.keys() and str(arg_params["subparser"]) in seen_arg_shorts[arg_params["short"]]:
+                        raise KeyError(f"Duplicate CLI argument short form in subparser {arg_params["subparser"]} found: \"{arg_params["short"]}\".")
+                    seen_arg_shorts[arg_params["short"]].add(str(arg_params["subparser"]))
 
     def _add_arguments_from_dict(self):
         """
@@ -289,7 +326,8 @@ class ConfiguredParser(ArgumentParser):
                 target_subparser_lookup: dict[str, Optional[ConfiguredParser._SubparserReference]] = self._subparsers_lookup
                 for i in range(len(arg_params["subparser"])):
                     subparser_name: str = arg_params["subparser"][i]  # +readability
-                    print(subparser_name)
+
+                    # check if subparser of this name already exists, create otherwise
                     if not subparser_name in target_subparser_lookup.keys():
                         target_parser = target_subparser.add_parser(subparser_name)
                         target_subparser_lookup[subparser_name] \
