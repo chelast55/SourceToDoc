@@ -83,7 +83,7 @@ class PrintConverter[T](Converter):
         files_count = len(files)
         print(f"{files_count} files found by regex {regex}")
         for i, file in enumerate(files):
-            print(f"Converting file \"{file}\" {i}/{files_count}")
+            print(f"Converting file \"{file}\" {i+1}/{files_count}")
             self.convert_file(file, replace)
 
     def _get_files(self, dir: Path, regex: str) -> Iterator[Path]:

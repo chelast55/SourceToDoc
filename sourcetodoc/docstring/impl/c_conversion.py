@@ -1,23 +1,25 @@
 import re
-from textwrap import dedent, indent
+from textwrap import indent
 from typing import Optional, override
 
-from openai import APIError, OpenAI
+from openai import APIError
 
 from ..conversion import (Conversion, ConversionEmpty, ConversionError,
                           ConversionPresent, ConversionResult,
                           ConversionUnsupported)
 from ..extractor import BlockComment, Comment
 from .c_extractor import CType
+from .llm import LLM
 
 
-class CLlmFunctionBlockCommentConversion(Conversion[CType]):
+class CLLMFunctionBlockCommentConversion(Conversion[CType]):
     # Matches "/** ... */"
-    COMMENT_PATTERN: str = r"/\*\*(?:.|\n)*?\*/"
-    comment_matcher = re.compile(COMMENT_PATTERN, re.VERBOSE)
+    COMMENT_REGEX: str = r"/\*\*(?:.|\n)*?\*/"
+    COMMENT_PATTERN = re.compile(COMMENT_REGEX, re.VERBOSE)
 
-    def __init__(self, client: OpenAI) -> None:
-        self.client = client
+    def __init__(self, llm: LLM) -> None:
+        self.llm = llm
+        self.system_prompt = "You are a coder that converts comments on c functions to doxygen style comments (Javadoc style) that start with \"/**\" without changing the text."
 
     @override
     def calc_conversion(self, comment: Comment[CType]) -> ConversionResult[CType]:
@@ -30,44 +32,25 @@ class CLlmFunctionBlockCommentConversion(Conversion[CType]):
                 return ConversionUnsupported(comment, "Not a block comment on a function")
 
     def _handle_function_block_comment(self, bc: BlockComment[CType]) -> ConversionResult[CType]:
-        input = (bc.indentation + bc.comment_text + "\n" +
-                 bc.indentation + bc.symbol_text)
-        input = dedent(input) # Remove indentation
+        prompt = bc.comment_with_symbol_unindented()
 
         try:
-            llm_output = self._call_llm(input)
+            llm_output = self.llm.call_llm(self.system_prompt, prompt)
         except APIError as e:
             return ConversionError(bc, e.message)
-        except Exception as e:
-            return ConversionError(bc, repr(e))
 
         new_comment = self._extract_multi_comment(llm_output) # Extract only the "/** ... /*" part
         if new_comment is None:
             return ConversionError(bc, "No '/** ... /*' found in output of LLM", llm_output)
 
         new_comment = indent(new_comment, bc.indentation) # Add indentation
-        new_comment = new_comment.removeprefix(bc.indentation) # Remove initial indentation
-        new_comment = new_comment.replace("/**", "/** AI_GENERATED", 1) # Adds "AI_GENERATED" after "/**"
+        new_comment = new_comment.removeprefix(bc.indentation) # Remove indentation on first line
+        new_comment = new_comment.replace("/**", "/** AI_GENERATED", 1) # Add "AI_GENERATED" after "/**"
         return ConversionPresent(bc, new_comment)
-            
-
-    def _call_llm(self, input: str) -> str:
-        response = self.client.chat.completions.create(
-            model="phi3",
-            seed=0,
-            messages=[
-                {"role": "system", "content": "You are a coder that converts comments on c functions to doxygen style comments that start with \"/**\" without changing the text."},
-                {"role": "user", "content": input}
-        ])
-        result = response.choices[0].message.content
-        if result is not None:
-            return result
-        else:
-            raise RuntimeError
 
     @staticmethod
     def _extract_multi_comment(result: str) -> Optional[str]:
-        match = CLlmFunctionBlockCommentConversion.comment_matcher.search(result)
+        match = CLLMFunctionBlockCommentConversion.COMMENT_PATTERN.search(result)
         if match is not None:
             return match[0]
         else:

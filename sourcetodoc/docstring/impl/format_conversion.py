@@ -1,3 +1,4 @@
+from textwrap import indent
 from typing import Any
 
 from ..extractor import BlockComment
@@ -14,7 +15,7 @@ class CCommentToDocstringConversion(Conversion[Any]):
                 return ConversionEmpty(bc, "Comment already starts with /**")
             case BlockComment() as bc if bc.comment_text.startswith("/*") and bc.comment_text.endswith("*/"):
                 return self._handle_slash_asterisk(bc)
-            case BlockComment() as bc if self._every_line_starts_with(bc.comment_text, "// "):
+            case BlockComment() as bc if self._every_line_starts_with(bc, "// "):
                 return self._handle_double_slash_space(bc)
             case _:
                 return ConversionUnsupported(comment)
@@ -42,10 +43,11 @@ class CCommentToDocstringConversion(Conversion[Any]):
             result_list.append(last_line)
 
         new_comment = "\n".join(result_list)
+        new_comment = indent(new_comment, comment.indentation).removeprefix(comment.indentation)
         return ConversionPresent(comment, new_comment)
 
-    def _every_line_starts_with(self, text: str, prefix: str) -> bool:
-        lines = text.splitlines()
+    def _every_line_starts_with(self, comment: BlockComment[Any], prefix: str) -> bool:
+        lines = comment.comment_unindented().splitlines()
         for line in lines:
             if not line.startswith(prefix):
                 return False
