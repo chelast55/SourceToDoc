@@ -5,7 +5,7 @@ Contains a CLI argument parser class that automatically supports the functionali
 from argparse import ArgumentParser
 from pathlib import Path
 from yaml import safe_load as yaml_safe_load
-from typing import Any
+from typing import Any, Optional, Final
 
 ARGS_YAML_PATHS: list[Path] = [
     Path("args_base.yaml")
@@ -47,6 +47,17 @@ More obscure:
 """
 
 class ConfiguredParser(ArgumentParser):
+
+    class _SubparserReference:
+        def __init__(self, name: str, reference: ArgumentParser):
+            """
+            Data structure to keep track of subparsers (of subparsers) without accessing protected members.
+            TODO: document
+            """
+            self.name: Final[str] = name
+            self.reference: Final[ArgumentParser] = reference
+            self.subparsers: dict[str, Optional[ConfiguredParser._SubparserReference]] = {}
+
     def __init__(self):
         """
         CLI argument parser class that is preconfigured to support the functionality defined in various YAML files.
@@ -69,6 +80,7 @@ class ConfiguredParser(ArgumentParser):
         """
         ArgumentParser.__init__(self)
         self._args: list[dict[str, dict[str, Any]]] = self.load_yamls_combined_and_check_structure(ARGS_YAML_PATHS)
+        self._subparsers_lookup: dict[str, Optional[ConfiguredParser._SubparserReference]] = {}  # workaround for no public way to access subparsers of a parser
         self._add_arguments_from_dict()
 
     def get_cli_args(self) -> list[dict[str, dict[str, Any]]]:
@@ -268,12 +280,29 @@ class ConfiguredParser(ArgumentParser):
             # add argument (while considering and handling subparsers)
             target_parser: ArgumentParser = self
             if "subparser" in arg_params.keys():
-                # TODO: probably need to check if subparser/parser already exists
-                target_subparser = self.add_subparsers(dest="subparser", parser_class=ArgumentParser)
-                for i in range(len(arg_params["subparser"])):  # add subparser to parser until "lowest level parser" or "leaf parser"
-                    target_parser = target_subparser.add_parser(arg_params["subparser"][i])
-                    if not i == len(arg_params["subparser"]) - 1:
-                        target_subparser = target_parser.add_subparsers(dest=arg_params["subparser"][i])
+                # check if top-level subparser already exists, create otherwise
+                if self._subparsers is None:
+                    self._top_level_subparser_reference = self.add_subparsers(dest="subparser", parser_class=ArgumentParser)
+                target_subparser = self._top_level_subparser_reference
+
+                # add subparser to parser until "lowest level parser" or "leaf parser"
+                target_subparser_lookup: dict[str, Optional[ConfiguredParser._SubparserReference]] = self._subparsers_lookup
+                for i in range(len(arg_params["subparser"])):
+                    subparser_name: str = arg_params["subparser"][i]  # +readability
+                    print(subparser_name)
+                    if not subparser_name in target_subparser_lookup.keys():
+                        target_parser = target_subparser.add_parser(subparser_name)
+                        target_subparser_lookup[subparser_name] \
+                            = ConfiguredParser._SubparserReference(subparser_name, target_parser)
+                    else:
+                        target_parser = target_subparser_lookup[subparser_name].reference
+
+                    # if current level =/= lowest level, check if subparser for the current parser already exists, create otherwise
+                    if not i == len(arg_params["subparser"]) - 1 and len(target_subparser_lookup.keys()) == 0:
+                        target_subparser = target_parser.add_subparsers(dest=subparser_name, parser_class=ArgumentParser)
+                        target_subparser_lookup = target_subparser_lookup[subparser_name].subparsers
+
+            # add argument to (lowest level sub)parser (duplicate arguments already ruled out)
             target_parser.add_argument(*add_argument_args, **add_argument_kwargs)
 
 if __name__ == "__main__":

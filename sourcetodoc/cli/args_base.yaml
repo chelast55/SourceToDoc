@@ -12,8 +12,17 @@
     help: Planned feature. Not implemented yet :/
     type: bool
     short: W
+- test_arg_with_subparsers:
+    help: Test123
+    type: str
+    subparser: gurke
 - test_arg_with_sub_subparsers:
     help: Test123
     type: str
     short: testsubp
     subparser: [gurke, hefe]
+- test_arg_with_sub_sub_subparsers:
+    help: Test123
+    type: str
+    short: testsubpp
+    subparser: [gurke, hefe, wololo]
