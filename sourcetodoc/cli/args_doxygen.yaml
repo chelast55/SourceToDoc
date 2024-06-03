@@ -1,0 +1,50 @@
+- project_name:
+    help: Name of the project. If no project path is given, it is assumed to be a directory called <project_name> in the same directory as main.py
+    type: str
+    required: True
+- project_number:
+    help: Project version/revision number
+    type: str
+    default: unknown
+- project_brief:
+    help: One-line/short description of the project
+    type: str
+    default:
+- project_logo:
+    help: Path to project logo or icon (max 200x55px) for use within documentation
+    type: str
+    default:
+- project_icon:
+    help: Path to project icon for use in the tabs
+    type: str
+    default:
+- output_language:
+    help: Language used for all constant output within documentation
+    type: str
+    choices: [Afrikaans, Arabic, Armenian, Brazilian, Bulgarian, Catalan, Chinese, Chinese-Traditional, Croatian, Czech, Danish, Dutch, English (United States), Esperanto, Farsi (Persian), Finnish, French, German, Greek, Hindi, Hungarian, Indonesian, Italian, Japanese, Japanese-en (Japanese with English messages), Korean, Korean-en (Korean with English messages), Latvian, Lithuanian, Macedonian, Norwegian, Persian (Farsi), Polish, Portuguese, Romanian, Russian, Serbian, Serbian-Cyrillic, Slovak, Slovene, Spanish, Swedish, Turkish, Ukrainian and Vietnamese]
+    default: English
+- no_brief_member_desc:
+    help: Include brief member descriptions after the members listed in file/class documentation (similar to Javadoc)
+    type: bool
+    default: True
+- no_repeat_brief:
+    help: Repeat the brief description of member/function before detailed description
+    type: bool
+    default: True
+- always_detailed_sec:
+    help: When REPEAT_BRIEF enabled, generate detailed section even when only brief exists
+    type: bool
+    default: False
+- inline_inherited_memb:
+    help: Show inherited members as members of child class
+    type: bool
+    default: False
+- no_full_path_names:
+    help: Disable referencing files by their full (relative?) path instead of just the shortest possible unique path
+    type: bool
+    default: True
+- doxygen_html_theme:
+    help: Whether to use a custom CSS theme for doxygen html output (by default "Doxygen Awesome" for a more modern look) or the standard (arguably more dated-looking) theme.
+    type: str
+    choices: [standard, doxygen-awesome]
+    default: doxygen-awesome
