@@ -1,5 +1,0 @@
-- doxygen_html_theme:
-    help: Whether to use a custom CSS theme for doxygen html output (by default "Doxygen Awesome" for a more modern look) or the standard (arguably more dated-looking) theme.
-    type: str
-    choices: [standard, doxygen-awesome]
-    default: doxygen-awesome

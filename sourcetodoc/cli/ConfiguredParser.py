@@ -8,7 +8,8 @@ from yaml import safe_load as yaml_safe_load
 from typing import Any, Optional, Final
 
 ARGS_YAML_PATHS: list[Path] = [
-    Path("args_base.yaml")
+    Path("args_base.yaml"),
+    Path("args_doxygen.yaml")
 ]
 """Paths to YAML files containing parser arguments."""
 
@@ -293,14 +294,9 @@ class ConfiguredParser(ArgumentParser):
                 add_argument_kwargs["type"] = eval(arg_params["type"])
 
             if "default" in arg_params.keys():
-                if arg_params["default"].upper() in ["NONE", "NULL"]:
+                if arg_params["default"] is None:
                     add_argument_kwargs["default"] = None
-                elif arg_params["default"].upper() == "TRUE":
-                    add_argument_kwargs["default"] = True
-                elif arg_params["default"].upper() == "FALSE":
-                    add_argument_kwargs["default"] = False
-                else:
-                    # perform "dynamic cast" to the type specified in arg_params["type"]
+                else:  # perform "dynamic cast" to the type specified in arg_params["type"]
                     add_argument_kwargs["default"] = eval(arg_params["type"])(arg_params["default"])
             elif arg_params["type"] == "bool":
                 add_argument_kwargs["default"] = False
