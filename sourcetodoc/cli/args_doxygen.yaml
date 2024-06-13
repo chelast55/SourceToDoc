@@ -1,3 +1,4 @@
+# Project related configuration options
 - project_name:
     help: Name of the project. If no project path is given, it is assumed to be a directory called <project_name> in the same directory as main.py
     type: str
@@ -39,10 +40,71 @@
     help: Show inherited members as members of child class
     type: bool
     default: False
-- no_full_path_names:
+- disable_full_path_names:
     help: Disable referencing files by their full (relative?) path instead of just the shortest possible unique path
     type: bool
     default: True
+- separate_member_pages:
+    help: Split members of files/classes/namespaces into separate pages
+    type: bool
+    default: False
+- tab_size:
+    help: Number of spaces to replace tabs in code snippets with
+    type: int
+    choices: range(1, 16)
+    default: 4
+- optimize_output_for_c:
+    help: Change some terminology to be more tailored to C (not C++), omit list of all members, etc.
+    type: bool
+    default: false
+- toc_include_headings:
+    help: If MARKDOWN_SUPPORT is enabled, all headers up to this level are included in table of contents
+    type: int
+    choices: range(0, 99)
+    default: 5
+- markdown_id_style:
+    help: Specify algorithm for generating markdown heading IDs (DOXYGEN or GITHUB)
+    type: str
+    choices: [DOXYGEN, GITHUB]
+    default: DOXYGEN
+- sip_support:
+    help: If whole project consists of SIP (Python bindings for C generator), enable to to use public inheritance when not explicitly protected.
+    type: bool
+    default: false
+- disable_idl_property_support:
+    help: Disable using properties for getters/setters where applicable (IDL support requires Microsoft IDL to be present)
+    type: bool
+    default: true
+- group_nested_compounds:
+    help: Enable to automatically add nested structs/classes to group when "parent" is added (otherwise \ingroup is required)
+    type: bool
+    default: false
+- disable_subgrouping:
+    help: Disable allowing class member groups of the same type (i. e. group of public functions) (can be disabled per class by \nosubgrouping)
+    type: bool
+    default: true
+- inline_grouped_classes:
+    help: Enable to show group members inside group they are included instead of on separate pages (does not work with SEPARATE_MEMBER_PAGES)
+    type: bool
+    default: false
+- inline_simple_structs:
+    help: Enable to inline structs/classes only containing typedefs and public data fields to page of their parent class/namespace
+    type: bool
+    default: false
+- typedef_hides_struct:
+    help: Enable to refer to typedefed struct/uniion/enum by name of typedef instead of listing typedefs as members
+    type: bool
+    default: false
+- small_lookup_cache:
+    help: Decrease size of type/symbol lookup cache (only use when memory consumption becomes an issue)
+    type: bool
+    default: false
+- timestamp:
+    help: Specify whether and how to add timestamp to each page (YES, NO, DATETIME or DATE) (relevant when trying to compare output of multiple runs)
+    type: str
+    choices: [DATETIME, DATE, NO]
+    default: DATETIME
+
 - doxygen_html_theme:
     help: Whether to use a custom CSS theme for doxygen html output (by default "Doxygen Awesome" for a more modern look) or the standard (arguably more dated-looking) theme.
     type: str
