@@ -1,38 +1,31 @@
 import re
-from enum import Enum, auto
-from typing import Iterator, Optional, override
+from typing import Optional, override
 
-from ..extractor import BlockComment, Comment, Extractor, Range
+from ..range import Range
 
-IDENTIFIER_REGEX: str = r"(_|[a-zA-Z])[a-zA-Z0-9_]+"
+from ..extractor import Comment
+from .c_extractor import CExtractor, CType
+
+_IDENTIFIER_REGEX: str = r"(_|[a-zA-Z])[a-zA-Z0-9_]+"
 
 # Matches function declarations or definitions e.g. "void main(void);" or "void main(void) { ... }"
-FUNCTION_SIGNATURE_REGEX: str = r"\b(?:\w+\s+){1,2}\w+\s*\([^)]*\)"
+_FUNCTION_SIGNATURE_REGEX: str = r"\b(?:\w+\s+){1,2}\w+\s*\([^)]*\)"
 
 # Matches block comments with equal indentations
-BLOCK_COMMENT_REGEX: str = (r"^(?P<indentation>(?:[ ]{2}|\t)*)"             # Match the initial indentation
+_BLOCK_COMMENT_REGEX: str = (r"^(?P<indentation>(?:[ ]{2}|\t)*)"             # Match the initial indentation
                                 r"(?P<comment>(?://.*\n\1)*//.*               |" # Match "// ..." , or
                                 r"            /\*(?:(?:.*\n\1[ ]\*)*?|.*?\*)/ )" # match "/* ... */"
                                 r"\n\1"
-                                r"(" # Match function declaration or definition
-                                fr"(?P<function>{FUNCTION_SIGNATURE_REGEX})" r"\s*(\{[^}]*\}|;)"
+                                r"(?P<symbol>" # Match function declaration or definition
+                                fr"(?P<function>{_FUNCTION_SIGNATURE_REGEX})" r"\s*(\{[^}]*\}|;)"
                                 r"|" # match struct
-                                fr"(?P<struct>struct\s+{IDENTIFIER_REGEX})" r"\s*?\{"
+                                fr"(?P<struct>struct\s+{_IDENTIFIER_REGEX})" r"\s*?\{"
                                 r"|" # match enum
-                                fr"(?P<enum>enum\s+{IDENTIFIER_REGEX})" r"\s*?\{"
-                                r"|" # match member variable
-                                fr"(?P<variable>{IDENTIFIER_REGEX}\s+{IDENTIFIER_REGEX})" r"\s*?;"
+                                fr"(?P<enum>enum\s+{_IDENTIFIER_REGEX})" r"\s*?\{"
                                 r")")
 
 
-class CType(Enum):
-    FUNCTION = auto()
-    STRUCT = auto()
-    ENUM = auto()
-    VARIABLE = auto()
-
-
-class CExtractor(Extractor[CType]):
+class CRegexExtractor(CExtractor):
     """
     Extracts comments from C source code.
 
@@ -54,20 +47,33 @@ class CExtractor(Extractor[CType]):
     """
 
     def __init__(self) -> None:
-        self.comment_pattern = re.compile(BLOCK_COMMENT_REGEX, re.VERBOSE | re.MULTILINE)
+        self.comment_pattern = re.compile(_BLOCK_COMMENT_REGEX, re.VERBOSE | re.MULTILINE)
 
     @override
-    def extract_comments(self, code: str) -> Iterator[Comment[CType]]:
+    def extract_comments(self, code: str) -> list[Comment[CType]]:
+        result: list[Comment[CType]] = []
         last_range: Optional[Range] = None # Keep track of range of previous match
         for matched in self.comment_pattern.finditer(code):
             initial_comment_indentation = matched.group("indentation")
             comment_text = matched.group("comment")
             comment_range = Range(matched.start("comment"), matched.end("comment"))
-            symbol_text, symbol_type = CExtractor._get_matched_symbol_group(matched)
+            symbol_text, symbol_type = self.__class__._get_matched_symbol_group(matched)
+            symbol_range = Range(matched.start("symbol"), matched.end("symbol"))
             
-            if (last_range is None or comment_range.start > last_range.end): # Assure that matches will not overlap (e.g. otherwise "/* /**/" can match "/* /**/" and "/**/")
-                yield BlockComment(comment_text, comment_range, symbol_text, symbol_type, initial_comment_indentation)
+            # Assure that matches will not overlap (e.g. otherwise "/* /**/" can match "/* /**/" and "/**/")
+            if (last_range is None or comment_range.start > last_range.end):
+                comment = Comment(
+                    comment_text,
+                    comment_range,
+                    symbol_text,
+                    symbol_range,
+                    symbol_type,
+                    initial_comment_indentation
+                )
+                result.append(comment)
             last_range = comment_range
+        
+        return result
 
     @staticmethod
     def _get_matched_symbol_group(matched: re.Match[str]) -> tuple[str, CType]:

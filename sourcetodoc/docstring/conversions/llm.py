@@ -27,6 +27,7 @@ class LLM:
 
         Raises
         ------
+        APIError
         RuntimeError
             If the reponse message is None.
         """

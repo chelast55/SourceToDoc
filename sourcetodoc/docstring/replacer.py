@@ -1,94 +1,114 @@
-from typing import Iterable
+from dataclasses import dataclass
+from typing import Callable, Iterable
 
-from .conversion import ConversionPresent
-from .extractor import BlockComment
-from .converter import Replace
+from .comment_style import CommentStyler
+from .range import Range
+from .replace import Replace
+
+
+@dataclass(frozen=True)
+class CommentReplacement:
+    range: Range
+    indentation: str
+    old_comment: str
+    new_comment: str
+
+
+@dataclass(frozen=True)
+class TextReplacement:
+    range: Range
+    new_text: str
 
 
 class Replacer:
+    """
+    Replaces old comments with new comments.
+    """
 
-    """
-    Adds new comments to code.
-    """
-    def apply_conversions[T](self, code: str, conversions: Iterable[ConversionPresent[T]], replace: Replace) -> str:
+    @classmethod
+    def replace_comments(cls, code: str, comment_replacements: Iterable[CommentReplacement], replace: Replace) -> str:
         """
-        Adds now comments to code given by conversions.
+        Replaces old comments in `code` with new comments given by `comment_replacements` and `replace`.
+
+        `comment_replacements` must be in ascending order without overlap by `range`.
 
         Returns
         -------
         str
-            Code with new comments.
+            Code with replaced comments.
+
+        Raises
+        ------
+        ValueError
+            If `comment_replacements` is not in ascending order without overlap by `range`.
         """
+        new_comment_func: Callable[[CommentReplacement], str]
         match replace:
             case Replace.REPLACE_OLD_COMMENTS:
-                return self._replace_old_comments(code, conversions)
+                new_comment_func = cls._new_comment_text
             case Replace.APPEND_TO_OLD_COMMENTS:
-                return self._append_to_old_comments(code, conversions)
+                new_comment_func = cls._old_new_concatenated
             case Replace.APPEND_TO_OLD_COMMENTS_INLINE:
-                return self._append_to_old_comments_inline(code, conversions)
+                new_comment_func = cls._old_new_concatenated_same_block
 
-    def _replace_old_comments[T](self, code: str, conversions: Iterable[ConversionPresent[T]]) -> str:
+        text_replacements = (TextReplacement(e.range, new_comment_func(e))
+                             for e in comment_replacements)
+        return cls.replace_text(code, text_replacements)
+
+    @classmethod
+    def replace_text(cls, text: str, text_replacements: Iterable[TextReplacement]) -> str:
         """
-        Replaces old comments with new comments.
+        Replaces parts in `text` given by `text_replacements`.
+
+        `text_replacements` must be in ascending order without overlap by `range`.
+
+        Returns
+        -------
+        str
+            Text with replaced parts.
+        
+        Raises
+        ------
+        ValueError
+            If `comment_replacements` is not in ascending order without overlap by `range`.
         """
-        result: str = ""
+        result: list[str] = []
         start = 0
-        end = len(code)
+        end = len(text)
 
-        for e in conversions:
-            end = e.comment.comment_range.start
-            result += code[start:end] + e.new_comment
-            start = e.comment.comment_range.end
+        for e in text_replacements:
+            end = e.range.start
+            if end < start: # Ranges must be in ascending order without overlap
+                raise ValueError
+            result.append(text[start:end])
+            result.append(e.new_text)
+            start = e.range.end
 
-        result += code[start:]
-        return result
+        result.append(text[start:])
+        return "".join(result)
 
-    def _append_to_old_comments[T](self, code: str, conversions: Iterable[ConversionPresent[T]]) -> str:
-        """
-        Places new comments under old comments.
-        """
-        result: str = ""
-        start = 0
-        end = len(code)
+    @classmethod
+    def _new_comment_text(cls, replacement: CommentReplacement) -> str:
+        return replacement.new_comment
 
-        for e in conversions:
-            match e.comment:
-                case BlockComment() as c:
-                    end = c.comment_range.end
-                    result += code[start:end] + "\n" + c.indentation + e.new_comment
-                    start = c.comment_range.end
-                case _:
-                    continue
+    @classmethod
+    def _old_new_concatenated(cls, replacement: CommentReplacement) -> str:
+        return replacement.old_comment + "\n" + replacement.indentation + replacement.new_comment
 
-        result += code[start:]
-        return result
+    @classmethod
+    def _old_new_concatenated_same_block(cls, replacement: CommentReplacement) -> str:
+        match CommentStyler.parse_comment(replacement.old_comment):
+            case CommentStyler(old_content, _):
+                pass
+            case None:
+                raise RuntimeError
 
-    def _append_to_old_comments_inline[T](self, code: str, conversions: Iterable[ConversionPresent[T]]) -> str:
-        """
-        Places new comments under old comments.
-        """
-        result: str = ""
-        start = 0
-        end = len(code)
-
-        for e in conversions:
-            match e.comment:
-                case BlockComment() as c:
-                    old_comment = code[c.comment_range.start:c.comment_range.end]
-                    if old_comment.startswith("/*") and old_comment.endswith("*/") and e.new_comment.startswith("/*") and e.new_comment.endswith("*/"):
-                        end = c.comment_range.start
-                        result += (code[start:end]
-                                   + "/**" + old_comment.removesuffix("/").removeprefix("/*").removeprefix("/**") +
-                                   "\n" + c.indentation + " * NEW_COMMENT" +
-                                   "\n" + c.indentation + " *" +
-                                   e.new_comment.removeprefix("/**").removeprefix("/*"))
-                        start = c.comment_range.end
-                    else:
-                        end = c.comment_range.end
-                        result += code[start:end] + "\n" + c.indentation + e.new_comment
-                        start = c.comment_range.end
-                case _:
-                    continue
-
-        result += code[start:]
-        return result
+        match CommentStyler.parse_comment(replacement.new_comment):
+            case CommentStyler(new_content, new_style):
+                concat_content = old_content + "\n\nNEW_COMMENT\n" + new_content
+                concat_comment = CommentStyler(
+                    concat_content, new_style
+                ).construct_comment(replacement.indentation)
+            case None:
+                raise RuntimeError
+        return concat_comment

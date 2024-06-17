@@ -1,8 +1,21 @@
+from itertools import chain
 import re
 from dataclasses import dataclass
-from enum import Enum, auto
-from textwrap import dedent, indent
-from typing import ClassVar, Iterator, Optional, Self
+from enum import Enum
+from textwrap import dedent
+from typing import ClassVar, Iterable, Iterator, Optional, Self
+
+
+@dataclass(frozen=True)
+class _LineComment:
+    start_delimiter: str
+
+
+@dataclass(frozen=True)
+class _BlockComment:
+    start_delimiter: str
+    end_delimiter: str
+    is_inline: bool = False
 
 
 class CommentStyle(Enum):
@@ -24,7 +37,7 @@ class CommentStyle(Enum):
         Typically for comments after member variables.
     """
 
-    C_LINE = auto()
+    C_LINE = _LineComment("//")
     """
     ```
     // text
@@ -32,14 +45,15 @@ class CommentStyle(Enum):
     ```
     """
 
-    C_BLOCK_INLINE = auto()
+    C_BLOCK_INLINE = _BlockComment("/*", "*/", True)
     """
     ```
     /* text */
+    /* ... */
     ```
     """
 
-    C_BLOCK = auto()
+    C_BLOCK = _BlockComment("/*", "*/")
     """
     ```
     /*
@@ -49,7 +63,7 @@ class CommentStyle(Enum):
     ```
     """
 
-    JAVADOC_BLOCK = auto()
+    JAVADOC_BLOCK = _BlockComment("/**", "*/")
     """
     ```
     /**
@@ -59,21 +73,23 @@ class CommentStyle(Enum):
     ```
     """
 
-    JAVADOC_BLOCK_INLINE = auto()
+    JAVADOC_BLOCK_INLINE = _BlockComment("/**", "*/", True)
     """
     ```
     /** text */
+    /** ... */
     ```
     """
 
-    JAVADOC_BLOCK_MEMBER_INLINE = auto()
+    JAVADOC_BLOCK_MEMBER_INLINE = _BlockComment("/*<", "*/", True)
     """
     ```
     /**< text */
+    /**< ... */
     ```
     """
 
-    QT_BLOCK = auto()
+    QT_BLOCK = _BlockComment("/*!", "*/")
     """
     ```
     /*!
@@ -83,21 +99,23 @@ class CommentStyle(Enum):
     ```
     """
 
-    QT_BLOCK_INLINE = auto()
+    QT_BLOCK_INLINE = _BlockComment("/*!", "*/", True)
     """
     ```
     /*! text */
+    /*! ... */
     ```
     """
 
-    QT_BLOCK_MEMBER_INLINE = auto()
+    QT_BLOCK_MEMBER_INLINE = _BlockComment("/*!<", "*/", True)
     """
     ```
     /*!< text */
+    /*!< ... */
     ```
     """
 
-    TRIPLE_SLASH_LINE = auto()
+    TRIPLE_SLASH_LINE = _LineComment("///")
     """
     ```
     /// text
@@ -105,7 +123,7 @@ class CommentStyle(Enum):
     ```
     """
 
-    TRIPLE_SLASH_LINE_MEMBER = auto()
+    TRIPLE_SLASH_LINE_MEMBER = _LineComment("///<")
     """
     ```
     ///< text
@@ -113,14 +131,14 @@ class CommentStyle(Enum):
     ```
     """
 
-    QT_LINE = auto()
+    QT_LINE = _LineComment("//!")
     """
     ```
     //! text
     //! ...
     ```
     """
-    QT_LINE_MEMBER = auto()
+    QT_LINE_MEMBER = _LineComment("//!<")
     """
     ```
     //!< text
@@ -128,78 +146,74 @@ class CommentStyle(Enum):
     ```
     """
 
+    def is_doxygen_style(self) -> bool:
+        return self in {
+            CommentStyle.JAVADOC_BLOCK,
+            CommentStyle.JAVADOC_BLOCK_INLINE,
+            CommentStyle.JAVADOC_BLOCK_MEMBER_INLINE,
+            CommentStyle.QT_BLOCK,
+            CommentStyle.QT_BLOCK_INLINE,
+            CommentStyle.QT_BLOCK_MEMBER_INLINE,
+            CommentStyle.TRIPLE_SLASH_LINE,
+            CommentStyle.TRIPLE_SLASH_LINE_MEMBER,
+            CommentStyle.QT_LINE,
+            CommentStyle.QT_LINE_MEMBER,
+        }
+
 
 @dataclass(frozen=True)
 class CommentStyler:
     """
-    Represents a comment.
+    Represents a C comment with a particular style.
 
     Attributes
     ----------
-    comment_content : str
+    content : str
         The content of the comment without comment delimiters.
-    comment_style : CommentStyle
+    style : CommentStyle
         The style of the comment.
     """
-    comment_content: str
-    comment_style: CommentStyle
+    content: str
+    style: CommentStyle
 
-    _C_LINE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"//.*(?:\n[ \t]*//.*)*")
-    _C_BLOCK_INLINE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"/\*[.]*?\*/(?:\n/\*[.]*?\*/)*")
-    _C_BLOCK_PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"/\*[.\n]*?\*/")
+    _C_LINE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"//.*(?:\n(?: \t)*//.*)*")
+    _C_BLOCK_INLINE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"/\*.*?\*/(?:(?: \t)*\n(?: \t)*/\*.*?\*/)*")
+    _C_BLOCK_PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"/\*(?:.|\n)*?\*/")
 
-    _LAST_LINE_SPACES_OR_TABS_PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"\n[ \t]*$")
 
     @classmethod
     def parse_comment(cls, text: str) -> Optional[Self]:
-        """
-        Creates a new instance from a comment text.
-
-        Parameters
-        ----------
-        input : str
-            The comment text.
-
-        Returns
-        -------
-        Optional[Self]
-            A new CommentRepr instance if a CommentStyle is found for input, else None.
-        """
+        """Creates a new instance from a comment text."""
         text_stripped = text.strip()
         if cls._C_LINE_PATTERN.fullmatch(text_stripped) is not None:
-            content = cls._extract_content_from_line_comment(text_stripped, "//")
-
-            style = CommentStyle.C_LINE
-            if text_stripped.startswith("///<"):
-                style = CommentStyle.TRIPLE_SLASH_LINE_MEMBER
-            elif text_stripped.startswith("///"):
-                style = CommentStyle.TRIPLE_SLASH_LINE
-            elif text_stripped.startswith("//!<"):
-                style = CommentStyle.QT_BLOCK_MEMBER_INLINE
-            elif text_stripped.startswith("//!"):
-                style = CommentStyle.QT_BLOCK
+            style = cls._get_style_by_delimiter(text_stripped, (
+                CommentStyle.TRIPLE_SLASH_LINE_MEMBER,
+                CommentStyle.TRIPLE_SLASH_LINE,
+                CommentStyle.QT_LINE_MEMBER,
+                CommentStyle.QT_LINE,
+                CommentStyle.C_LINE,
+            ))
+            start_delimiter = style.value.start_delimiter
+            content = cls._extract_content_from_line_comment(
+                text_stripped, start_delimiter
+            )
 
         elif cls._C_BLOCK_INLINE_PATTERN.fullmatch(text_stripped) is not None:
-            content = cls._extract_content_from_block_comment(text_stripped, "/*", "*/")
-
-            style = CommentStyle.C_BLOCK_INLINE
-            if text_stripped.startswith("/**<"):
-                style = CommentStyle.JAVADOC_BLOCK_MEMBER_INLINE
-            elif text_stripped.startswith("/**"):
-                style = CommentStyle.JAVADOC_BLOCK_INLINE
-            elif text_stripped.startswith("/*!<"):
-                style = CommentStyle.QT_BLOCK_MEMBER_INLINE
-            elif text_stripped.startswith("/*!"):
-                style = CommentStyle.QT_BLOCK_INLINE
+            content, style = cls._extract_content_from_block_inline_comment(
+                text_stripped
+            )
 
         elif cls._C_BLOCK_PATTERN.fullmatch(text_stripped) is not None:
-            content = cls._extract_content_from_block_comment(text_stripped, "/*", "*/", "*")
-
-            style = CommentStyle.C_BLOCK
-            if text_stripped.startswith("/**"):
-                style = CommentStyle.JAVADOC_BLOCK
-            elif text_stripped.startswith("/*!"):
-                style = CommentStyle.QT_BLOCK
+            style = cls._get_style_by_delimiter(text_stripped, (
+                CommentStyle.JAVADOC_BLOCK,
+                CommentStyle.QT_BLOCK,
+                CommentStyle.C_BLOCK,
+            ))
+            start_delimiter = style.value.start_delimiter
+            end_delimiter = style.value.end_delimiter # type: ignore
+            content = cls._extract_content_from_block_comment(
+                text_stripped, start_delimiter, end_delimiter, "*" # type: ignore
+            )
 
         else:
             return None
@@ -207,16 +221,16 @@ class CommentStyler:
         content_stripped = content.strip()
         return cls(content_stripped, style)
 
-    def construct_comment(self, indentation: str = "") -> str:
+    def construct_comment(self, subsequent_indentation: str = "") -> str:
         """
-        Constructs a comment text from comment_content depending on comment_style.
+        Constructs a comment text from `comment_content` depending on `comment_style`.
 
         - The first line of the comment text will not be indented.
         - Empty and blank lines from comment_content will be retained.
 
         Parameters
         ----------
-        indentation : str, optional
+        subsequent_indentation : str, optional
             The indentation for the returned comment text (except the first line), by default "".
 
         Returns
@@ -224,72 +238,130 @@ class CommentStyler:
         str
             The comment text.
         """
-        match self.comment_style:
-            case CommentStyle.C_LINE:
-                return self._construct_line("// ", indentation)
-            case CommentStyle.C_BLOCK:
-                return self._construct_block("/*", " */", " * ", indentation)
-            case CommentStyle.C_BLOCK_INLINE:
-                return self._construct_block_inline("/* ", " */")
-            case CommentStyle.JAVADOC_BLOCK:
-                return self._construct_block("/**", " */", " * ", indentation)
-            case CommentStyle.JAVADOC_BLOCK_INLINE:
-                return self._construct_block_inline("/** ", " */")
-            case CommentStyle.JAVADOC_BLOCK_MEMBER_INLINE:
-                return self._construct_block_inline("/**< ", " */")
-            case CommentStyle.QT_BLOCK:
-                return self._construct_block("/*!", " */", " * ", indentation)
-            case CommentStyle.QT_BLOCK_INLINE:
-                return self._construct_block_inline("/*! ", " */")
-            case CommentStyle.QT_BLOCK_MEMBER_INLINE:
-                return self._construct_block_inline("/*!< ", " */")
-            case CommentStyle.TRIPLE_SLASH_LINE:
-                return self._construct_line("/// ", indentation)
-            case CommentStyle.TRIPLE_SLASH_LINE_MEMBER:
-                return self._construct_line("///< ", indentation)
-            case CommentStyle.QT_LINE:
-                return self._construct_line("//! ", indentation)
-            case CommentStyle.QT_LINE_MEMBER:
-                return self._construct_line("//!< ", indentation)
+        match self.style.value:
+            case _LineComment(start_delimiter):
+                return self._construct_line(f"{start_delimiter} ", subsequent_indentation)
+            case _BlockComment(start_delimiter, end_delimiter, False):
+                return self._construct_block(start_delimiter, end_delimiter, " * ", subsequent_indentation)
+            case _BlockComment(start_delimiter, end_delimiter):
+                return self._construct_block_inline(start_delimiter, end_delimiter)
+    
+    @classmethod
+    def _get_style_by_delimiter(
+        cls,
+        text_stripped: str,
+        candidates: Iterable[CommentStyle]
+    ) -> CommentStyle:
+        for candidate in candidates:
+            c = candidate.value
+            if text_stripped.startswith(c.start_delimiter):
+                if isinstance(c, _BlockComment) and not text_stripped.endswith(c.end_delimiter):
+                    continue
+                return candidate
+        raise RuntimeError
 
     @classmethod
     def _extract_content_from_line_comment(cls, text_stripped: str, prefix: str) -> str:
         text = "".join(cls._remove_and_check_prefix_in_every_line(text_stripped, prefix))
         return dedent(text)
-    
+
     @classmethod
-    def _remove_and_check_prefix_in_every_line(cls, text_stripped: str, prefix: str) -> Iterator[str]:
+    def _remove_and_check_prefix_in_every_line(
+        cls,
+        text_stripped: str,
+        prefix: str
+    ) -> Iterator[str]:
         for line in text_stripped.splitlines(keepends=True):
             line_left_stripped = line.lstrip()
             if not line_left_stripped.startswith(prefix):
                 raise ValueError(f"Not all lines of {text_stripped} start with {prefix}")
             yield line_left_stripped.removeprefix(prefix)
+    
+    @classmethod
+    def _extract_content_from_block_inline_comment(
+        cls,
+        text: str,
+    ) -> tuple[str, CommentStyle]:
+        found_styles: set[CommentStyle] = set()
+        lines = text.splitlines()
+        for i in range(len(lines)):
+            lines[i], style = cls._get_from_inline_line(lines[i])
+            found_styles.add(style)
+
+        content = dedent("\n".join(lines))
+        if len(found_styles) == 1:
+            return content, found_styles.pop()
+        else:
+            return content, CommentStyle.C_BLOCK_INLINE
+    
+    @classmethod
+    def _get_from_inline_line(cls, line_stripped: str) -> tuple[str, CommentStyle]:
+        style = cls._get_style_by_delimiter(line_stripped, (
+            CommentStyle.JAVADOC_BLOCK_MEMBER_INLINE,
+            CommentStyle.JAVADOC_BLOCK_INLINE,
+            CommentStyle.QT_BLOCK_MEMBER_INLINE,
+            CommentStyle.QT_BLOCK_INLINE,
+            CommentStyle.C_BLOCK_INLINE,
+        ))
+
+        return (line_stripped
+            .removeprefix(style.value.start_delimiter)
+            .removesuffix(style.value.end_delimiter) # type: ignore
+            .rstrip()), style
 
     @classmethod
-    def _extract_content_from_block_comment(cls, text_stripped: str, first: str, last: str, line_prefix: str = "") -> str:
-        # Remove prefix, e.g. "/*..." or "/*\n..." to "..."
-        tmp = (text_stripped
-               .removeprefix(first)
-               .removeprefix("\n"))
-    
-        # Remove suffix, e.g. "...*/" or "...\n␣␣␣*/" to "..."
-        tmp = cls._LAST_LINE_SPACES_OR_TABS_PATTERN.sub("", tmp.removesuffix(last))
+    def _extract_content_from_block_comment(
+        cls,
+        text_stripped: str,
+        start_delimiter: str,
+        end_delimiter: str,
+        deco_prefix: str = ""
+    ) -> str:
+        lines = text_stripped.splitlines(keepends=True)
 
-        # For every line: From the left remove whitespaces, then remove line_prefix (e.g. "*")
-        content = "".join(line.lstrip().removeprefix(line_prefix) for line in tmp.splitlines(keepends=True))
+        start_index = 0
+        end_index = len(lines)
+
+        # Exclude start_delimiter, e.g. "/*..." or "/*\n..." to "..."
+        lines[0] = lines[0].removeprefix(start_delimiter)
+        if lines[0].isspace():
+            start_index = 1
+
+        # Exclude end_delimiter, e.g. "...*/" or "...\n␣␣␣*/" to "..."
+        lines[-1] = lines[-1].removesuffix(end_delimiter)
+        if lines[-1].isspace() and end_index >= 2:
+            end_index = end_index - 1
+            lines[-2] = lines[-2].removesuffix("\n")
+
+        # For every line except first line: From the left remove whitespaces,
+        # then remove the prefix (e.g. "*")
+        for i in range(1, end_index):
+            lines[i] = lines[i].lstrip().removeprefix(deco_prefix)
+        
+        content = "".join(lines[start_index:end_index])
         return dedent(content)
 
-    def _construct_line(self, line_prefix: str, indentation: str) -> str:
-        lines = self.comment_content.splitlines(keepends=True)
-        first_line_not_indented = line_prefix + lines[0]
-        other_lines_indented = "".join(indentation + line_prefix + line for line in lines[1:])
-        return first_line_not_indented + other_lines_indented
+    def _construct_line(self, deco_prefix: str, subsequent_indentation: str) -> str:
+        lines = self.content.splitlines(keepends=True)
 
-    def _construct_block(self, prefix: str, suffix: str, line_prefix: str, indentation: str) -> str:
-        top_not_indented = prefix
-        middle_indented = indent(self.comment_content, indentation + line_prefix, lambda _: True)
-        end_indented =  f"{indentation}{suffix}"
-        return f"{top_not_indented}\n{middle_indented}\n{end_indented}"
-    
-    def _construct_block_inline(self, prefix: str, suffix: str) -> str:
-        return "".join(suffix + line + prefix for line in self.comment_content)
+        lines[0] = deco_prefix + lines[0]
+        for i in range(1, len(lines)):
+            lines[i] = subsequent_indentation + deco_prefix + lines[i]
+        return "".join(lines)
+
+    def _construct_block(
+            self,
+            start_delimiter: str,
+            end_delimiter: str,
+            deco_prefix: str,
+            subsequent_indentation: str
+        ) -> str:
+        lines = self.content.splitlines(keepends=True)
+        middle_indented = (subsequent_indentation + deco_prefix + line for line in lines)
+        return "".join(chain(
+            (start_delimiter, "\n"),
+            middle_indented,
+            ("\n", subsequent_indentation, " ", end_delimiter)))
+
+    def _construct_block_inline(self, start_delimiter: str, end_delimiter: str) -> str:
+        return "\n".join(start_delimiter + " " + e + " " + end_delimiter for e in self.content.splitlines())
