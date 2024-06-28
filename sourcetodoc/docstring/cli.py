@@ -35,10 +35,10 @@ class ConverterNames(StrEnum):
     CXX_FUNCTION_COMMENT_LLM = "cxx_function_comment_llm"
 
 
-def get_converter_by_args(**args: str) -> Optional[Converter[Any]]:
+def get_converter_by_args(**kwargs: str) -> Optional[Converter[Any]]:
     converter: Optional[Converter[Any]] = None
-    arg_helper = ArgumentHelper(**args)
-    match args["converter"]:
+    arg_helper = ArgumentHelper(**kwargs)
+    match kwargs["converter"]:
         case ConverterNames.C_COMMENT_STYLE:
             style = arg_helper.get_style()
             if style is not None:
@@ -67,8 +67,8 @@ def get_converter_by_args(**args: str) -> Optional[Converter[Any]]:
 
 
 class ArgumentHelper:
-    def __init__(self, **args: Optional[str]) -> None:
-        self.args = args
+    def __init__(self, **kwargs: Optional[str]) -> None:
+        self.args = kwargs
         self.messages: list[str] = []
     
     def get_style(self) -> Optional[CommentStyle]:
