@@ -1,0 +1,36 @@
+- project_author:
+    help: Author(s) of the project to process
+    type: str
+    default: unknown
+- project_year:
+    help: Year(s) attributed to the project to process (year of first/current release, timespan from first to current release, ...)
+    type: str
+    default: unknown
+- apidoc_toolchain:
+    help: Which toolchain to use for automated API documentation generation. "sphinx-based" consists of a combination of Doxygen, breathe, exhale and Sphinx and is currently not recommended, because it lacks certain features (mainly concerning graphics that Doxygen can generate (Inheritance Diagrams, Caller Graphs, etc.)) and thus may not be maintained as well.
+    type: str
+    choices: [sphinx-based, doxygen-only]
+    default: doxygen-only
+- doc_hierarchy:
+    help: The order in which the "doc" and project name directories are placed within the hierarchy of the generated api documentation.
+    type: str
+    choices: [doc_first, project_name_first]
+    default: doc_first
+- wizard:
+    help: Planned feature. Not implemented yet :/
+    type: bool
+    short: W
+- test_arg_with_subparsers:
+    help: Test123
+    type: str
+    subparser: gurke
+- test_arg_with_subparsers:
+    help: Test123
+    type: str
+    short: testsubp
+    subparser: [gurke, hefe]
+- test_arg_with_subparsers:
+    help: Test123
+    type: str
+    short: testsubpp
+    subparser: [gurke, hefe, wololo]
