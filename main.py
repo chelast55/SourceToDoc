@@ -2,12 +2,43 @@ from os import chdir, system
 from pathlib import Path
 from argparse import Namespace
 
+from sourcetodoc.docstring.cli import get_converter_by_args
+from sourcetodoc.docstring.replace import Replace
 from sourcetodoc.helpers import delete_directory_if_exists
 from sourcetodoc.cli.ConfiguredParser import ConfiguredParser
 
-if __name__ == "__main__":
+def main() -> None:
     args: Namespace = ConfiguredParser().parse_args()
+    match args.subparser:
+        case "comment":
+            comment(args)
+        case _:
+            default(args)
 
+
+def comment(args: Namespace) -> None:
+    match args.replace:
+        case "replace":
+            replace = Replace.REPLACE_OLD_COMMENTS
+        case "append":
+            replace = Replace.APPEND_TO_OLD_COMMENTS
+        case "inline":
+            replace = Replace.APPEND_TO_OLD_COMMENTS_INLINE
+        case _:
+            raise RuntimeError
+
+    converter = get_converter_by_args(**vars(args))
+    if converter is not None:
+        path: Path = Path(args.path)
+        if path.is_file():
+            converter.convert_file(path, replace)
+        elif path.is_dir():
+            converter.convert_files(path, replace, args.filter)
+        else:
+            print(f"{args.path} is not a file or a directory")
+
+
+def default(args: Namespace) -> None:
     html_theme: str = "sphinx_rtd_theme"
     exhale_root_file_name: str = f"root_{args.project_name}"
 
@@ -331,3 +362,7 @@ if __name__ == "__main__":
         # run sphinx again
         # maybe some cleanup is necessary?
         #system(f"sphinx-build -b html . {sphinx_path}")
+
+
+if __name__ == "__main__":
+    main()

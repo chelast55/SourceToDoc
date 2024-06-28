@@ -1,0 +1,43 @@
+- path:
+    help: A file or directory
+    type: str
+    subparser: comment
+    default: "."
+- converter:
+    help: The converter to use to convert comments
+    type: str
+    required: true
+    subparser: comment
+- replace:
+    help: |
+      The method to replace comments.
+      "replace": Replace old comment with new comment.
+      "append": Append new comment block after the old comment block.
+      "inline": In the new comment block: Prepend the content of the old comment before the new comment content.
+    type: str
+    choices:
+      - replace
+      - append
+      - inline
+    default: replace
+    subparser: comment
+- filter:
+    help: Overrides the default include filter of the converter (Only matters if the path is a directory) (Python RegEx)
+    type: str
+    subparser: comment
+- style:
+    help: Specifies the comment style to convert into
+    type: str
+    subparser: comment
+- openai_base_url:
+    help: base_url for the OpenAI API
+    type: str
+    subparser: comment
+- openai_api_key:
+    help: api_key for the OpenAI API
+    type: str
+    subparser: comment
+- llm_model:
+    help: The LLM model to use with the OpenAI API
+    type: str
+    subparser: comment
