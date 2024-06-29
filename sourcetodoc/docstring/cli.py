@@ -1,3 +1,4 @@
+import re
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional
@@ -7,9 +8,12 @@ from openai import OpenAI
 from .comment_style import CommentStyle
 from .conversions.llm import LLM
 from .converter import Converter
-from .converters import (c_comment_style_converter,
+from .converters import (c_command_style_converter, c_comment_style_converter,
+                         c_find_and_replace_converter,
                          c_function_comment_llm_converter,
+                         cxx_command_style_converter,
                          cxx_comment_style_converter,
+                         cxx_find_and_replace_converter,
                          cxx_function_comment_llm_converter)
 from .replace import Replace
 
@@ -35,6 +39,10 @@ class _ConverterNames(StrEnum):
     CXX_COMMENT_STYLE = "cxx_comment_style"
     C_FUNCTION_COMMENT_LLM = "c_function_comment_llm"
     CXX_FUNCTION_COMMENT_LLM = "cxx_function_comment_llm"
+    C_COMMAND_STYLE = "c_command_style"
+    CXX_COMMAND_STYLE = "cxx_command_style"
+    C_FIND_AND_REPLACE = "c_find_and_replace"
+    CXX_FIND_AND_REPLACE = "cxx_find_and_replace"
 
 
 def comment(**kwargs: str) -> None:
@@ -58,10 +66,6 @@ def comment(**kwargs: str) -> None:
             converter.convert_files(path, replace, kwargs["filter"])
         else:
             print(f"{path} is not a file or a directory")
-    else:
-        print("Choices for --converter:")
-        for e in _ConverterNames:
-            print(e)
 
 
 def _get_converter(**kwargs: str) -> Optional[Converter[Any]]:
@@ -84,8 +88,28 @@ def _get_converter(**kwargs: str) -> Optional[Converter[Any]]:
             llm = arg_helper.get_llm()
             if llm is not None:
                 converter = cxx_function_comment_llm_converter(llm)
+        case _ConverterNames.C_COMMAND_STYLE:
+            javadoc_style = arg_helper.get_command_style()
+            if javadoc_style is not None:
+                converter = c_command_style_converter(javadoc_style)
+        case _ConverterNames.CXX_COMMAND_STYLE:
+            javadoc_style = arg_helper.get_command_style()
+            if javadoc_style is not None:
+                converter = cxx_command_style_converter(javadoc_style)
+        case _ConverterNames.C_FIND_AND_REPLACE:
+            pattern_and_replacement = arg_helper.get_find_and_replace()
+            if pattern_and_replacement is not None:
+                pattern, replacement = pattern_and_replacement
+                converter = c_find_and_replace_converter(pattern, replacement)
+        case _ConverterNames.CXX_FIND_AND_REPLACE:
+            pattern_and_replacement = arg_helper.get_find_and_replace()
+            if pattern_and_replacement is not None:
+                pattern, replacement = pattern_and_replacement
+                converter = cxx_find_and_replace_converter(pattern, replacement)
         case _:
-            pass
+            print("Choices for --converter:")
+            for e in _ConverterNames:
+                print(e)
     
     if arg_helper.has_missing_args():
         arg_helper.print_missing_args_message()
@@ -130,6 +154,39 @@ class _ArgumentHelper:
             client = OpenAI(base_url=base_url, api_key=api_key)
             return LLM(client, model) # type: ignore
     
+    def get_command_style(self) -> Optional[bool]:
+        self._check_args_present("command_style")
+
+        command_style = self.kwargs["command_style"]
+        match command_style:
+            case "default":
+                return False
+            case "javadoc":
+                return True
+            case _:
+                self._add_message("Value for --command_style must be \"default\" or \"javadoc\"")
+                return None
+    
+    def get_find_and_replace(self) -> Optional[tuple[re.Pattern[str], str]]:
+        self._check_args_present("find", "replacement")
+
+        find = self.kwargs["find"]
+        pattern = None
+        if find is None:
+            self._add_arg_missing_message("find")
+        else:
+            try:
+                pattern = re.compile(find)
+            except Exception:
+                self._add_message(f"Error occured when compiling {find}")
+        
+        replacement = self.kwargs["replacement"]
+        if replacement is None:
+            self._add_arg_missing_message("replacement")
+
+        if pattern is not None and replacement is not None:
+            return (pattern, replacement)
+
     def has_missing_args(self) -> bool:
         return len(self.messages) > 0
     

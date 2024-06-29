@@ -41,3 +41,18 @@
     help: The LLM model to use with the OpenAI API
     type: str
     subparser: comment
+- command_style:
+    help: The Doxygen command style to convert into
+    type: str
+    choices:
+      - default
+      - javadoc
+    subparser: comment
+- find:
+    help: Python RegEx to find substrings
+    type: str
+    subparser: comment
+- replacement:
+    help: Substitution for substrings found by --find
+    type: str
+    subparser: comment

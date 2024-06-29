@@ -1,5 +1,8 @@
 """This module contains converters"""
 
+from re import Pattern
+
+from .conversions.find_and_replace_conversion import FindAndReplaceConversion
 from .comment_style import CommentStyle
 from .conversions.c_llm_conversion import CLLMConversion
 from .conversions.command_style_conversion import CommandStyleConversion
@@ -53,4 +56,28 @@ def c_command_style_converter(javadoc_style: bool) -> Converter[CType]:
         CPylibclangExtractor(),
         CommandStyleConversion(javadoc_style),
         c_regex
+    )
+
+
+def cxx_command_style_converter(javadoc_style: bool) -> Converter[CXXType]:
+    return Converter(
+        CXXPylibclangExtractor(),
+        CommandStyleConversion(javadoc_style),
+        cxx_regex
+    )
+
+
+def c_find_and_replace_converter(pattern: Pattern[str], replacement: str) -> Converter[CType]:
+    return Converter(
+        CPylibclangExtractor(),
+        FindAndReplaceConversion(pattern, replacement),
+        c_regex
+    )
+
+
+def cxx_find_and_replace_converter(pattern: Pattern[str], replacement: str) -> Converter[CXXType]:
+    return Converter(
+        CXXPylibclangExtractor(),
+        FindAndReplaceConversion(pattern, replacement),
+        cxx_regex
     )
