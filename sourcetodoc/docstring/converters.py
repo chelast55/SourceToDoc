@@ -1,3 +1,5 @@
+"""This module contains converters"""
+
 from .comment_style import CommentStyle
 from .conversions.c_llm_conversion import CLLMConversion
 from .conversions.command_style_conversion import CommandStyleConversion

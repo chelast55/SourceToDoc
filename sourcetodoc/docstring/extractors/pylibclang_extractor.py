@@ -8,6 +8,17 @@ from ..range import Range  # type: ignore
 
 
 class PylibclangExtractor[T](Extractor[T]):
+    """
+    Extracts comments from source code with pylibclang.
+
+    Attributes
+    ----------
+    translation_unit_from_code: Callable[[str],TranslationUnit]
+        Function that creates a translation unit from source code.
+    get_type: Callable[[Cursor], T]
+        Function that returns symbol_type for Comment.
+    """
+
     def __init__(
             self,
             translation_unit_from_code: Callable[[str],TranslationUnit],

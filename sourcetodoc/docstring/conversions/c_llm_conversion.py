@@ -8,6 +8,9 @@ from .llm_conversion_helper import LLMConversionHelper
 
 
 class CLLMConversion(Conversion[CType]):
+    """
+    Converts comments on function declarations to Doxygen JavaDoc style comments.
+    """
     default_system_prompt = "You are a coder that converts comments on c functions to doxygen style comments that start with \"/**\" without changing the text."
 
     def __init__(self, llm: LLM, system_prompt: str = default_system_prompt) -> None:

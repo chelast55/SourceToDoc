@@ -9,6 +9,10 @@ from .pylibclang_extractor import PylibclangExtractor
 
 
 class CPylibclangExtractor(CExtractor):
+    """
+    Extracts coments from C source code that are associated with
+    symbols.
+    """
     type_map: Mapping[C.CXCursorKind, CType] = {
         C.CXCursorKind.CXCursor_FunctionDecl: CType.FUNCTION,
         C.CXCursorKind.CXCursor_StructDecl: CType.STRUCT,

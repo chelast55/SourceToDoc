@@ -8,6 +8,15 @@ from .llm_conversion_helper import LLMConversionHelper
 
 
 class CXXLLMConversion(Conversion[CXXType]):
+    """
+    Converts comments on some declarations to Doxygen JavaDoc style comments.
+
+    The declarations are:
+    - Constructors
+    - Functions
+    - Function templates
+    - Methods
+    """
     system_prompt = "You are a coder that converts comments on C++ functions to doxygen style comments that start with \"/**\" without changing the text."
 
     _INCLUDE_TYPES: set[CXXType] = {

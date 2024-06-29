@@ -5,7 +5,7 @@ from ..conversion import ConvEmpty, Conversion, ConvPresent, ConvResult
 from ..extractor import Comment
 
 
-class SubstituteConversion(Conversion[Any]):
+class FindAndReplaceConversion(Conversion[Any]):
     def __init__(self, pattern: Pattern[str], replacement: str) -> None:
         self.pattern = pattern
         self.replacement = replacement
