@@ -21,9 +21,7 @@ class TextReplacement:
 
 
 class Replacer:
-    """
-    Replaces old comments with new comments.
-    """
+    """Replaces old comments with new comments."""
 
     @classmethod
     def replace_comments(cls, code: str, comment_replacements: Iterable[CommentReplacement], replace: Replace) -> str:

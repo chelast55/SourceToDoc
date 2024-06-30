@@ -27,7 +27,7 @@ _BLOCK_COMMENT_REGEX: str = (r"^(?P<indentation>(?:[ ]{2}|\t)*)"             # M
 
 class CRegexExtractor(CExtractor):
     """
-    Extracts comments from C source code.
+    Extracts comments from C source code with Python RegEx.
 
     Extracts comments of the form:
     ```

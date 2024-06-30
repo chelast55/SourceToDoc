@@ -9,6 +9,7 @@ class LLM:
 
     @staticmethod
     def create_LLM(base_url: str, api_key: str, model: str):
+        """Convenience method to create a new LLM instance."""
         return LLM(OpenAI(base_url=base_url, api_key=api_key), model)
 
     def call_llm(self, system_prompt: str, prompt: str) -> str:
@@ -28,6 +29,7 @@ class LLM:
         Raises
         ------
         APIError
+
         RuntimeError
             If the reponse message is None.
         """

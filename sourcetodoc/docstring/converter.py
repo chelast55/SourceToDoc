@@ -2,7 +2,7 @@ from pathlib import Path
 import re
 from typing import Iterator, Optional
 
-from .conversion import ConvEmpty, ConvError, ConvPresent, ConvResult, ConvUnsupported, Conversion
+from .conversion import ConvPresent, ConvResult, Conversion
 from .extractor import Extractor, Comment
 from .replace import Replace
 from .replacer import CommentReplacement, Replacer
@@ -11,12 +11,6 @@ from .replacer import CommentReplacement, Replacer
 class Converter[T]:
     """
     Extracts comments with an `Extractor` object and converts them with a `Conversion` object.
-
-    When `convert_string` is called:
-    - The extractor extracts comments and outputs `Comment` objects.
-    - The conversion object outputs a `ConversionResult` object for every `Comment` object.
-    - The replacer (re)places the new comments and returns a string from every `ConversionResult` object
-       that is a `ConversionPresent` object.
 
     Attributes
     ----------
@@ -42,6 +36,22 @@ class Converter[T]:
         self.replacer = replacer
 
     def convert_string(self, code: str, replace: Replace) -> str:
+        """
+        Converts comments in `code`.
+
+        Parameters
+        ----------
+        code : str
+            The code with zero or more comments.
+
+        replace : Replace
+            Specifies how new comments are added.
+
+        Returns
+        -------
+        str
+            The code with replaced comments.
+        """
         # Extract comments
         print("Extracting comments", end="\r", flush=True)
         comments = self.extractor.extract_comments(code)
@@ -78,11 +88,40 @@ class Converter[T]:
         return result
 
     def convert_file(self, file: Path, replace: Replace):
+        """
+        Converts comments in `file`.
+
+        The source file is updated if conversions for comments are found.
+
+        Parameters
+        ----------
+        file : Path
+            The source file with zero or more comments.
+        replace : Replace
+            Specifies how new comments are added.
+        """
         code = file.read_text()
         result = self.convert_string(code, replace)
-        file.write_text(result)
+        if result != code:
+            file.write_text(result)
+        else:
+            print(f"{file} is not changed.")
 
     def convert_files(self, dir: Path, replace: Replace, regex: Optional[str] = None):
+        """
+        Converts comments in files in `dir` recursively.
+
+        The filenames of the files must be fully matched by `regex`.
+
+        Parameters
+        ----------
+        dir : Path
+            The directory.
+        replace : Replace
+            Specifies how new comments are added.
+        regex : Optional[str], optional
+            The Python RegEx to include files, by default None
+        """
         if regex is None:
             regex = self.default_regex
 
@@ -100,16 +139,3 @@ class Converter[T]:
                 if matcher.fullmatch(filename) is not None:
                     file = (dirpath / filename)
                     yield file
-
-    def print_message(self, conversion: ConvResult) -> None:
-        match conversion:
-            case ConvEmpty(message) if message is not None:
-                print(f"Skip: {message}")
-            case ConvUnsupported(message) if message is not None:
-                print(f"Skip: {message}")
-            case ConvEmpty() | ConvUnsupported():
-                print("Skip")
-            case ConvError():
-                print(f"Error: {repr(conversion)}")
-            case _:
-                pass

@@ -3,7 +3,7 @@ from enum import Enum, auto
 
 class Replace(Enum):
     """
-    Specifies how the comments should be replaced.
+    Specifies how new comments are added.
     """
 
     REPLACE_OLD_COMMENTS = auto()

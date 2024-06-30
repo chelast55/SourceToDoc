@@ -164,27 +164,44 @@ class CommentStyle(Enum):
 @dataclass(frozen=True)
 class CommentStyler:
     """
-    Represents a C comment with a particular style.
+    Represents a C comment with a particular comment style.
 
-    Attributes
+    Parameters
     ----------
     content : str
         The content of the comment without comment delimiters.
     style : CommentStyle
-        The style of the comment.
+        The (Doxygen) style of the comment.
     """
     content: str
     style: CommentStyle
 
-    _C_LINE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"//.*(?:\n(?: \t)*//.*)*")
-    _C_BLOCK_INLINE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"/\*.*?\*/(?:(?: \t)*\n(?: \t)*/\*.*?\*/)*")
-    _C_BLOCK_PATTERN: ClassVar[re.Pattern[str]] = re.compile(r"/\*(?:.|\n)*?\*/")
-
+    _C_LINE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
+        r"//.*(?:\n(?: \t)*//.*)*"
+    )
+    _C_BLOCK_INLINE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
+        r"/\*.*?\*/(?:(?: \t)*\n(?: \t)*/\*.*?\*/)*"
+    )
+    _C_BLOCK_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
+        r"/\*(?:.|\n)*?\*/"
+    )
 
     @classmethod
-    def parse_comment(cls, text: str) -> Optional[Self]:
-        """Creates a new instance from a comment text."""
-        text_stripped = text.strip()
+    def parse_comment(cls, comment_text: str) -> Optional[Self]:
+        """
+        Parses `comment_text` to extract its content and (Doxygen) style.
+
+        Parameters
+        ----------
+        comment_text : str
+            The comment text with delimiters (e.g. `//`).
+
+        Returns
+        -------
+        Optional[Self]
+            A CommandStyler object if the parsing was successful, else None.
+        """
+        text_stripped = comment_text.strip()
         if cls._C_LINE_PATTERN.fullmatch(text_stripped) is not None:
             style = cls._get_style_by_delimiter(text_stripped, (
                 CommentStyle.TRIPLE_SLASH_LINE_MEMBER,
@@ -236,7 +253,7 @@ class CommentStyler:
         Returns
         -------
         str
-            The comment text.
+            The constructed comment.
         """
         match self.style.value:
             case _LineComment(start_delimiter):

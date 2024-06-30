@@ -31,17 +31,21 @@ class Comment[T]:
 
 
 class Extractor[T](Protocol):
+    """Extracts comments"""
+
     def extract_comments(self, code: str) -> list[Comment[T]]:
         """
-        Extracts comments from a string.
+        Extracts comments from `code`.
 
         Parameters
         ----------
         code : str
+            The string that contain zero or more comments.
 
         Returns
         -------
         list[Comment[T]]
-            The extracted comments with pairwise disjoint comment_range in ascending order.
+            The extracted comments with pairwise disjoint
+            `comment_range` in ascending order.
         """
         ...

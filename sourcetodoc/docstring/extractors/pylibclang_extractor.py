@@ -8,28 +8,46 @@ from ..range import Range  # type: ignore
 
 
 class PylibclangExtractor[T](Extractor[T]):
-    """
-    Extracts comments from source code with pylibclang.
-
-    Attributes
-    ----------
-    translation_unit_from_code: Callable[[str],TranslationUnit]
-        Function that creates a translation unit from source code.
-    get_type: Callable[[Cursor], T]
-        Function that returns symbol_type for Comment.
-    """
+    """Extracts comments with pylibclang."""
 
     def __init__(
             self,
             translation_unit_from_code: Callable[[str],TranslationUnit],
             get_type: Callable[[Cursor], T]
         ) -> None:
+        """
+        Creates a new object.
+
+        Parameters
+        ----------
+        translation_unit_from_code : Callable[[str],TranslationUnit]
+            Function that creates a translation unit from source code.
+        get_type : Callable[[Cursor], T]
+            Function that returns `Comment.symbol_type`.
+        """
 
         self.translation_unit_from_code = translation_unit_from_code
         self.get_type = get_type
 
     @override
     def extract_comments(self, code: str) -> list[Comment[T]]:
+        """
+        Extracts comments in `code` that are associated with a libclang cursor.
+
+        - `self.translation_unit_from_code` maps `code` to a `TranslationUnit` object.
+        - `self.get_type` maps `Cursor` to `Comment.symbol_type`.
+
+        Parameters
+        ----------
+        code : str
+            The source code.
+
+        Returns
+        -------
+        list[Comment[T]]
+            The extracted comments with pairwise disjoint
+            `comment_range` in ascending order.
+        """
         tu: TranslationUnit = self.translation_unit_from_code(code)
 
         result: list[Comment[T]] = []

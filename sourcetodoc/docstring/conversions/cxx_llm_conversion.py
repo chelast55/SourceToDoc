@@ -8,16 +8,9 @@ from .llm_conversion_helper import LLMConversionHelper
 
 
 class CXXLLMConversion(Conversion[CXXType]):
-    """
-    Converts comments on some declarations to Doxygen JavaDoc style comments.
+    """Converts comments on C++ functions or similar with a LLM."""
 
-    The declarations are:
-    - Constructors
-    - Functions
-    - Function templates
-    - Methods
-    """
-    system_prompt = "You are a coder that converts comments on C++ functions to doxygen style comments that start with \"/**\" without changing the text."
+    default_system_prompt = "You are a coder that converts comments on C++ functions to doxygen style comments that start with \"/**\" without changing the text."
 
     _INCLUDE_TYPES: set[CXXType] = {
         CXXType.CONSTRUCTOR,
@@ -26,15 +19,46 @@ class CXXLLMConversion(Conversion[CXXType]):
         CXXType.METHOD,
     }
 
-    def __init__(self, llm: LLM) -> None:
+    def __init__(self, llm: LLM, system_prompt: str = default_system_prompt) -> None:
+        """
+        Creates a new object.
+
+        Parameters
+        ----------
+        llm : LLM
+            The LLM.
+        system_prompt : str, optional
+            The system prompt that is passed to the LLM, by default default_system_prompt
+        """
         self.llm_helper = LLMConversionHelper[CXXType](llm)
+        self.system_prompt = system_prompt
 
     @override
     def calc_conversion(self, comment: Comment[CXXType]) -> ConvResult:
+        """
+        Calculates a new Doxygen JavaDoc style comments with a LLM.
+
+        See: `LLMConversionHelper`.
+
+        Parameters
+        ----------
+        comment : Comment[CXXType]
+            The comment.
+
+        Returns
+        -------
+        ConvResult
+            A ConvUnsupported object if `comment.symbol_type` is not
+            one of the following types:
+            `CXXType.CONSTRUCTOR`,
+            `CXXType.FUNCTION`,
+            `CXXType.FUNCTION_TEMPLATE`,
+            `CXXType.METHOD`.
+        """
         if comment.symbol_type in self.__class__._INCLUDE_TYPES:
             return self.llm_helper.calc_conversion_with_llm(
                 comment,
-                self.__class__.system_prompt,
+                self.system_prompt,
                 CommentStyle.JAVADOC_BLOCK
             )
         else:

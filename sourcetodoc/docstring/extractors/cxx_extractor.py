@@ -5,6 +5,7 @@ from ..extractor import Comment, Extractor
 
 
 class CXXType(Enum):
+    """Enumeration with C++ symbol types"""
     DESTRUCTOR = auto()
     ACCESS_SPECIFIER = auto()
     CLASS = auto()
@@ -21,5 +22,6 @@ class CXXType(Enum):
 
 
 class CXXExtractor(Extractor[CXXType], Protocol):
+    """Extracts comments from C++ source files"""
     def extract_comments(self, code: str) -> list[Comment[CXXType]]:
         ...

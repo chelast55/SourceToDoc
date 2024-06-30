@@ -15,69 +15,77 @@ from .extractors.c_pylibclang_extractor import CPylibclangExtractor
 from .extractors.cxx_extractor import CXXType
 from .extractors.cxx_pylibclang_extractor import CXXPylibclangExtractor
 
-c_regex = r".*\.[ch]"
-cxx_regex = r".*\.(c(pp|xx|c)|h(pp|xx|h)?)"
+_c_regex = r".*\.[ch]"
+_cxx_regex = r".*\.(c(pp|xx|c)|h(pp|xx|h)?)"
 
 
 def c_comment_style_converter(style: CommentStyle) -> Converter[CType]:
+    """Changes the style of comments in C source files to `style`."""
     return Converter[CType](
         CPylibclangExtractor(),
         CommentStyleConversion(style), 
-        c_regex
+        _c_regex
     )
 
 
 def cxx_comment_style_converter(style: CommentStyle) -> Converter[CXXType]:
+    """Changes the style of comments in C++ source files to `style`."""
     return Converter[CXXType](
         CXXPylibclangExtractor(),
         CommentStyleConversion(style), 
-        cxx_regex
+        _cxx_regex
     )
 
 
 def c_function_comment_llm_converter(llm: LLM) -> Converter[CType]:
+    """Converts comments with a LLM in C source files."""
     return Converter(
         CPylibclangExtractor(),
         CLLMConversion(llm),
-        c_regex
+        _c_regex
     )
 
 
 def cxx_function_comment_llm_converter(llm: LLM) -> Converter[CXXType]:
+    """Converts comments with a LLM in C++ source files."""
     return Converter(
         CXXPylibclangExtractor(),
         CXXLLMConversion(llm),
-        cxx_regex
+        _cxx_regex
     )
 
 
 def c_command_style_converter(javadoc_style: bool) -> Converter[CType]:
+    """Changes the command style of comments in C source files."""
     return Converter(
         CPylibclangExtractor(),
         CommandStyleConversion(javadoc_style),
-        c_regex
+        _c_regex
     )
 
 
 def cxx_command_style_converter(javadoc_style: bool) -> Converter[CXXType]:
+    """Changes the command style of comments in C++ source files."""
     return Converter(
         CXXPylibclangExtractor(),
         CommandStyleConversion(javadoc_style),
-        cxx_regex
+        _cxx_regex
     )
 
 
-def c_find_and_replace_converter(pattern: Pattern[str], replacement: str) -> Converter[CType]:
+def c_find_and_replace_converter(find_pattern: Pattern[str], replacement: str) -> Converter[CType]:
+    """Finds and replaces substrings in C source files."""
     return Converter(
         CPylibclangExtractor(),
-        FindAndReplaceConversion(pattern, replacement),
-        c_regex
+        FindAndReplaceConversion(find_pattern, replacement),
+        _c_regex
     )
 
 
-def cxx_find_and_replace_converter(pattern: Pattern[str], replacement: str) -> Converter[CXXType]:
+def cxx_find_and_replace_converter(find_pattern: Pattern[str], replacement: str) -> Converter[CXXType]:
+    """Finds and replaces substrings in C++ source files."""
     return Converter(
         CXXPylibclangExtractor(),
-        FindAndReplaceConversion(pattern, replacement),
-        cxx_regex
+        FindAndReplaceConversion(find_pattern, replacement),
+        _cxx_regex
     )

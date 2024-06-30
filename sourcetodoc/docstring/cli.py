@@ -46,7 +46,7 @@ class _ConverterNames(StrEnum):
 
 
 def comment(**kwargs: str) -> None:
-    """Runs a converter depending on the given arguments in kwargs."""
+    """Runs a converter depending on the given arguments in `kwargs`."""
     match kwargs["replace"]:
         case "replace":
             replace = Replace.REPLACE_OLD_COMMENTS

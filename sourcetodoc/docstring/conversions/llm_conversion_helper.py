@@ -9,6 +9,7 @@ from .llm import LLM
 
 
 class LLMConversionHelper[T]:
+    """Helper to calculates new comments with a LLM."""
     # Matches "// ..." over multiple lines
     _LINE_COMMENT_REGEX = r"(?://.*\n\s*)*//.*"
     _LINE_COMMENT_PATTERN = re.compile(_LINE_COMMENT_REGEX, re.VERBOSE)
@@ -18,6 +19,14 @@ class LLMConversionHelper[T]:
     _BLOCK_COMMENT_PATTERN = re.compile(_BLOCK_COMMENT_REGEX, re.VERBOSE)
 
     def __init__(self, llm: LLM) -> None:
+        """
+        Creates a new object.
+
+        Parameters
+        ----------
+        llm : LLM
+            The LLM to use.
+        """
         self.llm = llm
 
     def calc_conversion_with_llm(
@@ -25,9 +34,17 @@ class LLMConversionHelper[T]:
             comment: Comment[T],
             system_prompt: str,
             output_style: CommentStyle
-            ) -> ConvResult:
+        ) -> ConvResult:
         """
-        Helper function to calculate conversion results.
+        Calculates new comment texts results with a LLM.
+
+        Steps:
+        1. `comment_text` in `comment` will be parsed and formatted by `CommandStyler`.
+        2. Pass the formatted comment to the LLM.
+        3. Extract the first found `/*...*/` part in the output of the LLM.
+        4. Replace `@command with` `\\command` in the new comment.
+        5. Prepend `AI_GENERATED` to the new comment.
+        6. Format the new comment.
 
         Parameters
         ----------
@@ -37,6 +54,15 @@ class LLMConversionHelper[T]:
             The system prompt that is passed to the LLM.
         output_style : CommentStyle
             The comment style of the output.
+        
+        Returns
+        -------
+        ConversionResult[T]
+            A ConvPresent object if all steps above execute successfully.
+            A ConvEmpty object if `comment` is already a Doxygen style comment.
+            A ConvError object if `comment` cannot be parsed in Step 1,
+            or if no `/*...*/` is found the output of the LLM.
+
         """
         # Format the comment text and append the symbol text
         match CommentStyler.parse_comment(comment.comment_text):
@@ -57,8 +83,6 @@ class LLMConversionHelper[T]:
         new_comment = self._extract_comment(llm_output)
         if new_comment is None:
             return ConvError(f"No comment found in output of LLM: {llm_output}")
-
-        # Mark the result as AI generated and format it
         output_styler = CommentStyler.parse_comment(new_comment)
         if output_styler is None:
             raise RuntimeError
