@@ -24,7 +24,7 @@ if __name__ == "__main__":
     doxygen_path: Path = Path()
     warning_log_file_path: Path = doxygen_path / Path("doxygen_warnings.txt")
     if args.apidoc_toolchain == "doxygen-only":
-        doxygen_path = doc_path
+        doxygen_path = doc_path_abs
     elif args.apidoc_toolchain == "sphinx-based":
         doxygen_path = doc_source_path_abs / Path("doxygen")
     sphinx_path: Path = doc_path_abs  # Sphinx (or rather its index.html) is the "main artifact"
@@ -35,8 +35,8 @@ if __name__ == "__main__":
     stylesheet_path: Path = doxygen_awesome_submodule_path / Path("doxygen-awesome.css")
 
     # conditions
-    doxygen_xml_required: bool = not args.apidoc_toolchain == "doxygen"
-    doxygen_html_required: bool = args.apidoc_toolchain == "doxygen"
+    doxygen_xml_required: bool = not args.apidoc_toolchain == "doxygen-only"
+    doxygen_html_required: bool = args.apidoc_toolchain == "doxygen-only"
 
     # file contents
     DOXYFILE_CONTENT: str = f"""
@@ -217,7 +217,7 @@ if __name__ == "__main__":
         
         # Configuration options related to the HTML output
         GENERATE_HTML         = {"YES" if doxygen_html_required else "NO"}
-        HTML_OUTPUT           = {"" if doxygen_html_required else "html"}
+        HTML_OUTPUT           = {str(Path("")) if (args.apidoc_toolchain == "doxygen-only") else "html"}
         HTML_FILE_EXTENSION   = html
         HTML_HEADER           = {"" if (args.html_header is None) else str(args.html_header).replace('\\', '\\\\')}
         HTML_FOOTER           = {"" if (args.html_footer is None) else str(args.html_footer).replace('\\', '\\\\')}
