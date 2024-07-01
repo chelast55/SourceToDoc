@@ -1,6 +1,7 @@
 from os import chdir, system
 from pathlib import Path
 from argparse import Namespace
+from typing import Optional
 
 from sourcetodoc.helpers import delete_directory_if_exists
 from sourcetodoc.cli.ConfiguredParser import ConfiguredParser
@@ -37,6 +38,15 @@ if __name__ == "__main__":
     # conditions
     doxygen_xml_required: bool = not args.apidoc_toolchain == "doxygen-only"
     doxygen_html_required: bool = args.apidoc_toolchain == "doxygen-only"
+
+    # locate README
+    readme_file_path: Optional[Path] = None
+    potential_readme_files: list[Path] = [file for file in project_path.glob("**/*") if file.is_file()]
+    for potential_readme_file in potential_readme_files:
+        if potential_readme_file.is_file() \
+        and "READ" in str(potential_readme_file).upper() and "ME" in str(potential_readme_file).upper():
+            readme_file_path = potential_readme_file
+            break
 
     # file contents
     DOXYFILE_CONTENT: str = f"""
@@ -195,7 +205,7 @@ if __name__ == "__main__":
         #FILTER_PATTERNS        =
         #FILTER_SOURCE_FILES    =
         #FILTER_SOURCE_PATTERNS =
-        USE_MDFILE_AS_MAINPAGE  = TODO: locate readme
+        USE_MDFILE_AS_MAINPAGE  = {"" if (readme_file_path is None) else str(readme_file_path).replace('\\', '\\\\')}
         
         # Configuration options related to source browsing
         SOURCE_BROWSER          = {"YES" if args.disable_source_browser else "NO"}
@@ -218,7 +228,7 @@ if __name__ == "__main__":
         # Configuration options related to the HTML output
         GENERATE_HTML         = {"YES" if doxygen_html_required else "NO"}
         HTML_OUTPUT           = {str(Path("")) if (args.apidoc_toolchain == "doxygen-only") else "html"}
-        HTML_FILE_EXTENSION   = html
+        HTML_FILE_EXTENSION   = .html
         HTML_HEADER           = {"" if (args.html_header is None) else str(args.html_header).replace('\\', '\\\\')}
         HTML_FOOTER           = {"" if (args.html_footer is None) else str(args.html_footer).replace('\\', '\\\\')}
         HTML_STYLESHEET       = {str(stylesheet_path).replace('\\', '\\\\')}
