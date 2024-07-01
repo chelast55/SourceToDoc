@@ -105,8 +105,133 @@
     choices: [DATETIME, DATE, NO]
     default: DATETIME
 
+# Build related configuration options
+- disable_extract_private:
+    help: Disable to include private members in documentation
+    type: bool
+    default: True
+- disable_extract_private_virtual:
+    help: Disable to include private virtual methods in documentation
+    type: bool
+    default: True
+- disable_extract_package:
+    help: Disable to include members with package or internal scope in documentation
+    type: bool
+    default: True
+- disable_extract_static:
+    help: Disable to include static members of files in documentation
+    type: bool
+    default: True
+- disable_extract_local_classes:
+    help: Disable to include locally defined structs/classes in documentation (not for Java)
+    type: bool
+    default: True
+- disable_extract_anon_namespaces:
+    help: Disable to include members of anonymous namespaces in documentation
+    type: bool
+    default: True
+- hide_scope_names:
+    help: Enable to hide full class and namescape scopes in documentaiton
+    type: bool
+    default: False
+- hide_compound_reference:
+    help: Enable to hide class reference etc. on documentation pages
+    type: bool
+    default: False
+- disable_show_headerfile:
+    help: Disable to show which header file to include to use a class
+    type: bool
+    default: True
+- disable_show_include_files:
+    help: Disable to show which files a file includes in its documentation
+    type: bool
+    default: True
+- disable_show_grounded_member_include:
+    help: Disable to show which file to include to use a group member
+    type: bool
+    default: True
+
+# Configuration options related to warning and progress messages
+- disable_doxygen_warnings:
+    help: Disable generating warning messages to stderr
+    type: bool
+    default: true
+
+
+# Configuration options related to the input files
+- input:
+    help: Path to files/directories containing a project's documented source files
+    type: Path
+    default: None
+- input_encoding:
+    help: Expected chracter encoding of the source files (output will be UTF-8, see https://www.gnu.org/software/libiconv/ for possible input encodings)
+    type: str
+    # very long list TODO choices:
+    default: UTF-8
+- input_file_encoding:
+    help: List of patterns to specify encodings for individual (groups of) files (pattern=encoding (like *.php=ISO-8859-1))
+    type: list
+    default: None
+- exclude_symlinks:
+    help: Enable to exclude files that are symlinks from the documentation
+    type: bool
+    default: False
+
+# Configuration options related to source browsing
+- disable_source_browser:
+    help: Disable generating a list of source files to cross-reference in documentation
+    type: bool
+    default: True
+- inline_sources:
+    help: Enable to inline function bodies, macros, enums or list initialized variables directly into documentation
+    type: bool
+    default: False
+- disable_strip_code_comments:
+    help: Disable to remove "special command blocks" from source code fragments in documentation
+    type: bool
+    default: True
+- disable_referenced_by_relation:
+    help: Disable to list all documented functions referencing it for each documented entity
+    type: bool
+    default: True
+- disable_references_relation:
+    help: Disable to list all documented entities called/used for each documented function
+    type: bool
+    default: True
+
+# Configuration options related to the HTML output
+- html_header:
+    help: Path to an optional custom HTML header (use "doxygen -w html new_header.html new_footer.html new_stylesheet.css" to generate a template)
+    type: Path
+    default: None
+- html_footer:
+    help: Path to an optional custom HTML footer (use "doxygen -w html new_header.html new_footer.html new_stylesheet.css" to generate a template)
+    type: Path
+    default: None
+- html_extra_stylesheet:
+    help: Path to an optional additional stylesheet that can override parts of the main stylesheet
+    type: Path
+    default: None
 - doxygen_html_theme:
     help: Whether to use a custom CSS theme for doxygen html output (by default "Doxygen Awesome" for a more modern look) or the standard (arguably more dated-looking) theme.
     type: str
     choices: [standard, doxygen-awesome]
     default: doxygen-awesome
+
+# Configuration options related to the XML output
+- disable_generate_doxygen_xml:
+    help: Disable generating XML files capturing the projects structure and documentation (only when not using Sphinx)
+    type: bool
+    default: True
+
+# Configuration options related to the preprocessor
+- disable_macro_expansion:
+    help: Disable expanding macros (instead only conditional compilation is performed)
+    type: bool
+    default: True
+- disable_skip_function_macros:
+    help: Disable removing all references to function-like macros (one-liner, all upper-case, not semicolon at end) (mostly used for boiler-plate and could confuse parser)
+    type: bool
+    default: True
+
+# Configuration options related to diagram generator tools
