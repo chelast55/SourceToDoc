@@ -103,9 +103,10 @@ class Converter[T]:
         code = file.read_text()
         result = self.convert_string(code, replace)
         if result != code:
+            print(f"\"{file}\" was updated")
             file.write_text(result)
         else:
-            print(f"{file} is not changed.")
+            print(f"\"{file}\" has not changed")
 
     def convert_files(self, dir: Path, replace: Replace, regex: Optional[str] = None):
         """
