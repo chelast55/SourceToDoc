@@ -162,7 +162,7 @@
 - input:
     help: Path to files/directories containing a project's documented source files
     type: Path
-    default: None
+    default:
 - input_encoding:
     help: Expected chracter encoding of the source files (output will be UTF-8, see https://www.gnu.org/software/libiconv/ for possible input encodings)
     type: str
@@ -171,7 +171,7 @@
 - input_file_encoding:
     help: List of patterns to specify encodings for individual (groups of) files (pattern=encoding (like *.php=ISO-8859-1))
     type: list
-    default: None
+    default:
 - exclude_symlinks:
     help: Enable to exclude files that are symlinks from the documentation
     type: bool
@@ -203,15 +203,15 @@
 - html_header:
     help: Path to an optional custom HTML header (use "doxygen -w html new_header.html new_footer.html new_stylesheet.css" to generate a template)
     type: Path
-    default: None
+    default:
 - html_footer:
     help: Path to an optional custom HTML footer (use "doxygen -w html new_header.html new_footer.html new_stylesheet.css" to generate a template)
     type: Path
-    default: None
+    default:
 - html_extra_stylesheet:
     help: Path to an optional additional stylesheet that can override parts of the main stylesheet
     type: Path
-    default: None
+    default:
 - doxygen_html_theme:
     help: Whether to use a custom CSS theme for doxygen html output (by default "Doxygen Awesome" for a more modern look) or the standard (arguably more dated-looking) theme.
     type: str

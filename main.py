@@ -135,7 +135,7 @@ if __name__ == "__main__":
         # Configuration options related to the input files
         INPUT                   = {str(project_path).replace('\\', '\\\\') if (args.input is None) else args.input}
         INPUT_ENCODING          = {args.input_encoding}
-        INPUT_FILE_ENCODING     = {args.input_file_encoding}
+        INPUT_FILE_ENCODING     = {"" if (args.input_file_encoding is None) else args.input_file_encoding}
         FILE_PATTERNS           =    *.c \
                                      *.cc \
                                      *.cxx \
@@ -219,10 +219,10 @@ if __name__ == "__main__":
         GENERATE_HTML         = {"YES" if doxygen_html_required else "NO"}
         HTML_OUTPUT           = {"" if doxygen_html_required else "html"}
         HTML_FILE_EXTENSION   = html
-        HTML_HEADER           = {str(args.html_header).replace('\\', '\\\\')}
-        HTML_FOOTER           = {str(args.html_footer).replace('\\', '\\\\')}
+        HTML_HEADER           = {"" if (args.html_header is None) else str(args.html_header).replace('\\', '\\\\')}
+        HTML_FOOTER           = {"" if (args.html_footer is None) else str(args.html_footer).replace('\\', '\\\\')}
         HTML_STYLESHEET       = {str(stylesheet_path).replace('\\', '\\\\')}
-        HTML_EXTRA_STYLESHEET = {str(args.html_extra_stylesheet).replace('\\', '\\\\')}
+        HTML_EXTRA_STYLESHEET = {"" if (args.html_extra_stylesheet is None) else str(args.html_extra_stylesheet).replace('\\', '\\\\')}
         
         # Configuration options related to the LaTeX output
         GENERATE_LATEX         = NO
