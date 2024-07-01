@@ -331,3 +331,7 @@ if __name__ == "__main__":
         # run sphinx again
         # maybe some cleanup is necessary?
         #system(f"sphinx-build -b html . {sphinx_path}")
+    
+    # coverage
+    if args.create_coverage_report == True and args.coverage_type == "meson":
+        pass

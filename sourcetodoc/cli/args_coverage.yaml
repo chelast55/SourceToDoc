@@ -1,0 +1,9 @@
+- create_coverage_report:
+    help: 
+    type: bool
+    default: True
+- coverage_type:
+    help:
+    type: str
+    choices: [meson, tbd]
+    default: meson
