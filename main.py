@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     # Paths
     generated_docs_main_path: Path = Path("out")  # Path conf.py will be placed, everything Sphinx related is rel. to it
-    project_path: Path = generated_docs_main_path.parent.absolute() / Path(args.project_name)
+    project_path: Path = generated_docs_main_path.parent.absolute() / Path(args.project_name) if (args.input is None) else args.input
     doxygen_awesome_submodule_path: Path \
         = generated_docs_main_path.parent.absolute() / Path("submodules") / Path("doxygen-awesome-css")
 
@@ -143,7 +143,7 @@ if __name__ == "__main__":
         WARN_LOGFILE           = {str(warning_log_file_path).replace('\\', '\\\\')}
         
         # Configuration options related to the input files
-        INPUT                   = {str(project_path).replace('\\', '\\\\') if (args.input is None) else args.input}
+        INPUT                   = {str(project_path).replace('\\', '\\\\')}
         INPUT_ENCODING          = {args.input_encoding}
         INPUT_FILE_ENCODING     = {"" if (args.input_file_encoding is None) else args.input_file_encoding}
         FILE_PATTERNS           =    *.c \
