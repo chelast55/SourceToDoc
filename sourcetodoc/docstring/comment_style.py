@@ -260,7 +260,7 @@ class CommentStyler:
             case _BlockComment(start_delimiter, end_delimiter, False):
                 return self._construct_block(start_delimiter, end_delimiter, " * ", subsequent_indentation)
             case _BlockComment(start_delimiter, end_delimiter):
-                return self._construct_block_inline(start_delimiter, end_delimiter)
+                return self._construct_block_inline(start_delimiter, end_delimiter, subsequent_indentation)
     
     @classmethod
     def _get_style_by_delimiter(
@@ -304,7 +304,7 @@ class CommentStyler:
         found_styles: set[CommentStyle] = set()
         lines = text.splitlines()
         for i in range(len(lines)):
-            lines[i], style = cls._get_from_inline_line(lines[i])
+            lines[i], style = cls._get_from_inline_line(lines[i].strip())
             found_styles.add(style)
 
         content = dedent("\n".join(lines))
@@ -360,12 +360,16 @@ class CommentStyler:
         content = "".join(lines[start_index:end_index])
         return dedent(content)
 
-    def _construct_line(self, deco_prefix: str, subsequent_indentation: str) -> str:
+    def _construct_line(
+            self,
+            start_delimiter: str,
+            subsequent_indentation: str
+        ) -> str:
         lines = self.content.splitlines(keepends=True)
 
-        lines[0] = deco_prefix + lines[0]
+        lines[0] = start_delimiter + lines[0]
         for i in range(1, len(lines)):
-            lines[i] = subsequent_indentation + deco_prefix + lines[i]
+            lines[i] = subsequent_indentation + start_delimiter + lines[i]
         return "".join(lines)
 
     def _construct_block(
@@ -382,5 +386,15 @@ class CommentStyler:
             middle_indented,
             ("\n", subsequent_indentation, " ", end_delimiter)))
 
-    def _construct_block_inline(self, start_delimiter: str, end_delimiter: str) -> str:
-        return "\n".join(start_delimiter + " " + e + " " + end_delimiter for e in self.content.splitlines())
+    def _construct_block_inline(
+            self,
+            start_delimiter: str,
+            end_delimiter: str,
+            subsequent_indentation: str
+        ) -> str:
+        lines = self.content.splitlines()
+
+        lines[0] = start_delimiter + " " + lines[0] + " " + end_delimiter
+        for i in range(1, len(lines)):
+            lines[i] = subsequent_indentation + start_delimiter + " " + lines[i] + " " + end_delimiter
+        return "\n".join(lines)
