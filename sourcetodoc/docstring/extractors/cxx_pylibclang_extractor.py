@@ -18,6 +18,7 @@ class CXXPylibclangExtractor(CXXExtractor):
         C.CXCursorKind.CXCursor_CXXAccessSpecifier: CXXType.ACCESS_SPECIFIER,
         C.CXCursorKind.CXCursor_ClassDecl: CXXType.CLASS,
         C.CXCursorKind.CXCursor_EnumDecl: CXXType.ENUM,
+        C.CXCursorKind.CXCursor_EnumConstantDecl: CXXType.ENUM_CONSTANT,
         C.CXCursorKind.CXCursor_FunctionDecl: CXXType.FUNCTION,
         C.CXCursorKind.CXCursor_FunctionTemplate: CXXType.FUNCTION_TEMPLATE,
         C.CXCursorKind.CXCursor_VarDecl: CXXType.VARIABLE,

@@ -34,6 +34,11 @@ multi_line_block_comment_actual = """\
 /* text
  */"""
 
+comment_after_member = """\
+int a; /**< a */
+       /**< b */
+"""
+
 
 @pytest.mark.parametrize(
     "input,expected",
@@ -42,6 +47,7 @@ multi_line_block_comment_actual = """\
         (single_line_block_comment, "/* text */"),
         (multi_line_line_comment, multi_line_line_comment_actual),
         (multi_line_block_comment, multi_line_block_comment_actual),
+        (comment_after_member, "/**< a */\n       /**< b */"),
     ],
 )
 def test_extract_one_comment(extractor: CExtractor, input: str, expected: str):

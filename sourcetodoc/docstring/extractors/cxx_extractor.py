@@ -10,6 +10,7 @@ class CXXType(Enum):
     ACCESS_SPECIFIER = auto()
     CLASS = auto()
     ENUM = auto()
+    ENUM_CONSTANT = auto()
     FUNCTION = auto()
     FUNCTION_TEMPLATE = auto()
     VARIABLE = auto()

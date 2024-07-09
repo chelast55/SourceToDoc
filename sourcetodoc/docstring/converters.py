@@ -19,20 +19,20 @@ _c_regex = r".*\.[ch]"
 _cxx_regex = r".*\.(c(pp|xx|c)|h(pp|xx|h)?)"
 
 
-def c_comment_style_converter(style: CommentStyle) -> Converter[CType]:
+def c_comment_style_converter(style: CommentStyle, only_after_member: bool) -> Converter[CType]:
     """Changes the style of comments in C source files to `style`."""
     return Converter[CType](
         CPylibclangExtractor(),
-        CommentStyleConversion(style), 
+        CommentStyleConversion(style, only_after_member), 
         _c_regex
     )
 
 
-def cxx_comment_style_converter(style: CommentStyle) -> Converter[CXXType]:
+def cxx_comment_style_converter(style: CommentStyle, only_after_member: bool) -> Converter[CXXType]:
     """Changes the style of comments in C++ source files to `style`."""
     return Converter[CXXType](
         CXXPylibclangExtractor(),
-        CommentStyleConversion(style), 
+        CommentStyleConversion(style, only_after_member), 
         _cxx_regex
     )
 

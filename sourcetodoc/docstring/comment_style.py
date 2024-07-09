@@ -81,7 +81,7 @@ class CommentStyle(Enum):
     ```
     """
 
-    JAVADOC_BLOCK_MEMBER_INLINE = _BlockComment("/*<", "*/", True)
+    JAVADOC_BLOCK_MEMBER_INLINE = _BlockComment("/**<", "*/", True)
     """
     ```
     /**< text */
@@ -160,7 +160,6 @@ class CommentStyle(Enum):
             CommentStyle.QT_LINE_MEMBER,
         }
 
-
 @dataclass(frozen=True)
 class CommentStyler:
     """
@@ -177,10 +176,10 @@ class CommentStyler:
     style: CommentStyle
 
     _C_LINE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
-        r"//.*(?:\n(?: \t)*//.*)*"
+        r"//.*(?:\n(?: |\t)*//.*)*"
     )
     _C_BLOCK_INLINE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
-        r"/\*.*?\*/(?:(?: \t)*\n(?: \t)*/\*.*?\*/)*"
+        r"/\*.*?\*/(?:(?: |\t)*\n(?: |\t)*/\*.*?\*/)*"
     )
     _C_BLOCK_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
         r"/\*(?:.|\n)*?\*/"
@@ -269,6 +268,9 @@ class CommentStyler:
         text_stripped: str,
         candidates: Iterable[CommentStyle]
     ) -> CommentStyle:
+        """
+        Gets the style by checking the prefix (and suffix) of `candidates` on `text_stripped`.
+        """
         for candidate in candidates:
             c = candidate.value
             if text_stripped.startswith(c.start_delimiter):

@@ -29,6 +29,10 @@
     help: Specifies the comment style to convert into
     type: str
     subparser: comment
+- only_after_member:
+    help: If set, only consider single line comments after members
+    type: bool
+    subparser: comment
 - openai_base_url:
     help: base_url for the OpenAI API
     type: str

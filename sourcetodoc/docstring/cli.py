@@ -73,13 +73,15 @@ def _get_converter(**kwargs: str) -> Optional[Converter[Any]]:
     arg_helper = _ArgumentHelper(**kwargs)
     match kwargs["converter"]:
         case _ConverterNames.C_COMMENT_STYLE:
-            style = arg_helper.get_style()
-            if style is not None:
-                converter = c_comment_style_converter(style)
+            result = arg_helper.get_style_and_only_after_member()
+            if result is not None:
+                style, only_after_member = result
+                converter = c_comment_style_converter(style, only_after_member)
         case _ConverterNames.CXX_COMMENT_STYLE:
-            style = arg_helper.get_style()
-            if style is not None:
-                converter = cxx_comment_style_converter(style)
+            result = arg_helper.get_style_and_only_after_member()
+            if result is not None:
+                style, only_after_member = result
+                converter = cxx_comment_style_converter(style, only_after_member)
         case _ConverterNames.C_FUNCTION_COMMENT_LLM:
             llm = arg_helper.get_llm()
             if llm is not None:
@@ -122,19 +124,21 @@ class _ArgumentHelper:
         self.kwargs = kwargs
         self.messages: list[str] = []
     
-    def get_style(self) -> Optional[CommentStyle]:
-        self._check_args_present("style")
+    def get_style_and_only_after_member(self) -> Optional[tuple[CommentStyle, bool]]:
+        self._check_args_present("style", "only_after_member")
 
-        value = self.kwargs["style"]
-        if value is None:
+        style = self.kwargs["style"]
+        if style is None:
             self._add_arg_missing_message(f"style")
 
-        if value not in _style_map:
+        if style not in _style_map:
             choices = self.__class__._repr_per_line(_style_map)
             self._add_message(f"Choices for --style:\n{choices}")
+        
+        only_after_member = self.kwargs["only_after_member"]
 
         if not self.has_missing_args():
-            return _style_map[value] # type: ignore
+            return _style_map[style], only_after_member # type: ignore
 
     def get_llm(self) -> Optional[LLM]:
         self._check_args_present("openai_base_url", "openai_api_key", "llm_model")
