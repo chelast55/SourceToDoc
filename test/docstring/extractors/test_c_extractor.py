@@ -1,12 +1,12 @@
 import pytest
 
 from sourcetodoc.docstring.extractors.c_extractor import CExtractor
-from sourcetodoc.docstring.extractors.c_pylibclang_extractor import CPylibclangExtractor
+from sourcetodoc.docstring.extractors.c_libclang_extractor import CLibclangExtractor
 
 
 @pytest.fixture
 def extractor() -> CExtractor:
-    return CPylibclangExtractor()
+    return CLibclangExtractor()
 
 
 single_line_line_comment = """\
