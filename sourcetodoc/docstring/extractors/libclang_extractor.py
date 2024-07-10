@@ -8,7 +8,7 @@ from ..range import Range
 
 
 class LibclangExtractor[T](Extractor[T]):
-    """Extracts comments with pylibclang."""
+    """Extracts comments with libclang."""
 
     def __init__(
             self,
