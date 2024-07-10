@@ -12,8 +12,6 @@ def main() -> None:
         case "comment":
             comment(**vars(args))
         case _:
-            if args.converter is not None:
-                comment(**vars(args))
             default(args)
 
 
