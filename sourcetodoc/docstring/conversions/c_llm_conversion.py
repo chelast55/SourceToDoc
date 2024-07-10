@@ -51,4 +51,4 @@ class CLLMConversion(Conversion[CType]):
                 CommentStyle.JAVADOC_BLOCK
             )
         else:
-            return ConvUnsupported("Comment is not attached to a C")
+            return ConvUnsupported("Comment is not attached to a C function")
