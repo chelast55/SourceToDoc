@@ -3,12 +3,22 @@ from pathlib import Path
 from argparse import Namespace
 from typing import Optional
 
+from sourcetodoc.docstring.cli import comment
 from sourcetodoc.helpers import delete_directory_if_exists
 from sourcetodoc.cli.ConfiguredParser import ConfiguredParser
 
-if __name__ == "__main__":
+def main() -> None:
     args: Namespace = ConfiguredParser().parse_args()
+    match args.subparser:
+        case "comment":
+            comment(**vars(args))
+        case _:
+            if args.converter is not None:
+                comment(**vars(args))
+            default(args)
 
+
+def default(args: Namespace) -> None:
     html_theme: str = "sphinx_rtd_theme"
     exhale_root_file_name: str = f"root_{args.project_name}"
 
@@ -445,3 +455,7 @@ if __name__ == "__main__":
         # run sphinx again
         # maybe some cleanup is necessary?
         #system(f"sphinx-build -b html . {sphinx_path}")
+
+
+if __name__ == "__main__":
+    main()
