@@ -4,6 +4,7 @@ from argparse import Namespace
 
 from sourcetodoc.helpers import delete_directory_if_exists
 from sourcetodoc.cli.ConfiguredParser import ConfiguredParser
+from sourcetodoc.testcoverage.cover_meson import *
 
 if __name__ == "__main__":
     args: Namespace = ConfiguredParser().parse_args()
@@ -334,4 +335,14 @@ if __name__ == "__main__":
     
     # coverage
     if args.create_coverage_report == True and args.coverage_type == "meson":
-        pass
+        meson_build_location: Path = project_path
+        build_folder_name: Path = Path("build")
+        meson_setup_args: list = []
+        if args.meson_build_location is not None:
+            meson_build_location = Path(args.meson_build_location)
+        if args.build_folder_name is not None:
+            build_folder_name = args.build_folder_name
+        if args.meson_setup_args is not None:
+            # TODO: str to list or change meson_setup_args in yaml to list if possible
+            pass
+        run_meson(meson_build_location, build_folder_name, meson_setup_args)

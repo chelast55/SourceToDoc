@@ -165,3 +165,5 @@ coin/
 doxygen/
 sphinx/
 exhale/
+
+out/

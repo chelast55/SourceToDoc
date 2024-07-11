@@ -7,3 +7,12 @@
     type: str
     choices: [meson, tbd]
     default: meson
+- meson_build_location:
+    help:
+    type: str
+- build_folder_name:
+    help:
+    type: str
+- meson_setup_args:
+    help:
+    type: str
