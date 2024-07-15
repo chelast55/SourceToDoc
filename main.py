@@ -280,8 +280,9 @@ if __name__ == "__main__":
         DIRECTORY_GRAPH = YES
         DOT_IMAGE_FORMAT = svg
         INTERACTIVE_SVG = YES
-        DOT_PATH = {str(graphviz_dot_path).replace('\\', '\\\\') if not graphviz_dot_path is None else ""}
+        DOT_PATH = #{str(graphviz_dot_path).replace('\\', '\\\\') if not graphviz_dot_path is None else ""}
         DOT_MULTI_TARGETS      = YES
+        DOT_GRAPH_MAX_NODES = 100
         HTML_COLORSTYLE = {"DARK" if not (args.doxygen_html_theme == "doxygen_awesome") else "LIGHT"}  # required with Doxygen >= 1.9.5
     """
 
@@ -401,17 +402,19 @@ if __name__ == "__main__":
     
     """
 
+    print("\nComment Conversion:\n")
     # docstring preprocessing TODO: ensure, that there is some kind of standard case, where docstrings ARE processed
     match args.subparser:
         case "comment":
             comment(**vars(args))
 
+    print("\nDocumentation Generation:\n")
     # delete artifacts from prior builds and ensure paths exist TODO: move to end as cleenup, when debugging is done
     delete_directory_if_exists(doc_path_abs)
     doc_path_abs.mkdir(parents=True, exist_ok=True)
     doxygen_path.mkdir(parents=True, exist_ok=True)
     if not graphviz_dot_path.exists():
-        raise OSError("dot.exe not found at given path")
+        pass#raise OSError("dot.exe not found at given path")
     chdir(generated_docs_main_path)
 
     if args.apidoc_toolchain == "doxygen-only":
@@ -454,6 +457,7 @@ if __name__ == "__main__":
         # maybe some cleanup is necessary?
         #system(f"sphinx-build -b html . {sphinx_path}")
     
+    print("\nTest Coverage Evaluation:\n")
     # coverage
     if args.create_coverage_report == True and args.coverage_type == "meson":
         meson_build_location: Path = project_path
