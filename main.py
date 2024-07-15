@@ -43,7 +43,7 @@ def default(args: Namespace) -> None:
     exhale_containment_path_abs: Path = doc_source_path_abs / Path("exhale")
     exhale_include_path: Path = doc_path / exhale_containment_path
     graphviz_dot_path: Path = Path(r"C:\Program Files\Graphviz\bin\dot.exe")  # TODO: this needs to be addressed
-    stylesheet_path: Path = doxygen_awesome_submodule_path / Path("doxygen-awesome.css")
+    stylesheet_path: Path = doxygen_awesome_submodule_path / Path("doxygen-awesome.css") if (args.doxygen_html_theme == "doxygen-awesome") else None
 
     # conditions
     doxygen_xml_required: bool = not args.apidoc_toolchain == "doxygen-only"
@@ -241,7 +241,7 @@ def default(args: Namespace) -> None:
         HTML_FILE_EXTENSION   = .html
         HTML_HEADER           = {"" if (args.html_header is None) else str(args.html_header).replace('\\', '\\\\')}
         HTML_FOOTER           = {"" if (args.html_footer is None) else str(args.html_footer).replace('\\', '\\\\')}
-        HTML_STYLESHEET       = {str(stylesheet_path).replace('\\', '\\\\')}
+        HTML_STYLESHEET       = {str(stylesheet_path).replace('\\', '\\\\') if (stylesheet_path is not None) else ""}
         HTML_EXTRA_STYLESHEET = {"" if (args.html_extra_stylesheet is None) else str(args.html_extra_stylesheet).replace('\\', '\\\\')}
         
         # Configuration options related to the LaTeX output
@@ -289,7 +289,7 @@ def default(args: Namespace) -> None:
         INTERACTIVE_SVG = YES
         DOT_PATH = {str(graphviz_dot_path).replace('\\', '\\\\') if not graphviz_dot_path is None else ""}
         DOT_MULTI_TARGETS      = YES
-        HTML_COLORSTYLE = LIGHT  # required with Doxygen >= 1.9.5
+        HTML_COLORSTYLE = {"DARK" if not (args.doxygen_html_theme == "doxygen_awesome") else "LIGHT"}  # required with Doxygen >= 1.9.5
     """
 
     INDEX_RST_CONTENT: str = f"""
