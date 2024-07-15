@@ -6,17 +6,12 @@ from typing import Optional
 from sourcetodoc.docstring.cli import comment
 from sourcetodoc.helpers import delete_directory_if_exists
 from sourcetodoc.cli.ConfiguredParser import ConfiguredParser
+from sourcetodoc.testcoverage.cover_meson import *
 
-def main() -> None:
+
+if __name__ == "__main__":
     args: Namespace = ConfiguredParser().parse_args()
-    match args.subparser:
-        case "comment":
-            comment(**vars(args))
-        case _:
-            default(args)
 
-
-def default(args: Namespace) -> None:
     html_theme: str = "sphinx_rtd_theme"
     exhale_root_file_name: str = f"root_{args.project_name}"
 
@@ -406,6 +401,11 @@ def default(args: Namespace) -> None:
     
     """
 
+    # docstring preprocessing TODO: ensure, that there is some kind of standard case, where docstrings ARE processed
+    match args.subparser:
+        case "comment":
+            comment(**vars(args))
+
     # delete artifacts from prior builds and ensure paths exist TODO: move to end as cleenup, when debugging is done
     delete_directory_if_exists(doc_path_abs)
     doc_path_abs.mkdir(parents=True, exist_ok=True)
@@ -453,7 +453,17 @@ def default(args: Namespace) -> None:
         # run sphinx again
         # maybe some cleanup is necessary?
         #system(f"sphinx-build -b html . {sphinx_path}")
-
-
-if __name__ == "__main__":
-    main()
+    
+    # coverage
+    if args.create_coverage_report == True and args.coverage_type == "meson":
+        meson_build_location: Path = project_path
+        build_folder_name: Path = Path("build")
+        meson_setup_args: list = []
+        if args.meson_build_location is not None:
+            meson_build_location = Path(args.meson_build_location)
+        if args.build_folder_name is not None:
+            build_folder_name = args.build_folder_name
+        if args.meson_setup_args is not None:
+            # TODO: str to list or change meson_setup_args in yaml to list if possible
+            pass
+        run_meson(meson_build_location, build_folder_name, meson_setup_args)

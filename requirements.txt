@@ -1,3 +1,6 @@
 pytest==8.2.2
 libclang==18.1.1
 openai==1.35.7
+pyaml==24.4.0
+lcov==1.15.5a0
+gcovr==7.2
