@@ -1,36 +1,34 @@
 from typing import Mapping, override
 
-import pylibclang._C as C
-from pylibclang.cindex import (Cursor, CursorKind,  # type: ignore
-                               TranslationUnit)
+from clang.cindex import Cursor, CursorKind, TranslationUnit
 
 from .cxx_extractor import Comment, CXXExtractor, CXXType
-from .pylibclang_extractor import PylibclangExtractor
+from .libclang_extractor import LibclangExtractor
 
 
-class CXXPylibclangExtractor(CXXExtractor):
+class CXXLibclangExtractor(CXXExtractor):
     """
     Extracts comments from C++ source code that are associated with
     symbols.
     """
-    type_map: Mapping[C.CXCursorKind, CXXType] = {
-        C.CXCursorKind.CXCursor_Destructor: CXXType.DESTRUCTOR,
-        C.CXCursorKind.CXCursor_CXXAccessSpecifier: CXXType.ACCESS_SPECIFIER,
-        C.CXCursorKind.CXCursor_ClassDecl: CXXType.CLASS,
-        C.CXCursorKind.CXCursor_EnumDecl: CXXType.ENUM,
-        C.CXCursorKind.CXCursor_EnumConstantDecl: CXXType.ENUM_CONSTANT,
-        C.CXCursorKind.CXCursor_FunctionDecl: CXXType.FUNCTION,
-        C.CXCursorKind.CXCursor_FunctionTemplate: CXXType.FUNCTION_TEMPLATE,
-        C.CXCursorKind.CXCursor_VarDecl: CXXType.VARIABLE,
-        C.CXCursorKind.CXCursor_Constructor: CXXType.CONSTRUCTOR,
-        C.CXCursorKind.CXCursor_CXXMethod: CXXType.METHOD,
-        C.CXCursorKind.CXCursor_Namespace: CXXType.NAMESPACE,
-        C.CXCursorKind.CXCursor_ClassTemplate: CXXType.CLASS_TEMPLATE,
-        C.CXCursorKind.CXCursor_FieldDecl: CXXType.FIELD,
+    type_map: Mapping[CursorKind, CXXType] = {
+        CursorKind.DESTRUCTOR: CXXType.DESTRUCTOR,
+        CursorKind.CXX_ACCESS_SPEC_DECL: CXXType.ACCESS_SPECIFIER,
+        CursorKind.CLASS_DECL: CXXType.CLASS,
+        CursorKind.ENUM_DECL: CXXType.ENUM,
+        CursorKind.ENUM_CONSTANT_DECL: CXXType.ENUM_CONSTANT,
+        CursorKind.FUNCTION_DECL: CXXType.FUNCTION,
+        CursorKind.FUNCTION_TEMPLATE: CXXType.FUNCTION_TEMPLATE,
+        CursorKind.VAR_DECL: CXXType.VARIABLE,
+        CursorKind.CONSTRUCTOR: CXXType.CONSTRUCTOR,
+        CursorKind.CXX_METHOD: CXXType.METHOD,
+        CursorKind.NAMESPACE: CXXType.NAMESPACE,
+        CursorKind.CLASS_TEMPLATE: CXXType.CLASS_TEMPLATE,
+        CursorKind.FIELD_DECL: CXXType.FIELD,
     }
 
     def __init__(self) -> None:
-        self.extractor = PylibclangExtractor(
+        self.extractor = LibclangExtractor(
             self.__class__._translation_unit_from_source,
             self.__class__._get_type
         )
