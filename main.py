@@ -1,6 +1,7 @@
 from os import chdir, system
 from pathlib import Path
 from argparse import Namespace
+from typing import Optional
 
 from sourcetodoc.docstring.cli import comment
 from sourcetodoc.helpers import delete_directory_if_exists
@@ -23,7 +24,7 @@ def default(args: Namespace) -> None:
 
     # Paths
     generated_docs_main_path: Path = Path("out")  # Path conf.py will be placed, everything Sphinx related is rel. to it
-    project_path: Path = generated_docs_main_path.parent.absolute() / Path(args.project_name)
+    project_path: Path = generated_docs_main_path.parent.absolute() / Path(args.project_name) if (args.input is None) else args.input
     doxygen_awesome_submodule_path: Path \
         = generated_docs_main_path.parent.absolute() / Path("submodules") / Path("doxygen-awesome-css")
 
@@ -32,8 +33,9 @@ def default(args: Namespace) -> None:
     doc_source_path: Path = doc_path / Path("src")
     doc_source_path_abs: Path = doc_path_abs / Path("src")
     doxygen_path: Path = Path()
+    warning_log_file_path: Path = doxygen_path / Path("doxygen_warnings.txt")
     if args.apidoc_toolchain == "doxygen-only":
-        doxygen_path = doc_path
+        doxygen_path = doc_path_abs
     elif args.apidoc_toolchain == "sphinx-based":
         doxygen_path = doc_source_path_abs / Path("doxygen")
     sphinx_path: Path = doc_path_abs  # Sphinx (or rather its index.html) is the "main artifact"
@@ -42,6 +44,19 @@ def default(args: Namespace) -> None:
     exhale_include_path: Path = doc_path / exhale_containment_path
     graphviz_dot_path: Path = Path(r"C:\Program Files\Graphviz\bin\dot.exe")  # TODO: this needs to be addressed
     stylesheet_path: Path = doxygen_awesome_submodule_path / Path("doxygen-awesome.css")
+
+    # conditions
+    doxygen_xml_required: bool = not args.apidoc_toolchain == "doxygen-only"
+    doxygen_html_required: bool = args.apidoc_toolchain == "doxygen-only"
+
+    # locate README
+    readme_file_path: Optional[Path] = None
+    potential_readme_files: list[Path] = [file for file in project_path.glob("**/*") if file.is_file()]
+    for potential_readme_file in potential_readme_files:
+        if potential_readme_file.is_file() \
+        and "READ" in str(potential_readme_file).upper() and "ME" in str(potential_readme_file).upper():
+            readme_file_path = potential_readme_file
+            break
 
     # file contents
     DOXYFILE_CONTENT: str = f"""
@@ -71,54 +86,163 @@ def default(args: Namespace) -> None:
                                  the
         ALWAYS_DETAILED_SEC    = {"YES" if args.always_detailed_sec else "NO"}
         INLINE_INHERITED_MEMB  = {"YES" if args.inline_inherited_memb else "NO"}
-        FULL_PATH_NAMES        = {"YES" if args.no_full_path_names else "NO"}
-        STRIP_FROM_PATH        = #{str(project_path).replace('\\', '\\\\')}
-        STRIP_FROM_INC_PATH    =
+        FULL_PATH_NAMES        = {"YES" if args.disable_full_path_names else "NO"}
+        FULL_PATH_NAMES        = {"YES" if args.disable_full_path_names else "NO"}
+        STRIP_FROM_PATH        = {str(project_path).replace('\\', '\\\\')}
+        STRIP_FROM_INC_PATH    = 
         SHORT_NAMES            = NO
         JAVADOC_AUTOBRIEF      = NO
-        JAVADOC_BANNER         = NO
+        JAVADOC_BANNER         = YES
         QT_AUTOBRIEF           = NO
         MULTILINE_CPP_IS_BRIEF = NO
         PYTHON_DOCSTRING       = YES
         INHERIT_DOCS           = YES
-        SEPARATE_MEMBER_PAGES  = NO
-        TAB_SIZE               = 4
+        SEPARATE_MEMBER_PAGES  = {"YES" if args.separate_member_pages else "NO"}
+        TAB_SIZE               = {args.tab_size}
         ALIASES                =
-        OPTIMIZE_OUTPUT_FOR_C  = NO
+        OPTIMIZE_OUTPUT_FOR_C  = {"YES" if args.optimize_output_for_c else "NO"}
         OPTIMIZE_OUTPUT_JAVA   = NO
         OPTIMIZE_FOR_FORTRAN   = NO
         OPTIMIZE_OUTPUT_VHDL   = NO
         OPTIMIZE_OUTPUT_SLICE  = NO
-        EXTENSION_MAPPING      =
+        EXTENSION_MAPPING      = 
         MARKDOWN_SUPPORT       = YES
-        TOC_INCLUDE_HEADINGS   = 5
-        MARKDOWN_ID_STYLE      = DOXYGEN
+        TOC_INCLUDE_HEADINGS   = {args.toc_include_headings}
+        MARKDOWN_ID_STYLE      = {args.markdown_id_style}
         AUTOLINK_SUPPORT       = YES
-        BUILTIN_STL_SUPPORT    = NO
+        BUILTIN_STL_SUPPORT    = YES
         CPP_CLI_SUPPORT        = NO
-        SIP_SUPPORT            = NO
-        IDL_PROPERTY_SUPPORT   = YES
+        SIP_SUPPORT            = {"YES" if args.sip_support else "NO"}
+        IDL_PROPERTY_SUPPORT   = {"YES" if args.disable_idl_property_support else "NO"}
         DISTRIBUTE_GROUP_DOC   = NO
-        GROUP_NESTED_COMPOUNDS = NO
-        SUBGROUPING            = YES
-        INLINE_GROUPED_CLASSES = NO
-        INLINE_SIMPLE_STRUCTS  = NO
-        TYPEDEF_HIDES_STRUCT   = NO
-        LOOKUP_CACHE_SIZE      = 0
-        NUM_PROC_THREADS       = 1
-        TIMESTAMP              = NO
+        GROUP_NESTED_COMPOUNDS = {"YES" if args.group_nested_compounds else "NO"}
+        SUBGROUPING            = {"YES" if args.disable_subgrouping else "NO"}
+        INLINE_GROUPED_CLASSES = {"YES" if args.inline_grouped_classes else "NO"}
+        INLINE_SIMPLE_STRUCTS  = {"YES" if args.inline_simple_structs else "NO"}
+        TYPEDEF_HIDES_STRUCT   = {"YES" if args.typedef_hides_struct else "NO"}
+        LOOKUP_CACHE_SIZE      = {2 if args.small_lookup_cache else 9}
+        NUM_PROC_THREADS       = 0
+        TIMESTAMP              = {args.timestamp}
         
         # Build related configuration options
+        EXTRACT_ALL             = YES
+        EXTRACT_PRIVATE         = {"YES" if args.disable_extract_private else "NO"}
+        EXTRACT_PRIV_VIRTUAL    = {"YES" if args.disable_extract_private_virtual else "NO"}
+        EXTRACT_PACKAGE         = {"YES" if args.disable_extract_package else "NO"}
+        EXTRACT_STATIC          = {"YES" if args.disable_extract_static else "NO"}
+        EXTRACT_LOCAL_CLASSES   = {"YES" if args.disable_extract_local_classes else "NO"}
+        EXTRACT_LOCAL_METHODS   = NO
+        EXTRACT_ANON_NSPACES    = {"YES" if args.disable_extract_anon_namespaces else "NO"}
+        RESOLVE_UNNAMED_PARAMS  = YES
+        HIDE_FRIEND_COMPOUNDS   = YES
+        HIDE_IN_BODY_DOCS       = NO
+        INTERNAL_DOCS           = YES
+        CASE_SENSE_NAMES        = SYSTEM
+        HIDE_SCOPE_NAMES        = {"YES" if args.hide_scope_names else "NO"}
+        HIDE_COMPOUND_REFERENCE = {"YES" if args.hide_compound_reference else "NO"}
+        SHOW_HEADERFILE         = {"YES" if args.disable_show_headerfile else "NO"}
+        SHOW_INCLUDE_FILES      = {"YES" if args.disable_show_include_files else "NO"}
+        SHOW_GROUPED_MEMB_INC   = {"YES" if args.disable_show_grounded_member_include else "NO"}
         
         # Configuration options related to warning and progress messages
+        QUIET                  = NO
+        WARNINGS               = {"YES" if args.disable_doxygen_warnings else "NO"}
+        WARN_IF_DOC_ERROR      = YES
+        WARN_IF_INCOMPLETE_DOC = YES
+        WARN_AS_ERROR          = NO
+        WARN_LOGFILE           = {str(warning_log_file_path).replace('\\', '\\\\')}
         
         # Configuration options related to the input files
+        INPUT                   = {str(project_path).replace('\\', '\\\\')}
+        INPUT_ENCODING          = {args.input_encoding}
+        INPUT_FILE_ENCODING     = {"" if (args.input_file_encoding is None) else args.input_file_encoding}
+        FILE_PATTERNS           =    *.c \
+                                     *.cc \
+                                     *.cxx \
+                                     *.cxxm \
+                                     *.cpp \
+                                     *.cppm \
+                                     *.ccm \
+                                     *.c++ \
+                                     *.c++m \
+                                     *.java \
+                                     *.ii \
+                                     *.ixx \
+                                     *.ipp \
+                                     *.i++ \
+                                     *.inl \
+                                     *.idl \
+                                     *.ddl \
+                                     *.odl \
+                                     *.h \
+                                     *.hh \
+                                     *.hxx \
+                                     *.hpp \
+                                     *.h++ \
+                                     *.ixx \
+                                     *.l \
+                                     *.cs \
+                                     *.d \
+                                     *.php \
+                                     *.php4 \
+                                     *.php5 \
+                                     *.phtml \
+                                     *.inc \
+                                     *.m \
+                                     *.markdown \
+                                     *.md \
+                                     *.mm \
+                                     *.dox \
+                                     *.py \
+                                     *.pyw \
+                                     *.f90 \
+                                     *.f95 \
+                                     *.f03 \
+                                     *.f08 \
+                                     *.f18 \
+                                     *.f \
+                                     *.for \
+                                     *.vhd \
+                                     *.vhdl \
+                                     *.ucf \
+                                     *.qsf \
+                                     *.ice \
+                                     *.txt
+        RECURSIVE               = YES
+        EXCLUDE_SYMLINKS        = {"YES" if args.exclude_symlinks else "NO"}
+        #IMAGE_PATH             =
+        #INPUT_FILTER           =
+        #FILTER_PATTERNS        =
+        #FILTER_SOURCE_FILES    =
+        #FILTER_SOURCE_PATTERNS =
+        USE_MDFILE_AS_MAINPAGE  = {"" if (readme_file_path is None) else str(readme_file_path).replace('\\', '\\\\')}
         
         # Configuration options related to source browsing
+        SOURCE_BROWSER          = {"YES" if args.disable_source_browser else "NO"}
+        INLINE_SOURCES          = {"YES" if args.inline_sources else "NO"}
+        STRIP_CODE_COMMENTS     = {"YES" if args.disable_strip_code_comments else "NO"}
+        REFERENCED_BY_RELATION  = {"YES" if args.disable_referenced_by_relation else "NO"}
+        REFERENCES_RELATION     = {"YES" if args.disable_references_relation else "NO"}
+        #REFERENCES_LINK_SOURCE  =
+        #SOURCE_TOOLTIPS         =
+        #USE_HTAGS               =
+        #VERBATIM_HEADERS        =
+        #CLANG_ASSISTED_PARSING  =
+        #CLANG_ADD_INC_PATHS     =
+        #CLANG_OPTIONS           =
+        #CLANG_DATABASE_PATH     =
         
         # Configuration options related to the alphabetical class index
+        ALPHABETICAL_INDEX = YES
         
         # Configuration options related to the HTML output
+        GENERATE_HTML         = {"YES" if doxygen_html_required else "NO"}
+        HTML_OUTPUT           = {str(Path("")) if (args.apidoc_toolchain == "doxygen-only") else "html"}
+        HTML_FILE_EXTENSION   = .html
+        HTML_HEADER           = {"" if (args.html_header is None) else str(args.html_header).replace('\\', '\\\\')}
+        HTML_FOOTER           = {"" if (args.html_footer is None) else str(args.html_footer).replace('\\', '\\\\')}
+        HTML_STYLESHEET       = {str(stylesheet_path).replace('\\', '\\\\')}
+        HTML_EXTRA_STYLESHEET = {"" if (args.html_extra_stylesheet is None) else str(args.html_extra_stylesheet).replace('\\', '\\\\')}
         
         # Configuration options related to the LaTeX output
         GENERATE_LATEX         = NO
@@ -128,31 +252,24 @@ def default(args: Namespace) -> None:
         # Configuration options related to the man page output
         
         # Configuration options related to the XML output
+        GENERATE_XML            = {"YES" if (doxygen_xml_required or args.disable_generate_doxygen_xml) else "NO"}
+        XML_OUTPUT              = xml
+        XML_PROGRAMLISTING      = YES
+        XML_NS_MEMB_FILE_SCOPE  = YES
         
         # Configuration options related to the Perl module output
         
         # Configuration options related to the preprocessor
-        
-        # Configuration options related to external references
+        ENABLE_PREPROCESSING    = YES
+        MACRO_EXPANSION         = {"YES" if args.disable_macro_expansion else "NO"}
+        EXPAND_ONLY_PREDEF      = NO
+        SKIP_FUNCTION_MACROS    = {"YES" if args.disable_skip_function_macros else "NO"}
         
         # Configuration options related to diagram generator tools
 
-    
-        INPUT = {str(project_path).replace('\\', '\\\\')}
         # OPTIMIZE_OUTPUT_FOR_C  = YES
-        EXTRACT_ALL = YES
-        EXTRACT_PRIVATE = YES
-        EXTRACT_PRIV_VIRTUAL   = YES
-        EXTRACT_PACKAGE        = YES
-        EXTRACT_STATIC         = YES
-        EXTRACT_LOCAL_METHODS  = YES
-        EXTRACT_ANON_NSPACES   = YES
         SORT_MEMBERS_CTORS_1ST = YES
-        GENERATE_HTML = YES  # DEBUG
-        XML_PROGRAMLISTING = YES
-        XML_NS_MEMB_FILE_SCOPE = YES
         GENERATE_AUTOGEN_DEF   = YES # EXPERIMENTAL
-        MACRO_EXPANSION        = YES
         HIDE_UNDOC_RELATIONS   = YES
         GENERATE_TREEVIEW = YES
         HAVE_DOT = YES
@@ -172,10 +289,7 @@ def default(args: Namespace) -> None:
         INTERACTIVE_SVG = YES
         DOT_PATH = {str(graphviz_dot_path).replace('\\', '\\\\') if not graphviz_dot_path is None else ""}
         DOT_MULTI_TARGETS      = YES
-        HTML_STYLESHEET = {str(stylesheet_path).replace('\\', '\\\\')}
         HTML_COLORSTYLE = LIGHT  # required with Doxygen >= 1.9.5
-        GENERATE_LATEX = NO
-        RECURSIVE = YES
     """
 
     INDEX_RST_CONTENT: str = f"""
