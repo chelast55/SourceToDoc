@@ -13,4 +13,5 @@ gcovr~=7.2
 # meson (apt)
 # ninja-build (apt, might already be installed as a sideproduct of installing 'wheel' via pip) 
 # cmake (apt)
-# cmocka (libcmocka-dev per apt)git 
+# cmocka (libcmocka-dev per apt)
+# optional: some llm instance (e. g. ollama)

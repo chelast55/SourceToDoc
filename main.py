@@ -402,72 +402,74 @@ if __name__ == "__main__":
     
     """
 
-    print("\nComment Conversion:\n")
-    # docstring preprocessing TODO: ensure, that there is some kind of standard case, where docstrings ARE processed
+    # docstring preprocessing
     match args.subparser:
         case "comment":
+            print("\nComment Conversion:\n")
             comment(**vars(args))
 
-    print("\nDocumentation Generation:\n")
-    # delete artifacts from prior builds and ensure paths exist TODO: move to end as cleenup, when debugging is done
-    delete_directory_if_exists(doc_path_abs)
-    doc_path_abs.mkdir(parents=True, exist_ok=True)
-    doxygen_path.mkdir(parents=True, exist_ok=True)
-    if not graphviz_dot_path.exists():
-        pass#raise OSError("dot.exe not found at given path")
-    chdir(generated_docs_main_path)
+    if args.disable_doc_gen:
+        print("\nDocumentation Generation:\n")
+        # delete artifacts from prior builds and ensure paths exist TODO: move to end as cleenup, when debugging is done
+        delete_directory_if_exists(doc_path_abs)
+        doc_path_abs.mkdir(parents=True, exist_ok=True)
+        doxygen_path.mkdir(parents=True, exist_ok=True)
+        if not graphviz_dot_path.exists():
+            pass#raise OSError("dot.exe not found at given path") TODO: handle this properly
+        chdir(generated_docs_main_path)
 
-    if args.apidoc_toolchain == "doxygen-only":
-        # generate config file for Doxygen
-        with open(Path("Doxyfile.in"), "w+") as doxyfile:
-            doxyfile.write(DOXYFILE_CONTENT)
+        if args.apidoc_toolchain == "doxygen-only":
+            # generate config file for Doxygen
+            with open(Path("Doxyfile.in"), "w+") as doxyfile:
+                doxyfile.write(DOXYFILE_CONTENT)
 
-        # run doxygen
-        system("doxygen Doxyfile.in")
+            # run doxygen
+            system("doxygen Doxyfile.in")
 
-    elif args.apidoc_toolchain == "sphinx-based":
-        # this path is only here for reference and may be (partially) broken
-        print("!!! Disclaimer: Using sphinx-based is currently not recommended and may not work at all.")
+        elif args.apidoc_toolchain == "sphinx-based":
+            # this path is only here for reference and may be (partially) broken
+            print("!!! Disclaimer: Using sphinx-based is currently not recommended and may not work at all.")
 
-        sphinx_path.mkdir(parents=True, exist_ok=True)
-        exhale_containment_path_abs.mkdir(parents=True, exist_ok=True)
+            sphinx_path.mkdir(parents=True, exist_ok=True)
+            exhale_containment_path_abs.mkdir(parents=True, exist_ok=True)
 
-        # generate config files for sphinx+breathe+exhale+doxygen
-        with open(Path("index.rst"), "w+") as index_rst_file:
-            index_rst_file.write(INDEX_RST_CONTENT)
-        with open(Path("conf.py"), "w+") as conf_py_file:
-            conf_py_file.write(CONF_PY_CONTENT + CONF_PY_EXHALE_EXTENSION)
+            # generate config files for sphinx+breathe+exhale+doxygen
+            with open(Path("index.rst"), "w+") as index_rst_file:
+                index_rst_file.write(INDEX_RST_CONTENT)
+            with open(Path("conf.py"), "w+") as conf_py_file:
+                conf_py_file.write(CONF_PY_CONTENT + CONF_PY_EXHALE_EXTENSION)
 
-        # run sphinx+breath+exhale+doxygen
-        print("\n--------------------")
-        print("Generate sphinx...")
-        system(f"sphinx-build -b html . {sphinx_path}")
+            # run sphinx+breath+exhale+doxygen
+            print("\n--------------------")
+            print("Generate sphinx...")
+            system(f"sphinx-build -b html . {sphinx_path}")
 
-        # exhale output post processings
-        # TODO: implement
-        #delete_directory_if_exists(exhale_containment_path)  # DEBUG
-        #delete_directory_if_exists(sphinx_path / Path("doc"))  # DEBUG
-        #system(f"breathe-apidoc -o {exhale_containment_path} -m {str(doxygen_path / Path("xml"))}")  # DEBUG
+            # exhale output post processings
+            # TODO: implement
+            #delete_directory_if_exists(exhale_containment_path)  # DEBUG
+            #delete_directory_if_exists(sphinx_path / Path("doc"))  # DEBUG
+            #system(f"breathe-apidoc -o {exhale_containment_path} -m {str(doxygen_path / Path("xml"))}")  # DEBUG
 
-        # adjust sphinx config for second run
-        with open(Path("conf.py"), "w+") as conf_py_file:
-            conf_py_file.write(CONF_PY_CONTENT)
+            # adjust sphinx config for second run
+            with open(Path("conf.py"), "w+") as conf_py_file:
+                conf_py_file.write(CONF_PY_CONTENT)
 
-        # run sphinx again
-        # maybe some cleanup is necessary?
-        #system(f"sphinx-build -b html . {sphinx_path}")
+            # run sphinx again
+            # maybe some cleanup is necessary?
+            #system(f"sphinx-build -b html . {sphinx_path}")
     
-    print("\nTest Coverage Evaluation:\n")
-    # coverage
-    if args.create_coverage_report == True and args.coverage_type == "meson":
-        meson_build_location: Path = project_path
-        build_folder_name: Path = Path("build")
-        meson_setup_args: list = []
-        if args.meson_build_location is not None:
-            meson_build_location = Path(args.meson_build_location)
-        if args.build_folder_name is not None:
-            build_folder_name = args.build_folder_name
-        if args.meson_setup_args is not None:
-            # TODO: str to list or change meson_setup_args in yaml to list if possible
-            pass
-        run_meson(meson_build_location, build_folder_name, meson_setup_args)
+    if args.disable_test_cov:
+        print("\nTest Coverage Evaluation:\n")
+        # coverage
+        if args.create_coverage_report == True and args.coverage_type == "meson":
+            meson_build_location: Path = project_path
+            build_folder_name: Path = Path("build")
+            meson_setup_args: list = []
+            if args.meson_build_location is not None:
+                meson_build_location = Path(args.meson_build_location)
+            if args.build_folder_name is not None:
+                build_folder_name = args.build_folder_name
+            if args.meson_setup_args is not None:
+                # TODO: str to list or change meson_setup_args in yaml to list if possible
+                pass
+            run_meson(meson_build_location, build_folder_name, meson_setup_args)
