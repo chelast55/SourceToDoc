@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 import re
 from enum import StrEnum
 from pathlib import Path
@@ -45,7 +46,7 @@ class _ConverterNames(StrEnum):
     CXX_FIND_AND_REPLACE = "cxx_find_and_replace"
 
 
-def comment(**kwargs: str) -> None:
+def comment(parser: ArgumentParser, **kwargs: str) -> None:
     """Runs a converter depending on the given arguments in `kwargs`."""
     match kwargs["replace"]:
         case "replace":
@@ -57,7 +58,7 @@ def comment(**kwargs: str) -> None:
         case _:
             raise RuntimeError
 
-    converter = _get_converter(**kwargs)
+    converter = _get_converter(parser, **kwargs)
     if converter is not None:
         path: Path = Path(kwargs["path"])
         if path.is_file():
@@ -65,10 +66,10 @@ def comment(**kwargs: str) -> None:
         elif path.is_dir():
             converter.convert_files(path, replace, kwargs["filter"])
         else:
-            print(f"{path} is not a file or a directory")
+            parser.error(f"{path} is not a file or a directory")
 
 
-def _get_converter(**kwargs: str) -> Optional[Converter[Any]]:
+def _get_converter(parser: ArgumentParser, **kwargs: str) -> Optional[Converter[Any]]:
     converter: Optional[Converter[Any]] = None
     arg_helper = _ArgumentHelper(**kwargs)
     match kwargs["converter"]:
@@ -109,18 +110,17 @@ def _get_converter(**kwargs: str) -> Optional[Converter[Any]]:
                 pattern, replacement = pattern_and_replacement
                 converter = cxx_find_and_replace_converter(pattern, replacement)
         case _:
-            print("Choices for --converter:")
-            for e in _ConverterNames:
-                print(e)
+            message = "Choices for --converter:\n" + "\n".join(e for e in _ConverterNames)
+            parser.error(message)
     
     if arg_helper.has_missing_args():
-        arg_helper.print_missing_args_message()
-
+        message = arg_helper.get_missing_args_message()
+        parser.error(message)
     return converter
 
 
 class _ArgumentHelper:
-    def __init__(self, **kwargs: Optional[str]) -> None:
+    def __init__(self, **kwargs: str | None) -> None:
         self.kwargs = kwargs
         self.messages: list[str] = []
     
@@ -194,10 +194,10 @@ class _ArgumentHelper:
     def has_missing_args(self) -> bool:
         return len(self.messages) > 0
     
-    def print_missing_args_message(self) -> None:
+    def get_missing_args_message(self) -> str:
         if not self.has_missing_args():
             raise ValueError
-        print("\n".join(self.messages))
+        return "\n".join(self.messages)
 
     def _check_args_present(self, *args: str) -> None:
         for arg in args:

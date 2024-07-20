@@ -1,13 +1,11 @@
 - path:
-    help: A file or directory
+    help: A source file or a directory that contains source files
     type: str
-    subparser: comment
     default: "."
 - converter:
     help: The converter to use to convert comments
     type: str
     required: true
-    subparser: comment
 - replace:
     help: |
       The method to replace comments.
@@ -20,43 +18,33 @@
       - append
       - inline
     default: replace
-    subparser: comment
 - filter:
     help: Overrides the default include filter of the converter (Only matters if the path is a directory) (Python RegEx)
     type: str
-    subparser: comment
 - style:
     help: Specifies the comment style to convert into
     type: str
-    subparser: comment
 - only_after_member:
     help: If set, only consider single line comments after members
     type: bool
-    subparser: comment
 - openai_base_url:
     help: base_url for the OpenAI API
     type: str
-    subparser: comment
 - openai_api_key:
     help: api_key for the OpenAI API
     type: str
-    subparser: comment
 - llm_model:
     help: The LLM model to use with the OpenAI API
     type: str
-    subparser: comment
 - command_style:
     help: The Doxygen command style to convert into
     type: str
     choices:
       - default
       - javadoc
-    subparser: comment
 - find:
     help: Python RegEx to find substrings
     type: str
-    subparser: comment
 - replacement:
     help: Substitution for substrings found by --find
     type: str
-    subparser: comment

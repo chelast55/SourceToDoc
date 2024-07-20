@@ -1,6 +1,7 @@
 from os import chdir, system
 from pathlib import Path
 from argparse import Namespace
+import shutil
 from typing import Optional
 
 from sourcetodoc.docstring.cli import comment
@@ -10,7 +11,8 @@ from sourcetodoc.testcoverage.cover_meson import *
 
 
 if __name__ == "__main__":
-    args: Namespace = ConfiguredParser().parse_args()
+    parser = ConfiguredParser()
+    args: Namespace = parser.parse_args()
 
     html_theme: str = "sphinx_rtd_theme"
     exhale_root_file_name: str = f"root_{args.project_name}"
@@ -35,8 +37,8 @@ if __name__ == "__main__":
     exhale_containment_path: Path = doc_source_path / Path("exhale")
     exhale_containment_path_abs: Path = doc_source_path_abs / Path("exhale")
     exhale_include_path: Path = doc_path / exhale_containment_path
-    graphviz_dot_path: Path = Path(r"C:\Program Files\Graphviz\bin\dot.exe")  # TODO: this needs to be addressed
-    stylesheet_path: Path = doxygen_awesome_submodule_path / Path("doxygen-awesome.css") if (args.doxygen_html_theme == "doxygen-awesome") else None
+    graphviz_dot_path: Path | None = Path(args.graphviz_dot_path) if args.graphviz_dot_path is not None else None
+    stylesheet_path: Path | None = doxygen_awesome_submodule_path / Path("doxygen-awesome.css") if (args.doxygen_html_theme == "doxygen-awesome") else None
 
     # conditions
     doxygen_xml_required: bool = not args.apidoc_toolchain == "doxygen-only"
@@ -61,7 +63,7 @@ if __name__ == "__main__":
         PROJECT_LOGO           = {args.project_logo if (args.project_logo is not None and Path(args.project_logo).is_file()) else ""}
         PROJECT_ICON           = {args.project_icon if (args.project_icon is not None and Path(args.project_icon).is_file()) else ""}
         OUTPUT_DIRECTORY       = {str(doxygen_path).replace('\\', '\\\\')}
-        CREATE_SUBDIRS         = NO
+        CREATE_SUBDIRS         = YES
         ALLOW_UNICODE_NAMES    = NO
         OUTPUT_LANGUAGE        = {args.output_language}
         BRIEF_MEMBER_DESC      = {"YES" if args.no_brief_member_desc else "NO"}
@@ -280,7 +282,7 @@ if __name__ == "__main__":
         DIRECTORY_GRAPH = YES
         DOT_IMAGE_FORMAT = svg
         INTERACTIVE_SVG = YES
-        DOT_PATH = #{str(graphviz_dot_path).replace('\\', '\\\\') if not graphviz_dot_path is None else ""}
+        DOT_PATH = {str(graphviz_dot_path) if graphviz_dot_path is not None else ""}
         DOT_MULTI_TARGETS      = YES
         DOT_GRAPH_MAX_NODES = 100
         HTML_COLORSTYLE = {"DARK" if not (args.doxygen_html_theme == "doxygen_awesome") else "LIGHT"}  # required with Doxygen >= 1.9.5
@@ -403,19 +405,21 @@ if __name__ == "__main__":
     """
 
     # docstring preprocessing
-    match args.subparser:
-        case "comment":
-            print("\nComment Conversion:\n")
-            comment(**vars(args))
+    if args.converter is not None:
+        print("\nComment Conversion:\n")
+        comment(parser, **vars(args))
 
     if args.disable_doc_gen:
         print("\nDocumentation Generation:\n")
-        # delete artifacts from prior builds and ensure paths exist TODO: move to end as cleenup, when debugging is done
+        # delete artifacts from prior builds and ensure paths exist TODO: move to end as cleanup, when debugging is done
         delete_directory_if_exists(doc_path_abs)
         doc_path_abs.mkdir(parents=True, exist_ok=True)
         doxygen_path.mkdir(parents=True, exist_ok=True)
-        if not graphviz_dot_path.exists():
-            pass#raise OSError("dot.exe not found at given path") TODO: handle this properly
+        default_dot = shutil.which("dot")
+        if default_dot is None and graphviz_dot_path is None:
+            parser.error("dot.(exe) was not found in PATH")
+        elif graphviz_dot_path is not None and not graphviz_dot_path.exists():
+            parser.error(f"--graphviz_dot_path: {graphviz_dot_path} does not exist")
         chdir(generated_docs_main_path)
 
         if args.apidoc_toolchain == "doxygen-only":
@@ -464,7 +468,7 @@ if __name__ == "__main__":
         if args.create_coverage_report == True and args.coverage_type == "meson":
             meson_build_location: Path = project_path
             build_folder_name: Path = Path("build")
-            meson_setup_args: list = []
+            meson_setup_args: list[str] = []
             if args.meson_build_location is not None:
                 meson_build_location = Path(args.meson_build_location)
             if args.build_folder_name is not None:

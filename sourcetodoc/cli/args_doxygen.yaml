@@ -231,3 +231,6 @@
     default: True
 
 # Configuration options related to diagram generator tools
+- graphviz_dot_path:
+    help: Path to the Graphviz dot executable
+    type: str
