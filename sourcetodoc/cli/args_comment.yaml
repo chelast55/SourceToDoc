@@ -1,11 +1,11 @@
-- path:
-    help: A source file or a directory that contains source files
+- src_path:
+    help: A source file or a directory that contains source files to convert comments
     type: str
     default: "."
 - converter:
     help: The converter to use to convert comments
     type: str
-    required: true
+    const: "default"
 - replace:
     help: |
       The method to replace comments.
@@ -18,7 +18,7 @@
       - append
       - inline
     default: replace
-- filter:
+- src_filter:
     help: Overrides the default include filter of the converter (Only matters if the path is a directory) (Python RegEx)
     type: str
 - style:

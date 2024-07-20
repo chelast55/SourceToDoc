@@ -14,12 +14,15 @@ Depending on the software project you try to documemnt, you may not get the most
   
 An additional component of the toolchain, the *comment converter*, can be enabled to preprocess the encountered docstrings. Thus, the **recommended** basic version to run the toolchain is as follows:  
 (this will modify the source code)
-```
-$ python main.py --project_name <PROJECT_NAME> comment 
+```sh
+python main.py --project_name <PROJECT_NAME> --converter # Change // and /* ... /* on symbols to /** ... */
 ```
 Just enabling the *comment converter* like this will likely solve the issue of docstrings not being recognized. For even better results (where symbols are resolved more correctly), an OpenAI-API-compatible LLM can be used to preprocess docstrings:
-```
-$ python main.py --project_name <PROJECT_NAME> comment TODO: additional required args 
+```sh
+# For C files
+python main.py --project_name test --converter c_function_comment_llm --src_path <path> --openai_base_url <url> --openai_api_key <key> --llm_model <model>
+# or for C++ files
+python main.py --project_name test --converter cxx_function_comment_llm --src_path <path> --openai_base_url <url> --openai_api_key <key> --llm_model <model>
 ```
 
 If desired, all components of the toolchain can be disabled individually (`disable_doc_gen`for *documentation generation* and `disable_test_cov` for *test coverage evaluation*).  

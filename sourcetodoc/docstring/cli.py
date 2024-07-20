@@ -1,5 +1,5 @@
-from argparse import ArgumentParser
 import re
+from argparse import ArgumentParser
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional
@@ -60,11 +60,11 @@ def comment(parser: ArgumentParser, **kwargs: str) -> None:
 
     converter = _get_converter(parser, **kwargs)
     if converter is not None:
-        path: Path = Path(kwargs["path"])
+        path: Path = Path(kwargs["src_path"])
         if path.is_file():
             converter.convert_file(path, replace)
         elif path.is_dir():
-            converter.convert_files(path, replace, kwargs["filter"])
+            converter.convert_files(path, replace, kwargs["src_filter"])
         else:
             parser.error(f"{path} is not a file or a directory")
 
@@ -73,6 +73,9 @@ def _get_converter(parser: ArgumentParser, **kwargs: str) -> Optional[Converter[
     converter: Optional[Converter[Any]] = None
     arg_helper = _ArgumentHelper(**kwargs)
     match kwargs["converter"]:
+        case "default":
+            style = CommentStyle.JAVADOC_BLOCK
+            converter = cxx_comment_style_converter(style, False)
         case _ConverterNames.C_COMMENT_STYLE:
             result = arg_helper.get_style_and_only_after_member()
             if result is not None:
