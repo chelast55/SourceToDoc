@@ -165,5 +165,10 @@ coin/
 doxygen/
 sphinx/
 exhale/
+out/
+
+# VSCode
+/.vscode
+origin/main
 
 out/
