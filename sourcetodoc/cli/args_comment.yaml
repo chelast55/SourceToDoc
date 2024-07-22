@@ -4,7 +4,7 @@
     default: "."
 - converter:
     help: The converter to use to convert comments
-    type: str
+    action: store_const
     const: "default"
 - replace:
     help: |
