@@ -1,6 +1,7 @@
 from os import chdir, system
 from pathlib import Path
 from argparse import Namespace
+import shutil
 from typing import Optional
 
 from sourcetodoc.docstring.cli import comment
@@ -8,18 +9,11 @@ from sourcetodoc.helpers import delete_directory_if_exists
 from sourcetodoc.cli.ConfiguredParser import ConfiguredParser
 from sourcetodoc.testcoverage.cover_meson import *
 
-def main() -> None:
-    args: Namespace = ConfiguredParser().parse_args()
-    match args.subparser:
-        case "comment":
-            comment(**vars(args))
-        case _:
-            if args.converter is not None:
-                comment(**vars(args))
-            default(args)
 
+if __name__ == "__main__":
+    parser = ConfiguredParser()
+    args: Namespace = parser.parse_args()
 
-def default(args: Namespace) -> None:
     html_theme: str = "sphinx_rtd_theme"
     exhale_root_file_name: str = f"root_{args.project_name}"
 
@@ -43,8 +37,8 @@ def default(args: Namespace) -> None:
     exhale_containment_path: Path = doc_source_path / Path("exhale")
     exhale_containment_path_abs: Path = doc_source_path_abs / Path("exhale")
     exhale_include_path: Path = doc_path / exhale_containment_path
-    graphviz_dot_path: Path = Path(r"C:\Program Files\Graphviz\bin\dot.exe")  # TODO: this needs to be addressed
-    stylesheet_path: Path = doxygen_awesome_submodule_path / Path("doxygen-awesome.css") if (args.doxygen_html_theme == "doxygen-awesome") else None
+    graphviz_dot_path: Path | None = Path(args.graphviz_dot_path) if args.graphviz_dot_path is not None else None
+    stylesheet_path: Path | None = doxygen_awesome_submodule_path / Path("doxygen-awesome.css") if (args.doxygen_html_theme == "doxygen-awesome") else None
 
     # conditions
     doxygen_xml_required: bool = not args.apidoc_toolchain == "doxygen-only"
@@ -69,7 +63,7 @@ def default(args: Namespace) -> None:
         PROJECT_LOGO           = {args.project_logo if (args.project_logo is not None and Path(args.project_logo).is_file()) else ""}
         PROJECT_ICON           = {args.project_icon if (args.project_icon is not None and Path(args.project_icon).is_file()) else ""}
         OUTPUT_DIRECTORY       = {str(doxygen_path).replace('\\', '\\\\')}
-        CREATE_SUBDIRS         = NO
+        CREATE_SUBDIRS         = YES
         ALLOW_UNICODE_NAMES    = NO
         OUTPUT_LANGUAGE        = {args.output_language}
         BRIEF_MEMBER_DESC      = {"YES" if args.no_brief_member_desc else "NO"}
@@ -288,8 +282,9 @@ def default(args: Namespace) -> None:
         DIRECTORY_GRAPH = YES
         DOT_IMAGE_FORMAT = svg
         INTERACTIVE_SVG = YES
-        DOT_PATH = {str(graphviz_dot_path).replace('\\', '\\\\') if not graphviz_dot_path is None else ""}
+        DOT_PATH = {str(graphviz_dot_path) if graphviz_dot_path is not None else ""}
         DOT_MULTI_TARGETS      = YES
+        DOT_GRAPH_MAX_NODES = 100
         HTML_COLORSTYLE = {"DARK" if not (args.doxygen_html_theme == "doxygen_awesome") else "LIGHT"}  # required with Doxygen >= 1.9.5
     """
 
@@ -409,68 +404,76 @@ def default(args: Namespace) -> None:
     
     """
 
-    # delete artifacts from prior builds and ensure paths exist TODO: move to end as cleenup, when debugging is done
-    delete_directory_if_exists(doc_path_abs)
-    doc_path_abs.mkdir(parents=True, exist_ok=True)
-    doxygen_path.mkdir(parents=True, exist_ok=True)
-    if not graphviz_dot_path.exists():
-        raise OSError("dot.exe not found at given path")
-    chdir(generated_docs_main_path)
+    # docstring preprocessing
+    if args.converter is not None:
+        print("\nComment Conversion:\n")
+        comment(parser, **vars(args))
 
-    if args.apidoc_toolchain == "doxygen-only":
-        # generate config file for Doxygen
-        with open(Path("Doxyfile.in"), "w+") as doxyfile:
-            doxyfile.write(DOXYFILE_CONTENT)
+    if args.disable_doc_gen:
+        print("\nDocumentation Generation:\n")
+        # delete artifacts from prior builds and ensure paths exist TODO: move to end as cleanup, when debugging is done
+        delete_directory_if_exists(doc_path_abs)
+        doc_path_abs.mkdir(parents=True, exist_ok=True)
+        doxygen_path.mkdir(parents=True, exist_ok=True)
+        default_dot = shutil.which("dot")
+        if default_dot is None and graphviz_dot_path is None:
+            parser.error("dot.(exe) was not found in PATH")
+        elif graphviz_dot_path is not None and not graphviz_dot_path.exists():
+            parser.error(f"--graphviz_dot_path: {graphviz_dot_path} does not exist")
+        chdir(generated_docs_main_path)
 
-        # run doxygen
-        system("doxygen Doxyfile.in")
+        if args.apidoc_toolchain == "doxygen-only":
+            # generate config file for Doxygen
+            with open(Path("Doxyfile.in"), "w+") as doxyfile:
+                doxyfile.write(DOXYFILE_CONTENT)
 
-    elif args.apidoc_toolchain == "sphinx-based":
-        # this path is only here for reference and may be (partially) broken
-        print("!!! Disclaimer: Using sphinx-based is currently not recommended and may not work at all.")
+            # run doxygen
+            system("doxygen Doxyfile.in")
 
-        sphinx_path.mkdir(parents=True, exist_ok=True)
-        exhale_containment_path_abs.mkdir(parents=True, exist_ok=True)
+        elif args.apidoc_toolchain == "sphinx-based":
+            # this path is only here for reference and may be (partially) broken
+            print("!!! Disclaimer: Using sphinx-based is currently not recommended and may not work at all.")
 
-        # generate config files for sphinx+breathe+exhale+doxygen
-        with open(Path("index.rst"), "w+") as index_rst_file:
-            index_rst_file.write(INDEX_RST_CONTENT)
-        with open(Path("conf.py"), "w+") as conf_py_file:
-            conf_py_file.write(CONF_PY_CONTENT + CONF_PY_EXHALE_EXTENSION)
+            sphinx_path.mkdir(parents=True, exist_ok=True)
+            exhale_containment_path_abs.mkdir(parents=True, exist_ok=True)
 
-        # run sphinx+breath+exhale+doxygen
-        print("\n--------------------")
-        print("Generate sphinx...")
-        system(f"sphinx-build -b html . {sphinx_path}")
+            # generate config files for sphinx+breathe+exhale+doxygen
+            with open(Path("index.rst"), "w+") as index_rst_file:
+                index_rst_file.write(INDEX_RST_CONTENT)
+            with open(Path("conf.py"), "w+") as conf_py_file:
+                conf_py_file.write(CONF_PY_CONTENT + CONF_PY_EXHALE_EXTENSION)
 
-        # exhale output post processings
-        # TODO: implement
-        #delete_directory_if_exists(exhale_containment_path)  # DEBUG
-        #delete_directory_if_exists(sphinx_path / Path("doc"))  # DEBUG
-        #system(f"breathe-apidoc -o {exhale_containment_path} -m {str(doxygen_path / Path("xml"))}")  # DEBUG
+            # run sphinx+breath+exhale+doxygen
+            print("\n--------------------")
+            print("Generate sphinx...")
+            system(f"sphinx-build -b html . {sphinx_path}")
 
-        # adjust sphinx config for second run
-        with open(Path("conf.py"), "w+") as conf_py_file:
-            conf_py_file.write(CONF_PY_CONTENT)
+            # exhale output post processings
+            # TODO: implement
+            #delete_directory_if_exists(exhale_containment_path)  # DEBUG
+            #delete_directory_if_exists(sphinx_path / Path("doc"))  # DEBUG
+            #system(f"breathe-apidoc -o {exhale_containment_path} -m {str(doxygen_path / Path("xml"))}")  # DEBUG
 
-        # run sphinx again
-        # maybe some cleanup is necessary?
-        #system(f"sphinx-build -b html . {sphinx_path}")
+            # adjust sphinx config for second run
+            with open(Path("conf.py"), "w+") as conf_py_file:
+                conf_py_file.write(CONF_PY_CONTENT)
+
+            # run sphinx again
+            # maybe some cleanup is necessary?
+            #system(f"sphinx-build -b html . {sphinx_path}")
     
-    # coverage
-    if args.create_coverage_report == True and args.coverage_type == "meson":
-        meson_build_location: Path = project_path
-        build_folder_name: Path = Path("build")
-        meson_setup_args: list = []
-        if args.meson_build_location is not None:
-            meson_build_location = Path(args.meson_build_location)
-        if args.build_folder_name is not None:
-            build_folder_name = args.build_folder_name
-        if args.meson_setup_args is not None:
-            # TODO: str to list or change meson_setup_args in yaml to list if possible
-            pass
-        run_meson(meson_build_location, build_folder_name, meson_setup_args)
-
-
-if __name__ == "__main__":
-    main()
+    if args.disable_test_cov:
+        print("\nTest Coverage Evaluation:\n")
+        # coverage
+        if args.create_coverage_report == True and args.coverage_type == "meson":
+            meson_build_location: Path = project_path
+            build_folder_name: Path = Path("build")
+            meson_setup_args: list[str] = []
+            if args.meson_build_location is not None:
+                meson_build_location = Path(args.meson_build_location)
+            if args.build_folder_name is not None:
+                build_folder_name = args.build_folder_name
+            if args.meson_setup_args is not None:
+                # TODO: str to list or change meson_setup_args in yaml to list if possible
+                pass
+            run_meson(meson_build_location, build_folder_name, meson_setup_args)

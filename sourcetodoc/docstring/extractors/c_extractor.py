@@ -8,6 +8,7 @@ class CType(Enum):
     FUNCTION = auto()
     STRUCT = auto()
     UNION = auto()
+    FIELD = auto()
     VARIABLE = auto()
     ENUM = auto()
     ENUM_CONSTANT = auto()

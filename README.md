@@ -1,8 +1,42 @@
 # SourceToDoc
 Forschungsprojekt INF 2024 "Reverse Engineering of Documentation and Design for Independently Developed Safety-Related Projects"
 
+## Usage
+When using Linux, you have to begin the following example commands with `python3` instad of `python`, if you have not installed `python-is-python3`.
+
+To run the toolchain in its most basic version, you have to provide at least the name of the directory (`<PROJECT_NAME>`) containing the source of the project, you want to document:   
+(the `<PROJECT_NAME>` directory and your terminal instance should be in the same directory, where `main.py` is located)
+
+```
+$ python main.py --project_name <PROJECT_NAME>
+```
+Depending on the software project you try to documemnt, you may not get the most out of the generated documentation. The source code may contain incorrectly formatted docstrings, which causes symbols (function/variable/class names etc.) not to be recognized/linked correctly or the entire docstring not to appear in the documentation at all.  
+  
+An additional component of the toolchain, the *comment converter*, can be enabled to preprocess the encountered docstrings. Thus, the **recommended** basic version to run the toolchain is as follows:  
+(this will modify the source code)
+```sh
+python main.py --project_name <PROJECT_NAME> --converter # Change // and /* ... /* on symbols to /** ... */
+```
+Just enabling the *comment converter* like this will likely solve the issue of docstrings not being recognized. For even better results (where symbols are resolved more correctly), an OpenAI-API-compatible LLM can be used to preprocess docstrings:
+```sh
+# For C files
+python main.py --project_name test --converter c_function_comment_llm --src_path <path> --openai_base_url <url> --openai_api_key <key> --llm_model <model>
+# or for C++ files
+python main.py --project_name test --converter cxx_function_comment_llm --src_path <path> --openai_base_url <url> --openai_api_key <key> --llm_model <model>
+```
+
+If desired, all components of the toolchain can be disabled individually (`disable_doc_gen`for *documentation generation* and `disable_test_cov` for *test coverage evaluation*).  
+Some recommended additional options would be `--project_author` and `--project_year`.  
+For all possible options, see:
+```
+$ python main.py --help
+```
+
+## Setup
+TODO
+
 ## File Hierarchy
-TODO: this probably deserves it's own file in ``doc``
+TODO: this probably deserves it's own file in ``doc`` AND IS REDUNDANT (switch to doxygen-only as main!)
 ```
 <PROJECT>
 ├───doc

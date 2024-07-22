@@ -10,8 +10,8 @@ from typing import Any, Optional, Final
 ARGS_YAML_PATHS: list[Path] = [
     Path("args_base.yaml"),
     Path("args_doxygen.yaml"),
-    Path("args_coverage.yaml"),
     Path("args_comment.yaml"),
+    Path("args_coverage.yaml")
 ]
 """Paths to YAML files containing parser arguments."""
 

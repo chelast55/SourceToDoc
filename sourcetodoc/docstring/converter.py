@@ -1,11 +1,11 @@
 from pathlib import Path
-import re
-from typing import Iterator, Optional
+from typing import Optional
 
-from .conversion import ConvPresent, ConvResult, Conversion
-from .extractor import Extractor, Comment
+from .conversion import Conversion, ConvPresent, ConvResult
+from .extractor import Comment, Extractor
 from .replace import Replace
 from .replacer import CommentReplacement, Replacer
+from .util import get_files
 
 
 class Converter[T]:
@@ -24,8 +24,8 @@ class Converter[T]:
             self,
             extractor: Extractor[T],
             conversion: Conversion[T],
-            default_regex: str, replacer:
-            Optional[Replacer] = None
+            default_regex: str,
+            replacer: Optional[Replacer] = None
         ) -> None:
 
         self.extractor = extractor
@@ -126,17 +126,9 @@ class Converter[T]:
         if regex is None:
             regex = self.default_regex
 
-        files = list(self._get_files(dir, regex))
+        files = list(get_files(dir, regex))
         files_count = len(files)
         print(f"{files_count} files found by regex {regex}")
         for i, file in enumerate(files):
             print(f"{i+1}/{files_count} Converting file \"{file}\"")
             self.convert_file(file, replace)
-
-    def _get_files(self, dir: Path, regex: str) -> Iterator[Path]:
-        matcher = re.compile(regex)
-        for (dirpath, _, filenames) in dir.walk():
-            for filename in filenames:
-                if matcher.fullmatch(filename) is not None:
-                    file = (dirpath / filename)
-                    yield file

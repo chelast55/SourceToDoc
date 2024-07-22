@@ -82,6 +82,7 @@ class CommentStyleConversion(Conversion[Any]):
         return comment.symbol_type in {
             CType.ENUM_CONSTANT,
             CType.VARIABLE,
+            CType.FIELD,
             CXXType.ENUM_CONSTANT,
             CXXType.VARIABLE,
             CXXType.FIELD,

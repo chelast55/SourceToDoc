@@ -1,14 +1,14 @@
+import ctypes
 from typing import Callable, Iterator, Optional, override
 
-import pylibclang._C as C
-from pylibclang.cindex import Cursor, TranslationUnit
+from clang.cindex import Cursor, SourceLocation, SourceRange, TranslationUnit, conf, register_function
 
 from ..extractor import Comment, Extractor
-from ..range import Range  # type: ignore
+from ..range import Range
 
 
-class PylibclangExtractor[T](Extractor[T]):
-    """Extracts comments with pylibclang."""
+class LibclangExtractor[T](Extractor[T]):
+    """Extracts comments with libclang."""
 
     def __init__(
             self,
@@ -28,6 +28,7 @@ class PylibclangExtractor[T](Extractor[T]):
 
         self.translation_unit_from_code = translation_unit_from_code
         self.get_type = get_type
+        self.__class__._patch()
 
     @override
     def extract_comments(self, code: str) -> list[Comment[T]]:
@@ -82,7 +83,7 @@ class PylibclangExtractor[T](Extractor[T]):
     
     @classmethod
     def _get_comment_range(cls, cursor: Cursor) -> Range:
-        source_range = C.clang_Cursor_getCommentRange(cursor) # type: ignore
+        source_range = cls._clang_get_comment_range(cursor)
         return Range(source_range.start.offset, source_range.end.offset) # type: ignore
 
     @classmethod
@@ -104,6 +105,20 @@ class PylibclangExtractor[T](Extractor[T]):
     def _walk_preorder_only_main_file(cls, node: Cursor) -> Iterator[Cursor]:
         yield node
         for child in node.get_children(): # type: ignore
-            if C.clang_Location_isFromMainFile(child.location) != 0: # type: ignore
+            if cls._clang_location_is_from_main_file(child.location): # type: ignore
                 for descendant in cls._walk_preorder_only_main_file(child): # type: ignore
                     yield descendant
+
+    @classmethod
+    def _patch(cls) -> None:
+        """Adds necessary function bindings"""
+        register_function(conf.lib, ("clang_Cursor_getCommentRange", [Cursor], SourceRange), False)
+        register_function(conf.lib, ("clang_Location_isFromMainFile", [SourceLocation], ctypes.c_int), False)
+    
+    @classmethod
+    def _clang_get_comment_range(cls, cursor: Cursor) -> SourceRange:
+        return conf.lib.clang_Cursor_getCommentRange(cursor)
+
+    @classmethod
+    def _clang_location_is_from_main_file(cls, location: SourceLocation) -> bool:
+        return conf.lib.clang_Location_isFromMainFile(location) != 0

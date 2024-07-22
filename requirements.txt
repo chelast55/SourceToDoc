@@ -1,3 +1,17 @@
-pytest==8.2.2
-pylibclang==316.0.6
-openai==1.35.7
+pytest~=8.2.2
+libclang~=18.1.1
+openai~=1.35.7
+pyaml~=24.4.0
+lcov~=1.15.5a0
+gcovr~=7.2
+# non-python:
+# python3.12 https://ubuntuhandbook.org/index.php/2023/05/install-python-3-12-ubuntu/
+# python3-pip (apt) https://github.com/pypa/get-pip 
+# doxygen (apt)
+# graphviz (apt, dnf)
+# doxygen-awesome (git submodule update --init)
+# meson (apt)
+# ninja-build (apt, might already be installed as a sideproduct of installing 'wheel' via pip) 
+# cmake (apt)
+# cmocka (libcmocka-dev per apt)
+# optional: some llm instance (e. g. ollama)
