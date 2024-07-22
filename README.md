@@ -13,9 +13,9 @@ $ python main.py --project_name <PROJECT_NAME>
 Depending on the software project you try to documemnt, you may not get the most out of the generated documentation. The source code may contain incorrectly formatted docstrings, which causes symbols (function/variable/class names etc.) not to be recognized/linked correctly or the entire docstring not to appear in the documentation at all.  
   
 An additional component of the toolchain, the *comment converter*, can be enabled to preprocess the encountered docstrings. Thus, the **recommended** basic version to run the toolchain is as follows:  
-(this will modify the source code)
+(this will modify the source code (more precisely: change // and /* ... /* on symbols to /** ... */ in this case))
 ```sh
-python main.py --project_name <PROJECT_NAME> --converter # Change // and /* ... /* on symbols to /** ... */
+python main.py --project_name <PROJECT_NAME> --converter
 ```
 Just enabling the *comment converter* like this will likely solve the issue of docstrings not being recognized. For even better results (where symbols are resolved more correctly), an OpenAI-API-compatible LLM can be used to preprocess docstrings:
 ```sh
@@ -33,6 +33,21 @@ $ python main.py --help
 ```
 
 ## Setup
+### Linux (Debian/Ubuntu)
+All Dependencies can be installed via *apt* and *pip* packet managers.
+If you have not installed `python(3.12)` yet or your default `python(3)` version is older than `3.12`, install it first and make sure, it is set as default
+(see https://ubuntuhandbook.org/index.php/2023/05/install-python-3-12-ubuntu/ for more on this).  
+With that out of the way, you can continue installing the dependencies:
+Non-Python first:
+```sh
+sudo apt install python3-pip doxygen graphviz doxygen-awesome meson ninja-build cmake cmocka
+```
+Python dependencies:
+```sh
+sudo pip install requirements.txt
+```
+
+### Windows
 TODO
 
 ## File Hierarchy
