@@ -14,12 +14,24 @@ if __name__ == "__main__":
     parser = ConfiguredParser()
     args: Namespace = parser.parse_args()
 
-    html_theme: str = "sphinx_rtd_theme"
-    exhale_root_file_name: str = f"root_{args.project_name}"
+    # Non-trivial argument requirements
+    if args.converter is not None:
+        if args.project_name is None:
+            raise ValueError(
+                f"Missing argument: --project_name\n"
+                f"When using the documentation generation or test coverage evaluation parts of the toolchain, "
+                f"a project name must be provided!"
+            )
+    elif args.project_name is None or args.project_path is None:
+        raise ValueError(
+            f"Missing argument: --project_path OR --project_name\n"
+            f"Path to project source files must be either provided explicitly (--project_path) or indirectly via "
+            f"the project name (--project_name) "
+        )
 
     # Paths
     generated_docs_main_path: Path = Path("out")  # Path conf.py will be placed, everything Sphinx related is rel. to it
-    project_path: Path = generated_docs_main_path.parent.absolute() / Path(args.project_name) if (args.input is None) else args.input
+    project_path: Path = generated_docs_main_path.parent.absolute() / Path(args.project_name) if (args.project_path is None) else Path(args.project_path)
     doxygen_awesome_submodule_path: Path \
         = generated_docs_main_path.parent.absolute() / Path("submodules") / Path("doxygen-awesome-css")
 
@@ -33,12 +45,12 @@ if __name__ == "__main__":
         doxygen_path = doc_path_abs
     elif args.apidoc_toolchain == "sphinx-based":
         doxygen_path = doc_source_path_abs / Path("doxygen")
+    doxygen_stylesheet_path: Path | None = doxygen_awesome_submodule_path / Path("doxygen-awesome.css") if (args.doxygen_html_theme == "doxygen-awesome") else None
     sphinx_path: Path = doc_path_abs  # Sphinx (or rather its index.html) is the "main artifact"
     exhale_containment_path: Path = doc_source_path / Path("exhale")
     exhale_containment_path_abs: Path = doc_source_path_abs / Path("exhale")
     exhale_include_path: Path = doc_path / exhale_containment_path
     graphviz_dot_path: Path | None = Path(args.graphviz_dot_path) if args.graphviz_dot_path is not None else None
-    stylesheet_path: Path | None = doxygen_awesome_submodule_path / Path("doxygen-awesome.css") if (args.doxygen_html_theme == "doxygen-awesome") else None
 
     # conditions
     doxygen_xml_required: bool = not args.apidoc_toolchain == "doxygen-only"
@@ -52,6 +64,10 @@ if __name__ == "__main__":
         and "READ" in str(potential_readme_file).upper() and "ME" in str(potential_readme_file).upper():
             readme_file_path = potential_readme_file
             break
+
+    # additional sphinx-specific
+    sphinx_html_theme: str = "sphinx_rtd_theme"
+    exhale_root_file_name: str = f"root_{args.project_name}"
 
     # file contents
     DOXYFILE_CONTENT: str = f"""
@@ -236,7 +252,7 @@ if __name__ == "__main__":
         HTML_FILE_EXTENSION   = .html
         HTML_HEADER           = {"" if (args.html_header is None) else str(args.html_header).replace('\\', '\\\\')}
         HTML_FOOTER           = {"" if (args.html_footer is None) else str(args.html_footer).replace('\\', '\\\\')}
-        HTML_STYLESHEET       = {str(stylesheet_path).replace('\\', '\\\\') if (stylesheet_path is not None) else ""}
+        HTML_STYLESHEET       = {str(doxygen_stylesheet_path).replace('\\', '\\\\') if (doxygen_stylesheet_path is not None) else ""}
         HTML_EXTRA_STYLESHEET = {"" if (args.html_extra_stylesheet is None) else str(args.html_extra_stylesheet).replace('\\', '\\\\')}
         
         # Configuration options related to the LaTeX output
@@ -345,7 +361,7 @@ if __name__ == "__main__":
     # -- Options for HTML output -------------------------------------------------
     # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
     
-    html_theme = "{html_theme}"
+    html_theme = "{sphinx_html_theme}"
     
     extensions = ["sphinx.ext.graphviz", "sphinx.ext.autodoc", "sphinx.ext.autosummary", "myst_parser"]
     """

@@ -155,10 +155,6 @@
 
 
 # Configuration options related to the input files
-- input:
-    help: Path to files/directories containing a project's documented source files
-    type: Path
-    default:
 - input_encoding:
     help: Expected chracter encoding of the source files (output will be UTF-8, see https://www.gnu.org/software/libiconv/ for possible input encodings)
     type: str
