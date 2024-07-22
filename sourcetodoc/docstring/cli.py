@@ -48,6 +48,19 @@ class _ConverterNames(StrEnum):
 
 def comment(parser: ArgumentParser, **kwargs: str) -> None:
     """Runs a converter depending on the given arguments in `kwargs`."""
+    if kwargs["converter"] == "default":
+        c_converter = c_comment_style_converter(CommentStyle.JAVADOC_BLOCK, False)
+        cxx_converter = cxx_comment_style_converter(CommentStyle.JAVADOC_BLOCK, False)
+        _run_converter(parser, c_converter, **kwargs)
+        _run_converter(parser, cxx_converter, **kwargs)
+    else:
+        converter = _get_converter(parser, **kwargs)
+        if converter is None:
+            raise RuntimeError
+        _run_converter(parser, converter, **kwargs)
+
+
+def _run_converter(parser: ArgumentParser, converter: Converter[Any], **kwargs: str):
     match kwargs["replace"]:
         case "replace":
             replace = Replace.REPLACE_OLD_COMMENTS
@@ -58,18 +71,16 @@ def comment(parser: ArgumentParser, **kwargs: str) -> None:
         case _:
             raise RuntimeError
 
-    converter = _get_converter(parser, **kwargs)
-    if converter is not None:
-        path: Path = Path(kwargs["src_path"])
-        if path.is_file():
-            converter.convert_file(path, replace)
-        elif path.is_dir():
-            converter.convert_files(path, replace, kwargs["src_filter"])
-        else:
-            parser.error(f"{path} is not a file or a directory")
+    path = Path(kwargs["project_path"])
+    if path.is_file():
+        converter.convert_file(path, replace)
+    elif path.is_dir():
+        converter.convert_files(path, replace, kwargs["src_filter"])
+    else:
+        parser.error(f"{path} is not a file or a directory")
 
 
-def _get_converter(parser: ArgumentParser, **kwargs: str) -> Optional[Converter[Any]]:
+def _get_converter(parser: ArgumentParser, **kwargs: str) -> Converter[Any] | None:
     converter: Optional[Converter[Any]] = None
     arg_helper = _ArgumentHelper(**kwargs)
     match kwargs["converter"]:

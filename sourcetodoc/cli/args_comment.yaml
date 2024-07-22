@@ -1,7 +1,3 @@
-- src_path:
-    help: A source file or a directory that contains source files to convert comments
-    type: str
-    default: "."
 - converter:
     help: The converter to use to convert comments
     action: store_const
