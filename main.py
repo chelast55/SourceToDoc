@@ -79,7 +79,7 @@ if __name__ == "__main__":
         PROJECT_LOGO           = {args.project_logo if (args.project_logo is not None and Path(args.project_logo).is_file()) else ""}
         PROJECT_ICON           = {args.project_icon if (args.project_icon is not None and Path(args.project_icon).is_file()) else ""}
         OUTPUT_DIRECTORY       = {str(doxygen_path).replace('\\', '\\\\')}
-        CREATE_SUBDIRS         = YES
+        CREATE_SUBDIRS         = NO
         ALLOW_UNICODE_NAMES    = NO
         OUTPUT_LANGUAGE        = {args.output_language}
         BRIEF_MEMBER_DESC      = {"YES" if args.no_brief_member_desc else "NO"}
