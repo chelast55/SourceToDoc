@@ -46,21 +46,21 @@ class _ConverterNames(StrEnum):
     CXX_FIND_AND_REPLACE = "cxx_find_and_replace"
 
 
-def comment(parser: ArgumentParser, **kwargs: str) -> None:
+def comment(parser: ArgumentParser, src_path: Path, **kwargs: str) -> None:
     """Runs a converter depending on the given arguments in `kwargs`."""
     if kwargs["converter"] == "default":
         c_converter = c_comment_style_converter(CommentStyle.JAVADOC_BLOCK, False)
         cxx_converter = cxx_comment_style_converter(CommentStyle.JAVADOC_BLOCK, False)
-        _run_converter(parser, c_converter, **kwargs)
-        _run_converter(parser, cxx_converter, **kwargs)
+        _run_converter(parser, src_path, c_converter, **kwargs)
+        _run_converter(parser, src_path, cxx_converter, **kwargs)
     else:
         converter = _get_converter(parser, **kwargs)
         if converter is None:
             raise RuntimeError
-        _run_converter(parser, converter, **kwargs)
+        _run_converter(parser, src_path, converter, **kwargs)
 
 
-def _run_converter(parser: ArgumentParser, converter: Converter[Any], **kwargs: str):
+def _run_converter(parser: ArgumentParser, src_path: Path, selected_converter: Converter[Any], **kwargs: str):
     match kwargs["replace"]:
         case "replace":
             replace = Replace.REPLACE_OLD_COMMENTS
@@ -71,13 +71,12 @@ def _run_converter(parser: ArgumentParser, converter: Converter[Any], **kwargs: 
         case _:
             raise RuntimeError
 
-    path = Path(kwargs["project_path"])
-    if path.is_file():
-        converter.convert_file(path, replace)
-    elif path.is_dir():
-        converter.convert_files(path, replace, kwargs["src_filter"])
+    if src_path.is_file():
+        selected_converter.convert_file(src_path, replace)
+    elif src_path.is_dir():
+        selected_converter.convert_files(src_path, replace, kwargs["src_filter"])
     else:
-        parser.error(f"{path} is not a file or a directory")
+        parser.error(f"{src_path} is not a file or a directory")
 
 
 def _get_converter(parser: ArgumentParser, **kwargs: str) -> Converter[Any] | None:

@@ -298,7 +298,6 @@ if __name__ == "__main__":
         DIRECTORY_GRAPH = YES
         DOT_IMAGE_FORMAT = svg
         INTERACTIVE_SVG = YES
-        DOT_PATH = {str(graphviz_dot_path) if graphviz_dot_path is not None else ""}
         DOT_MULTI_TARGETS      = YES
         DOT_GRAPH_MAX_NODES = 100
         HTML_COLORSTYLE = {"DARK" if not (args.doxygen_html_theme == "doxygen_awesome") else "LIGHT"}  # required with Doxygen >= 1.9.5
@@ -423,7 +422,7 @@ if __name__ == "__main__":
     # docstring preprocessing
     if args.converter is not None:
         print("\nComment Conversion:\n")
-        comment(parser, **vars(args))
+        comment(parser, project_path, **vars(args))
 
     if args.disable_doc_gen:
         print("\nDocumentation Generation:\n")
