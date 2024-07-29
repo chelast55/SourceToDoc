@@ -40,7 +40,7 @@ If you have not installed `python(3.12)` yet or your default `python(3)` version
 With that out of the way, you can continue installing the dependencies:
 Non-Python first:
 ```sh
-sudo apt install python3-pip doxygen graphviz doxygen-awesome meson ninja-build cmake cmocka
+sudo apt install python3-pip doxygen graphviz meson ninja-build cmake cmocka # TODO: git pull submodules
 ```
 Python dependencies:
 ```sh
