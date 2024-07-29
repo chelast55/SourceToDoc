@@ -1,41 +1,107 @@
 from pathlib import Path
-from typing import Optional
+from re import Pattern
+from typing import Any
 
 from .conversion import Conversion, ConvPresent, ConvResult
 from .extractor import Comment, Extractor
+from .extractors.c_libclang_extractor import CLibclangExtractor
+from .extractors.c_type import CType
+from .extractors.cxx_libclang_extractor import CXXLibclangExtractor
+from .extractors.cxx_type import CXXType
 from .replace import Replace
 from .replacer import CommentReplacement, Replacer
-from .util import get_files
 
 
-class Converter[T]:
-    """
-    Extracts comments with an `Extractor` object and converts them with a `Conversion` object.
+class Converter:
 
-    Attributes
-    ----------
-    extractor: Extractor[T]
-    converters: Conversion[T]
-    default_pattern: str
-    replacer: Replacer
-    """
+    c_extractor = CLibclangExtractor()
+    cxx_extractor = CXXLibclangExtractor()
 
     def __init__(
             self,
-            extractor: Extractor[T],
-            conversion: Conversion[T],
-            default_regex: str,
-            replacer: Optional[Replacer] = None
+            c_pattern: Pattern[str],
+            cxx_pattern: Pattern[str],
+            conversion: Conversion[CType | CXXType],
+            replace: Replace
         ) -> None:
-
-        self.extractor = extractor
+        self.c_pattern = c_pattern
+        self.cxx_pattern = cxx_pattern
         self.conversion = conversion
-        self.default_regex = default_regex
-        if replacer is None:
-            replacer = Replacer()
-        self.replacer = replacer
+        self.replace = replace
 
-    def convert_string(self, code: str, replace: Replace) -> str:
+    def convert_file(self, file: Path) -> None:
+        """
+        Converts comments in `file`.
+
+        The source file is updated if conversions for comments are found.
+
+        Parameters
+        ----------
+        file : Path
+            The source file with zero or more comments.
+        """
+        c_matched = self.c_pattern.fullmatch(file.stem) is not None
+        cxx_matched = self.cxx_pattern.fullmatch(file.stem) is not None
+        if c_matched and cxx_matched:
+            raise ValueError
+        elif c_matched:
+            print(f"\"{file}\" was identified as a C source file")
+            self._convert_file(file, self.__class__.c_extractor)
+        elif cxx_matched:
+            print(f"\"{file}\" was identified as a C++ source file")
+            self._convert_file(file, self.__class__.cxx_extractor)
+        else:
+            print(f"\"{file}\": Filename does not match C (specified by --c_regex) or C++ (specified by --cxx_regex) Python RegEx")
+
+
+    def convert_files(self, dir: Path) -> None:
+        """
+        Converts comments in files in `dir` recursively.
+
+        Parameters
+        ----------
+        dir : Path
+            The directory.
+        """
+        # Collect source files
+        c_files: list[Path] = []
+        cxx_files: list[Path] = []
+        for (dirpath, _, filenames) in dir.walk():
+            for filename in filenames:
+                file = (dirpath / filename)
+                if self.c_pattern.fullmatch(filename) is not None:
+                    c_files.append(file)
+                elif self.cxx_pattern.fullmatch(filename) is not None:
+                    cxx_files.append(file)
+        
+        c_files_count = len(c_files)
+        cxx_files_count = len(cxx_files)
+
+        # Convert source files
+        print(f"{c_files_count} C source files found")
+        for i, file in enumerate(c_files):
+            print(f"{i+1}/{c_files_count} Converting file \"{file}\"")
+            self._convert_file(file, self.c_extractor)
+
+        print(f"{cxx_files_count} C++ source files found")
+        for i, file in enumerate(cxx_files):
+            print(f"{i+1}/{cxx_files_count} Converting file \"{file}\"")
+            self._convert_file(file, self.cxx_extractor)
+
+    def _convert_file(self, file: Path, extractor: Extractor[CType] | Extractor[CXXType]) -> None:
+        code = file.read_text()
+        result = self._convert_string(code, extractor)
+        if result != code:
+            print(f"\"{file}\" was updated")
+            file.write_text(result)
+        else:
+            print(f"\"{file}\" has not changed")
+
+    def _convert_string(
+            self,
+            code: str,
+            extractor: Extractor[CType] | Extractor[CXXType],
+        ) -> str:
         """
         Converts comments in `code`.
 
@@ -43,9 +109,8 @@ class Converter[T]:
         ----------
         code : str
             The code with zero or more comments.
-
-        replace : Replace
-            Specifies how new comments are added.
+        extractor: Extractor[CType] | Extractor[CXXType]
+            The extractor to use to extract comments from `code`.
 
         Returns
         -------
@@ -54,17 +119,15 @@ class Converter[T]:
         """
         # Extract comments
         print("Extracting comments", end="\r", flush=True)
-        comments = self.extractor.extract_comments(code)
+        comments = extractor.extract_comments(code)
         comments_count = len(comments)
         print(f"{comments_count} comments were found")
-
         # Calculate new comments
-        comment_conv_pair: list[tuple[Comment[T], ConvResult]] = []
+        comment_conv_pair: list[tuple[Comment[Any], ConvResult]] = []
         for i, comment in enumerate(comments):
             print(f"{i+1}/{comments_count} Processing comment", end="\r", flush=True)
             conv_result = self.conversion.calc_conversion(comment)
             comment_conv_pair.append((comment, conv_result))
-
         # Apply new comments
         conv_present_list = [
             (comment, conv_result)
@@ -83,52 +146,6 @@ class Converter[T]:
                 for c, conv_present in conv_present_list
             )
             sorted_replacements = sorted(replacements, key=lambda e: e.range.start)
-            result = self.replacer.replace_comments(code, sorted_replacements, replace)
+            result = Replacer.replace_comments(code, sorted_replacements, self.replace)
         print(f"{len(conv_present_list)} comments were converted")
         return result
-
-    def convert_file(self, file: Path, replace: Replace):
-        """
-        Converts comments in `file`.
-
-        The source file is updated if conversions for comments are found.
-
-        Parameters
-        ----------
-        file : Path
-            The source file with zero or more comments.
-        replace : Replace
-            Specifies how new comments are added.
-        """
-        code = file.read_text()
-        result = self.convert_string(code, replace)
-        if result != code:
-            print(f"\"{file}\" was updated")
-            file.write_text(result)
-        else:
-            print(f"\"{file}\" has not changed")
-
-    def convert_files(self, dir: Path, replace: Replace, regex: Optional[str] = None):
-        """
-        Converts comments in files in `dir` recursively.
-
-        The filenames of the files must be fully matched by `regex`.
-
-        Parameters
-        ----------
-        dir : Path
-            The directory.
-        replace : Replace
-            Specifies how new comments are added.
-        regex : Optional[str], optional
-            The Python RegEx to include files, by default None
-        """
-        if regex is None:
-            regex = self.default_regex
-
-        files = list(get_files(dir, regex))
-        files_count = len(files)
-        print(f"{files_count} files found by regex {regex}")
-        for i, file in enumerate(files):
-            print(f"{i+1}/{files_count} Converting file \"{file}\"")
-            self.convert_file(file, replace)
