@@ -4,7 +4,7 @@ from argparse import Namespace
 import shutil
 from typing import Optional
 
-from sourcetodoc.docstring.cli import comment
+from sourcetodoc.docstring.cli import run_comment_converter
 from sourcetodoc.helpers import delete_directory_if_exists
 from sourcetodoc.cli.ConfiguredParser import ConfiguredParser
 from sourcetodoc.testcoverage.cover_meson import *
@@ -422,7 +422,7 @@ if __name__ == "__main__":
     # docstring preprocessing
     if args.converter is not None:
         print("\nComment Conversion:\n")
-        comment(parser, project_path, **vars(args))
+        run_comment_converter(parser, project_path, **vars(args))
 
     if args.disable_doc_gen:
         print("\nDocumentation Generation:\n")

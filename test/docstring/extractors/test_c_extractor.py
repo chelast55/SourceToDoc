@@ -1,11 +1,12 @@
 import pytest
 
-from sourcetodoc.docstring.extractors.c_extractor import CExtractor
+from sourcetodoc.docstring.extractor import Extractor
+from sourcetodoc.docstring.extractors.c_type import CType
 from sourcetodoc.docstring.extractors.c_libclang_extractor import CLibclangExtractor
 
 
 @pytest.fixture
-def extractor() -> CExtractor:
+def extractor() -> Extractor[CType]:
     return CLibclangExtractor()
 
 
@@ -50,7 +51,7 @@ int a; /**< a */
         (comment_after_member, "/**< a */\n       /**< b */"),
     ],
 )
-def test_extract_one_comment(extractor: CExtractor, input: str, expected: str):
+def test_extract_one_comment(extractor: Extractor[CType], input: str, expected: str):
     comments = list(extractor.extract_comments(input))
     assert len(comments) == 1
     assert comments[0].comment_text == expected
@@ -62,7 +63,7 @@ comment_with_indent = """\
     void f(void) {}"""
 
 
-def test_extract_comment_with_indent(extractor: CExtractor):
+def test_extract_comment_with_indent(extractor: Extractor[CType]):
     comments = list(extractor.extract_comments(comment_with_indent))
     assert len(comments) == 1
     assert comments[0].symbol_indentation == "    "

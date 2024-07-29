@@ -2,11 +2,12 @@ from typing import Mapping, override
 
 from clang.cindex import Cursor, CursorKind, TranslationUnit
 
-from .c_extractor import CExtractor, Comment, CType
+from ..extractor import Comment, Extractor
+from .c_type import CType
 from .libclang_extractor import LibclangExtractor
 
 
-class CLibclangExtractor(CExtractor):
+class CLibclangExtractor(Extractor[CType]):
     """
     Extracts coments from C source code that are associated with
     symbols.

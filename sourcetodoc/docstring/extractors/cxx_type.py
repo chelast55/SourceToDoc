@@ -1,7 +1,4 @@
 from enum import Enum, auto
-from typing import Protocol
-
-from ..extractor import Comment, Extractor
 
 
 class CXXType(Enum):
@@ -20,9 +17,3 @@ class CXXType(Enum):
     CLASS_TEMPLATE = auto()
     FIELD = auto()
     UNKNOWN = auto()
-
-
-class CXXExtractor(Extractor[CXXType], Protocol):
-    """Extracts comments from C++ source files"""
-    def extract_comments(self, code: str) -> list[Comment[CXXType]]:
-        ...
