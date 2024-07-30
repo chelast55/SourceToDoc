@@ -23,7 +23,7 @@ $ python main.py --project_name test --project_path <path> --converter function_
 ```
 
 If desired, all components of the toolchain can be disabled individually (`disable_doc_gen`for *documentation generation* and `disable_test_cov` for *test coverage evaluation*).  
-Some recommended additional options would be `--project_author` and `--project_year`.  
+Some recommended additional options would be `--project_number` and `--project_brief`.  
 For all possible options, see:
 ```sh
 $ python main.py --help
