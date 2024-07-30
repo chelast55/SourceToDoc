@@ -33,6 +33,7 @@ $ python main.py --help
 ```
 
 ## Setup
+Todo: How to ensure submodules are also fetched (git submodule update --init)
 ### Linux (Debian/Ubuntu)
 All Dependencies can be installed via *apt* and *pip* packet managers.
 If you have not installed `python(3.12)` yet or your default `python(3)` version is older than `3.12`, install it first and make sure, it is set as default
@@ -40,7 +41,7 @@ If you have not installed `python(3.12)` yet or your default `python(3)` version
 With that out of the way, you can continue installing the dependencies:
 Non-Python first:
 ```sh
-sudo apt install python3-pip doxygen graphviz meson ninja-build cmake cmocka # TODO: git pull submodules
+sudo apt install python3-pip doxygen graphviz cmake cmocka # TODO: git pull submodules
 ```
 Python dependencies:
 ```sh

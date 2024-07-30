@@ -277,29 +277,51 @@ if __name__ == "__main__":
         SKIP_FUNCTION_MACROS    = {"YES" if args.disable_skip_function_macros else "NO"}
         
         # Configuration options related to diagram generator tools
-
+        HIDE_UNDOC_RELATIONS    = NO
+        HAVE_DOT                = {"YES" if args.disable_dot_graphs else "NO"}
+        DOT_NUM_THREADS         = 0
+        #DOT_COMMON_ATTR         =
+        #DOT_EDGE_ATTR           = 
+        #DOT_NODE_ATTR           = 
+        #DOT_FONTPATH            =
+        CLASS_GRAPH             = {"YES" if args.disable_dot_graphs else "NO"}
+        COLLABORATION_GRAPH     = {"YES" if args.disable_dot_graphs else "NO"}
+        GROUP_GRAPHS            = {"YES" if args.disable_dot_graphs else "NO"}
+        UML_LOOK                = {"YES" if args.disable_uml_look else "NO"}
+        UML_LIMIT_NUM_FIELDS    = {args.uml_limit_num_fields if not args.uml_limit_num_fields == 0 else 100}
+        DOT_UML_DETAILS         = {args.dot_uml_details}
+        DOT_WRAP_THRESHOLD      = 20
+        TEMPLATE_RELATIONS      = {"YES" if args.disable_template_relations else "NO"}
+        INCLUDE_GRAPH           = {"YES" if args.disable_dot_graphs else "NO"}
+        INCLUDED_BY_GRAPH       = {"YES" if args.disable_dot_graphs else "NO"}
+        CALL_GRAPH              = {"YES" if args.disable_dot_graphs else "NO"}
+        CALLER_GRAPH            = {"YES" if args.disable_dot_graphs else "NO"}
+        GRAPHICAL_HIERARCHY     = {"YES" if args.disable_dot_graphs else "NO"}
+        DIRECTORY_GRAPH         = {"YES" if args.disable_dot_graphs else "NO"}
+        DIR_GRAPH_MAX_DEPTH     = 25
+        DOT_IMAGE_FORMAT        = {args.dot_image_format}
+        INTERACTIVE_SVG         = YES
+        DOT_PATH                = 
+        DOTFILE_DIRS            = 
+        DIA_PATH                = 
+        DIAFILE_DIRS            = 
+        PLANTUML_JAR_PATH       =
+        PLANTUML_CFG_FILE       = 
+        PLANTUML_INCLUDE_PATH   = 
+        DOT_GRAPH_MAX_NODES     = 1000
+        MAX_DOT_GRAPH_DEPTH     = 0
+        DOT_MULTI_TARGETS       = YES
+        GENERATE_LEGEND         = YES
+        DOT_CLEANUP             = {"YES" if args.disable_dot_cleanup else "NO"}
+        MSCGEN_TOOL             = 
+        MSCFILE_DIRS            =
+        
+        # not properly inplemented but still set:
         # OPTIMIZE_OUTPUT_FOR_C  = YES
         SORT_MEMBERS_CTORS_1ST = YES
         GENERATE_AUTOGEN_DEF   = YES # EXPERIMENTAL
         HIDE_UNDOC_RELATIONS   = YES
         GENERATE_TREEVIEW = YES
-        HAVE_DOT = YES
-        CLASS_GRAPH = YES
-        COLLABORATION_GRAPH = YES
-        UML_LOOK = YES
-        UML_LIMIT_NUM_FIELDS   = 50
-        DOT_UML_DETAILS = YES
-        TEMPLATE_RELATIONS     = YES
-        INCLUDE_GRAPH = YES
-        INCLUDED_BY_GRAPH = YES
-        CALL_GRAPH = YES
-        CALLER_GRAPH = YES
-        GRAPHICAL_HIERARCHY = YES
-        DIRECTORY_GRAPH = YES
-        DOT_IMAGE_FORMAT = svg
-        INTERACTIVE_SVG = YES
-        DOT_MULTI_TARGETS      = YES
-        DOT_GRAPH_MAX_NODES = 100
         HTML_COLORSTYLE = {"DARK" if not (args.doxygen_html_theme == "doxygen_awesome") else "LIGHT"}  # required with Doxygen >= 1.9.5
     """
 
