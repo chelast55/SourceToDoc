@@ -37,15 +37,15 @@ $ git clone --recurse-submodules https://github.com/chelast55/SourceToDoc.git
 ### Linux (Debian/Ubuntu)
 All Dependencies can be installed via *apt* and *pip* packet managers.
 If you have not installed `python(3.12)` yet or your default `python(3)` version is older than `3.12`, install it first and make sure, it is set as default
-(see https://ubuntuhandbook.org/index.php/2023/05/install-python-3-12-ubuntu/ for more on this).  
+(see https://ubuntuhandbook.org/index.php/2023/05/install-python-3-12-ubuntu/ and potentially https://pip.pypa.io/en/stable/installation/ for more on this).  
 With that out of the way, you can continue installing the dependencies:
 Non-Python first:
 ```sh
-$ sudo apt install python3-pip doxygen graphviz cmake cmocka
+$ sudo apt install python3-pip doxygen graphviz cmake libcmocka-dev
 ```
 Python dependencies:
 ```sh
-$ sudo pip install requirements.txt
+$ sudo pip install -r requirements.txt
 ```
 
 ### Windows
