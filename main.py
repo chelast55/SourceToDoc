@@ -22,7 +22,7 @@ if __name__ == "__main__":
                 f"When using the documentation generation or test coverage evaluation parts of the toolchain, "
                 f"a project name must be provided!"
             )
-    elif args.project_name is None or args.project_path is None:
+    elif args.project_name is None and args.project_path is None:
         raise ValueError(
             f"Missing argument: --project_path OR --project_name\n"
             f"Path to project source files must be either provided explicitly (--project_path) or indirectly via "
@@ -50,7 +50,6 @@ if __name__ == "__main__":
     exhale_containment_path: Path = doc_source_path / Path("exhale")
     exhale_containment_path_abs: Path = doc_source_path_abs / Path("exhale")
     exhale_include_path: Path = doc_path / exhale_containment_path
-    graphviz_dot_path: Path | None = Path(args.graphviz_dot_path) if args.graphviz_dot_path is not None else None
 
     # conditions
     doxygen_xml_required: bool = not args.apidoc_toolchain == "doxygen-only"
@@ -367,7 +366,6 @@ if __name__ == "__main__":
     doxygen_path: Path = Path(r"{str(doxygen_path)}")
     sphinx_path: Path = Path(r"{str(sphinx_path)}")
     exhale_path: Path = Path(r"{str(exhale_containment_path)}")
-    graphviz_dot_path: Path = Path(r"{str(graphviz_dot_path)}")
             
     graphviz_output_format = "svg"
     # graphviz_dot_args = ["-Gbgcolor=#FF00FF", "-Ncolor=#ffffff", "-Ecolor=#00ff00"]
@@ -442,7 +440,7 @@ if __name__ == "__main__":
     """
 
     # docstring preprocessing
-    if args.converter is not None:
+    if not args.converter is None:
         print("\nComment Conversion:\n")
         run_comment_converter(parser, project_path, **vars(args))
 
@@ -452,13 +450,16 @@ if __name__ == "__main__":
         delete_directory_if_exists(doc_path_abs)
         doc_path_abs.mkdir(parents=True, exist_ok=True)
         doxygen_path.mkdir(parents=True, exist_ok=True)
-        default_dot = shutil.which("dot")
-        if default_dot is None and graphviz_dot_path is None:
-            parser.error("dot.(exe) was not found in PATH")
-        elif graphviz_dot_path is not None and not graphviz_dot_path.exists():
-            parser.error(f"--graphviz_dot_path: {graphviz_dot_path} does not exist")
         chdir(generated_docs_main_path)
 
+        # check installed tools
+        default_dot = shutil.which("dot")
+        if default_dot is None:
+            parser.error("dot (graphviz) was not found in PATH")
+        default_doxygen = shutil.which("doxygen")
+        if default_doxygen is None:
+            parser.error("doxygen was not found in PATH")
+        
         if args.apidoc_toolchain == "doxygen-only":
             # generate config file for Doxygen
             with open(Path("Doxyfile.in"), "w+") as doxyfile:

@@ -44,15 +44,15 @@ class _ConverterNames(StrEnum):
 def run_comment_converter(parser: ArgumentParser, src_path: Path, **kwargs: str) -> None:
     """Runs the converter depending on the given arguments in `kwargs`."""
 
-    c_regex = kwargs["cc_c_regex"] if "cc_c_regex" in kwargs else r".*\.[ch]"
-    cxx_regex = kwargs["cc_cxx_regex"] if "cc_cxx_regex" in kwargs else r".*\.(c(pp|xx|c)|h(pp|xx|h)?)"
+    c_regex = kwargs["cc_c_regex"] if ("cc_c_regex" in kwargs and kwargs["cc_c_regex"] is not None) else r".*\.[ch]"
+    cxx_regex = kwargs["cc_cxx_regex"] if ("cc_cxx_regex" in kwargs and kwargs["cc_cxx_regex"] is not None) else r".*\.(c(pp|xx|c)|h(pp|xx|h)?)"
     try:
         c_pattern = re.compile(c_regex)
-    except Exception:
+    except re.error:
         parser.error(f"Error: Python RegEx {c_regex} cannot be compiled")
     try:
         cxx_pattern = re.compile(cxx_regex)
-    except Exception:
+    except re.error:
         parser.error(f"Error: Python RegEx {cxx_regex} cannot be compiled")
 
     selected_conversion = _get_conversion(parser, **kwargs)
