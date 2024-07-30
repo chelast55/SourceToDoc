@@ -11,6 +11,7 @@ ARGS_YAML_PATHS: list[Path] = [
     Path("args_base.yaml"),
     Path("args_doxygen.yaml"),
     Path("args_comment.yaml"),
+    Path("args_coverage.yaml")
 ]
 """Paths to YAML files containing parser arguments."""
 
@@ -21,7 +22,7 @@ REQUIRED_ARG_PARAMS: list[str] = [
 Keys considered mandatory for an argument to be "valid".
 
 - "help":   help message for the argument (technically not mandatory, but enforced anyway for usability reasons)
-- "type":   expected (or converted to) type of the argument (enforced for less need of defensive programming measures)
+- "type":   expected (or converted to) type of the argument (enforced (when NOT using 'action') for less need of defensive programming measures)
 """
 
 OPTIONAL_ARG_PARAMS: list[str] = [
@@ -178,10 +179,11 @@ class ConfiguredParser(ArgumentParser):
                     arg_params: dict[str, Any] = arg[arg_name]
                     for required_param in REQUIRED_ARG_PARAMS:
                         if not required_param in arg_params.keys():  # check for required parameters missing
-                            raise KeyError(
-                                f"Required parameter \"{required_param}\" missing in \"{arg_name}\" ({args_yaml_path}).\n"
-                                f"Required parameters: {REQUIRED_ARG_PARAMS}"
-                            )
+                            if not (required_param == "type" and "action" in arg_params.keys()):  # special case, 'action' does not work with 'type'
+                                raise KeyError(
+                                    f"Required parameter \"{required_param}\" missing in \"{arg_name}\" ({args_yaml_path}).\n"
+                                    f"Required parameters: {REQUIRED_ARG_PARAMS}"
+                                )
                     for key in arg_params.keys():
                         if not isinstance(key, str):  # check for all keys being strings
                             raise TypeError(f"\"{key}\" in \"{arg_name}\" ({args_yaml_path}) is not a string.")
@@ -291,15 +293,15 @@ class ConfiguredParser(ArgumentParser):
 
             add_argument_kwargs: dict[str, Any] = {"help": arg_params["help"]}
 
-            if not arg_params["type"] == "bool":  # having any type set causes store_true/store_false to fail
-                add_argument_kwargs["type"] = eval(arg_params["type"])
+            if "type" in arg_params.keys() and not arg_params["type"] == "bool":  
+                add_argument_kwargs["type"] = eval(arg_params["type"])  # having any type set causes most(?) actions (store_true/store_false/etc.) to fail
 
             if "default" in arg_params.keys():
                 if arg_params["default"] is None:
                     add_argument_kwargs["default"] = None
                 else:  # perform "dynamic cast" to the type specified in arg_params["type"]
                     add_argument_kwargs["default"] = eval(arg_params["type"])(arg_params["default"])
-            elif arg_params["type"] == "bool":
+            elif "type" in arg_params.keys() and arg_params["type"] == "bool":
                 add_argument_kwargs["default"] = False
 
             if "required" in arg_params.keys():

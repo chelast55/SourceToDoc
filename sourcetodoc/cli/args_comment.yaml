@@ -1,14 +1,8 @@
-- path:
-    help: A file or directory
-    type: str
-    subparser: comment
-    default: "."
 - converter:
     help: The converter to use to convert comments
-    type: str
-    required: true
-    subparser: comment
-- replace:
+    action: store_const
+    const: "default"
+- cc_replace:
     help: |
       The method to replace comments.
       "replace": Replace old comment with new comment.
@@ -20,43 +14,36 @@
       - append
       - inline
     default: replace
-    subparser: comment
-- filter:
-    help: Overrides the default include filter of the converter (Only matters if the path is a directory) (Python RegEx)
-    type: str
-    subparser: comment
-- style:
+- cc_style:
     help: Specifies the comment style to convert into
     type: str
-    subparser: comment
-- only_after_member:
+- cc_only_after_member:
     help: If set, only consider single line comments after members
     type: bool
-    subparser: comment
-- openai_base_url:
+- cc_openai_base_url:
     help: base_url for the OpenAI API
     type: str
-    subparser: comment
-- openai_api_key:
+- cc_openai_api_key:
     help: api_key for the OpenAI API
     type: str
-    subparser: comment
-- llm_model:
+- cc_llm_model:
     help: The LLM model to use with the OpenAI API
     type: str
-    subparser: comment
-- command_style:
+- cc_command_style:
     help: The Doxygen command style to convert into
     type: str
     choices:
       - default
       - javadoc
-    subparser: comment
-- find:
+- cc_find:
     help: Python RegEx to find substrings
     type: str
-    subparser: comment
-- replacement:
+- cc_substitution:
     help: Substitution for substrings found by --find
     type: str
-    subparser: comment
+- cc_c_regex:
+    help: The Python RegEx to find C source files, by default r".*\.[ch]". It has precedence over --cxx_regex.
+    type: str
+- cc_cxx_regex:
+    help: The Python RegEx to find C++ files, by default r".*\.(c(pp|xx|c)|h(pp|xx|h)?)"
+    type: str

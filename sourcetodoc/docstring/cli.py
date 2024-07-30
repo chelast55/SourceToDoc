@@ -1,4 +1,5 @@
 import re
+from argparse import ArgumentParser
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional
@@ -6,15 +7,13 @@ from typing import Any, Iterable, Mapping, Optional
 from openai import OpenAI
 
 from .comment_style import CommentStyle
+from .conversion import Conversion
+from .conversions.command_style_conversion import CommandStyleConversion
+from .conversions.comment_style_conversion import CommentStyleConversion
+from .conversions.find_and_replace_conversion import FindAndReplaceConversion
 from .conversions.llm import LLM
+from .conversions.llm_conversion import LLMConversion
 from .converter import Converter
-from .converters import (c_command_style_converter, c_comment_style_converter,
-                         c_find_and_replace_converter,
-                         c_function_comment_llm_converter,
-                         cxx_command_style_converter,
-                         cxx_comment_style_converter,
-                         cxx_find_and_replace_converter,
-                         cxx_function_comment_llm_converter)
 from .replace import Replace
 
 _style_map: Mapping[str, CommentStyle] = {
@@ -35,19 +34,32 @@ _style_map: Mapping[str, CommentStyle] = {
 
 
 class _ConverterNames(StrEnum):
-    C_COMMENT_STYLE = "c_comment_style"
-    CXX_COMMENT_STYLE = "cxx_comment_style"
-    C_FUNCTION_COMMENT_LLM = "c_function_comment_llm"
-    CXX_FUNCTION_COMMENT_LLM = "cxx_function_comment_llm"
-    C_COMMAND_STYLE = "c_command_style"
-    CXX_COMMAND_STYLE = "cxx_command_style"
-    C_FIND_AND_REPLACE = "c_find_and_replace"
-    CXX_FIND_AND_REPLACE = "cxx_find_and_replace"
+    DEFAULT = "default"
+    COMMENT_STYLE = "comment_style"
+    FUNCTION_COMMENT_LLM = "function_comment_llm"
+    COMMAND_STYLE = "command_style"
+    FIND_AND_REPLACE = "find_and_replace"
 
 
-def comment(**kwargs: str) -> None:
-    """Runs a converter depending on the given arguments in `kwargs`."""
-    match kwargs["replace"]:
+def run_comment_converter(parser: ArgumentParser, src_path: Path, **kwargs: str) -> None:
+    """Runs the converter depending on the given arguments in `kwargs`."""
+
+    c_regex = kwargs["cc_c_regex"] if ("cc_c_regex" in kwargs and kwargs["cc_c_regex"] is not None) else r".*\.[ch]"
+    cxx_regex = kwargs["cc_cxx_regex"] if ("cc_cxx_regex" in kwargs and kwargs["cc_cxx_regex"] is not None) else r".*\.(c(pp|xx|c)|h(pp|xx|h)?)"
+    try:
+        c_pattern = re.compile(c_regex)
+    except re.error:
+        parser.error(f"Error: Python RegEx {c_regex} cannot be compiled")
+    try:
+        cxx_pattern = re.compile(cxx_regex)
+    except re.error:
+        parser.error(f"Error: Python RegEx {cxx_regex} cannot be compiled")
+
+    selected_conversion = _get_conversion(parser, **kwargs)
+    if selected_conversion is None:
+        raise RuntimeError
+    
+    match kwargs["cc_replace"]:
         case "replace":
             replace = Replace.REPLACE_OLD_COMMENTS
         case "append":
@@ -57,136 +69,123 @@ def comment(**kwargs: str) -> None:
         case _:
             raise RuntimeError
 
-    converter = _get_converter(**kwargs)
-    if converter is not None:
-        path: Path = Path(kwargs["path"])
-        if path.is_file():
-            converter.convert_file(path, replace)
-        elif path.is_dir():
-            converter.convert_files(path, replace, kwargs["filter"])
-        else:
-            print(f"{path} is not a file or a directory")
+    converter = Converter(
+        c_pattern,
+        cxx_pattern,
+        selected_conversion,
+        replace
+    )
+    if src_path.is_file():
+        converter.convert_file(src_path)
+    elif src_path.is_dir():
+        converter.convert_files(src_path)
+    else:
+        parser.error(f"{src_path} is not a file or a directory")
 
 
-def _get_converter(**kwargs: str) -> Optional[Converter[Any]]:
-    converter: Optional[Converter[Any]] = None
+def _get_conversion(parser: ArgumentParser, **kwargs: str) -> Conversion[Any] | None:
+    conversion: Optional[Conversion[Any]] = None
     arg_helper = _ArgumentHelper(**kwargs)
     match kwargs["converter"]:
-        case _ConverterNames.C_COMMENT_STYLE:
+        case _ConverterNames.DEFAULT:
+            style = CommentStyle.JAVADOC_BLOCK
+            conversion = CommentStyleConversion(style)
+        case _ConverterNames.COMMENT_STYLE:
             result = arg_helper.get_style_and_only_after_member()
             if result is not None:
                 style, only_after_member = result
-                converter = c_comment_style_converter(style, only_after_member)
-        case _ConverterNames.CXX_COMMENT_STYLE:
-            result = arg_helper.get_style_and_only_after_member()
-            if result is not None:
-                style, only_after_member = result
-                converter = cxx_comment_style_converter(style, only_after_member)
-        case _ConverterNames.C_FUNCTION_COMMENT_LLM:
+                conversion = CommentStyleConversion(style, only_after_member)
+        case _ConverterNames.FUNCTION_COMMENT_LLM:
             llm = arg_helper.get_llm()
             if llm is not None:
-                converter = c_function_comment_llm_converter(llm)
-        case _ConverterNames.CXX_FUNCTION_COMMENT_LLM:
-            llm = arg_helper.get_llm()
-            if llm is not None:
-                converter = cxx_function_comment_llm_converter(llm)
-        case _ConverterNames.C_COMMAND_STYLE:
+                conversion = LLMConversion(llm)
+        case _ConverterNames.COMMAND_STYLE:
             javadoc_style = arg_helper.get_command_style()
             if javadoc_style is not None:
-                converter = c_command_style_converter(javadoc_style)
-        case _ConverterNames.CXX_COMMAND_STYLE:
-            javadoc_style = arg_helper.get_command_style()
-            if javadoc_style is not None:
-                converter = cxx_command_style_converter(javadoc_style)
-        case _ConverterNames.C_FIND_AND_REPLACE:
+                conversion = CommandStyleConversion(javadoc_style)
+        case _ConverterNames.FIND_AND_REPLACE:
             pattern_and_replacement = arg_helper.get_find_and_replace()
             if pattern_and_replacement is not None:
                 pattern, replacement = pattern_and_replacement
-                converter = c_find_and_replace_converter(pattern, replacement)
-        case _ConverterNames.CXX_FIND_AND_REPLACE:
-            pattern_and_replacement = arg_helper.get_find_and_replace()
-            if pattern_and_replacement is not None:
-                pattern, replacement = pattern_and_replacement
-                converter = cxx_find_and_replace_converter(pattern, replacement)
+                conversion = FindAndReplaceConversion(pattern, replacement)
         case _:
-            print("Choices for --converter:")
-            for e in _ConverterNames:
-                print(e)
-    
-    if arg_helper.has_missing_args():
-        arg_helper.print_missing_args_message()
+            message = "Choices for --converter:\n" + "\n".join(e for e in _ConverterNames)
+            parser.error(message)
 
-    return converter
+    if arg_helper.has_missing_args():
+        message = arg_helper.get_missing_args_message()
+        parser.error(message)
+    return conversion
 
 
 class _ArgumentHelper:
-    def __init__(self, **kwargs: Optional[str]) -> None:
+    def __init__(self, **kwargs: str | None) -> None:
         self.kwargs = kwargs
         self.messages: list[str] = []
     
     def get_style_and_only_after_member(self) -> Optional[tuple[CommentStyle, bool]]:
-        self._check_args_present("style", "only_after_member")
+        self._check_args_present("cc_style", "cc_only_after_member")
 
-        style = self.kwargs["style"]
+        style = self.kwargs["cc_style"]
         if style is None:
-            self._add_arg_missing_message(f"style")
+            self._add_arg_missing_message(f"cc_style")
 
         if style not in _style_map:
             choices = self.__class__._repr_per_line(_style_map)
-            self._add_message(f"Choices for --style:\n{choices}")
+            self._add_message(f"Choices for --cc_style:\n{choices}")
         
-        only_after_member = self.kwargs["only_after_member"]
+        only_after_member = self.kwargs["cc_only_after_member"]
 
         if not self.has_missing_args():
             return _style_map[style], only_after_member # type: ignore
 
     def get_llm(self) -> Optional[LLM]:
-        self._check_args_present("openai_base_url", "openai_api_key", "llm_model")
+        self._check_args_present("cc_openai_base_url", "cc_openai_api_key", "cc_llm_model")
 
-        base_url = self.kwargs["openai_base_url"]
-        api_key = self.kwargs["openai_api_key"]
-        model = self.kwargs["llm_model"]
+        base_url = self.kwargs["cc_openai_base_url"]
+        api_key = self.kwargs["cc_openai_api_key"]
+        model = self.kwargs["cc_llm_model"]
 
         if base_url is None:
-            self._add_arg_missing_message("openai_base_url")
+            self._add_arg_missing_message("cc_openai_base_url")
         if api_key is None:
-            self._add_arg_missing_message("openai_api_key")
+            self._add_arg_missing_message("cc_openai_api_key")
         if model is None:
-            self._add_arg_missing_message("llm_model")
+            self._add_arg_missing_message("cc_llm_model")
 
         if not self.has_missing_args():
             client = OpenAI(base_url=base_url, api_key=api_key)
             return LLM(client, model) # type: ignore
     
     def get_command_style(self) -> Optional[bool]:
-        self._check_args_present("command_style")
+        self._check_args_present("cc_command_style")
 
-        command_style = self.kwargs["command_style"]
+        command_style = self.kwargs["cc_command_style"]
         match command_style:
             case "default":
                 return False
             case "javadoc":
                 return True
             case _:
-                self._add_message("Value for --command_style must be \"default\" or \"javadoc\"")
+                self._add_message("Value for --cc_command_style must be \"default\" or \"javadoc\"")
                 return None
     
     def get_find_and_replace(self) -> Optional[tuple[re.Pattern[str], str]]:
-        self._check_args_present("find", "replacement")
+        self._check_args_present("cc_find", "cc_substitution")
 
-        find = self.kwargs["find"]
+        find = self.kwargs["cc_find"]
         pattern = None
         if find is None:
-            self._add_arg_missing_message("find")
+            self._add_arg_missing_message("cc_find")
         else:
             try:
                 pattern = re.compile(find)
             except Exception:
-                self._add_message(f"Error occured when compiling {find}")
+                self._add_message(f"Error: Python RegEx {find} cannot be compiled")
         
-        replacement = self.kwargs["replacement"]
+        replacement = self.kwargs["cc_substitution"]
         if replacement is None:
-            self._add_arg_missing_message("replacement")
+            self._add_arg_missing_message("cc_substitution")
 
         if pattern is not None and replacement is not None:
             return (pattern, replacement)
@@ -194,10 +193,10 @@ class _ArgumentHelper:
     def has_missing_args(self) -> bool:
         return len(self.messages) > 0
     
-    def print_missing_args_message(self) -> None:
+    def get_missing_args_message(self) -> str:
         if not self.has_missing_args():
             raise ValueError
-        print("\n".join(self.messages))
+        return "\n".join(self.messages)
 
     def _check_args_present(self, *args: str) -> None:
         for arg in args:
@@ -205,7 +204,7 @@ class _ArgumentHelper:
                 raise RuntimeError
     
     def _add_arg_missing_message(self, missing: str) -> None:
-        self._add_message(f"--{missing} is not specified")
+        self._add_message(f"--{missing} is mandatory")
 
     def _add_message(self, message: str) -> None:
         self.messages.append(message)

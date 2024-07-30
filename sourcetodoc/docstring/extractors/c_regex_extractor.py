@@ -1,10 +1,9 @@
 import re
 from typing import Optional, override
 
+from ..extractor import Comment, Extractor
 from ..range import Range
-
-from ..extractor import Comment
-from .c_extractor import CExtractor, CType
+from .c_type import CType
 
 _IDENTIFIER_REGEX: str = r"(_|[a-zA-Z])[a-zA-Z0-9_]+"
 
@@ -25,7 +24,7 @@ _BLOCK_COMMENT_REGEX: str = (r"^(?P<indentation>(?:[ ]{2}|\t)*)"             # M
                                 r")")
 
 
-class CRegexExtractor(CExtractor):
+class CRegexExtractor(Extractor[CType]):
     """
     Extracts comments from C source code with Python RegEx.
 

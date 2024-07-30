@@ -1,31 +1,30 @@
 from typing import Mapping, override
 
-import pylibclang._C as C
-from pylibclang.cindex import (Cursor, CursorKind,  # type: ignore
-                               TranslationUnit)
+from clang.cindex import Cursor, CursorKind, TranslationUnit
 
-from .c_extractor import CExtractor, Comment, CType
-from .pylibclang_extractor import PylibclangExtractor
+from ..extractor import Comment, Extractor
+from .c_type import CType
+from .libclang_extractor import LibclangExtractor
 
 
-class CPylibclangExtractor(CExtractor):
+class CLibclangExtractor(Extractor[CType]):
     """
     Extracts coments from C source code that are associated with
     symbols.
     """
-    type_map: Mapping[C.CXCursorKind, CType] = {
-        C.CXCursorKind.CXCursor_FunctionDecl: CType.FUNCTION,
-        C.CXCursorKind.CXCursor_StructDecl: CType.STRUCT,
-        C.CXCursorKind.CXCursor_UnionDecl: CType.UNION,
-        C.CXCursorKind.CXCursor_FieldDecl: CType.VARIABLE,
-        C.CXCursorKind.CXCursor_EnumDecl: CType.ENUM,
-        C.CXCursorKind.CXCursor_EnumConstantDecl: CType.ENUM_CONSTANT,
-        C.CXCursorKind.CXCursor_VarDecl: CType.VARIABLE,
-        C.CXCursorKind.CXCursor_TypedefDecl: CType.TYPEDEF,
+    type_map: Mapping[CursorKind, CType] = {
+        CursorKind.FUNCTION_DECL: CType.FUNCTION,
+        CursorKind.STRUCT_DECL: CType.STRUCT,
+        CursorKind.UNION_DECL: CType.UNION,
+        CursorKind.FIELD_DECL: CType.FIELD,
+        CursorKind.ENUM_DECL: CType.ENUM,
+        CursorKind.ENUM_CONSTANT_DECL: CType.ENUM_CONSTANT,
+        CursorKind.VAR_DECL: CType.VARIABLE,
+        CursorKind.TYPEDEF_DECL: CType.TYPEDEF,
     }
 
     def __init__(self) -> None:
-        self.extractor = PylibclangExtractor(
+        self.extractor = LibclangExtractor(
             self.__class__._translation_unit_from_code,
             self.__class__._get_type
         )
