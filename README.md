@@ -33,7 +33,10 @@ $ python main.py --help
 ```
 
 ## Setup
-Todo: How to ensure submodules are also fetched (git submodule update --init)
+To ensure that all submodules are also cloned, use the following command:
+```sh
+$ git clone --recurse-submodules https://github.com/chelast55/SourceToDoc.git
+```
 ### Linux (Debian/Ubuntu)
 All Dependencies can be installed via *apt* and *pip* packet managers.
 If you have not installed `python(3.12)` yet or your default `python(3)` version is older than `3.12`, install it first and make sure, it is set as default
@@ -41,11 +44,11 @@ If you have not installed `python(3.12)` yet or your default `python(3)` version
 With that out of the way, you can continue installing the dependencies:
 Non-Python first:
 ```sh
-sudo apt install python3-pip doxygen graphviz cmake cmocka # TODO: git pull submodules
+$ sudo apt install python3-pip doxygen graphviz cmake cmocka
 ```
 Python dependencies:
 ```sh
-sudo pip install requirements.txt
+$ sudo pip install requirements.txt
 ```
 
 ### Windows
