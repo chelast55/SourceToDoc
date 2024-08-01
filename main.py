@@ -29,7 +29,7 @@ if __name__ == "__main__":
             f"the project name (--project_name) "
         )
 
-    # Paths
+    #region paths
     generated_docs_main_path: Path = Path("out")  # Path conf.py will be placed, everything Doxygen/Sphinx related is rel. to it
     project_path: Path = generated_docs_main_path.parent.absolute() / Path(args.project_name) if (args.project_path is None) else Path(args.project_path)
     doxygen_awesome_submodule_path: Path \
@@ -49,6 +49,7 @@ if __name__ == "__main__":
     exhale_containment_path: Path = doc_source_path / Path("exhale")
     exhale_containment_path_abs: Path = doc_source_path_abs / Path("exhale")
     exhale_include_path: Path = doc_path / exhale_containment_path
+    #endregion paths
 
     # conditions
     doxygen_xml_required: bool = not args.apidoc_toolchain == "doxygen-only"
@@ -67,7 +68,7 @@ if __name__ == "__main__":
     sphinx_html_theme: str = "sphinx_rtd_theme"
     exhale_root_file_name: str = f"root_{args.project_name}"
 
-    # file contents
+    #region file contents
     DOXYFILE_CONTENT: str = f"""
         # Project related configuration options
         DOXYFILE_ENCODING      = UTF-8
@@ -438,6 +439,7 @@ if __name__ == "__main__":
     }}
     
     """
+    #endregion file contents
 
     # docstring preprocessing
     if args.converter is not None:
@@ -472,6 +474,7 @@ if __name__ == "__main__":
 
         elif args.apidoc_toolchain == "sphinx-based":
             # this path is only here for reference and may be (partially) broken
+            #region sphinx-based
             print("!!! Disclaimer: Using sphinx-based is currently not recommended and may not work at all.")
 
             sphinx_path.mkdir(parents=True, exist_ok=True)
@@ -501,6 +504,8 @@ if __name__ == "__main__":
             # run sphinx again
             # maybe some cleanup is necessary?
             #system(f"sphinx-build -b html . {sphinx_path}")
+
+            #endregion sphinx-based
     
     if args.disable_test_cov:
         print("\nTest Coverage Evaluation:\n")
