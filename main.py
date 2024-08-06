@@ -476,4 +476,8 @@ if __name__ == "__main__":
             if args.meson_setup_args is not None:
                 # TODO: str to list or change meson_setup_args in yaml to list if possible
                 pass
+            # TODO: pass cleanup bool to method
             run_meson(meson_build_location, build_folder_name, meson_setup_args)
+
+            # Link coverage and documentation.
+            pass
