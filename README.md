@@ -1,116 +1,95 @@
 # SourceToDoc
 Forschungsprojekt INF 2024 "Reverse Engineering of Documentation and Design for Independently Developed Safety-Related Projects"
 
-## Usage
-When using Linux, you have to begin the following example commands with `python3` instad of `python`, if you have not installed `python-is-python3`.
-
-To run the toolchain in its most basic version, you have to provide at least the name of the directory (`<PROJECT_NAME>`) containing the source of the project, you want to document:   
-(the `<PROJECT_NAME>` directory and your terminal instance should be in the same directory, where `main.py` is located)
-
+## Setup
+To ensure that all submodules are also cloned, use the following command:
+```sh
+$ git clone --recurse-submodules https://github.com/chelast55/SourceToDoc.git
 ```
+### Linux (Debian/Ubuntu)
+When using Linux, you have to begin the following example commands with `python3` instad of `python`, if you have not installed `python-is-python3`.  
+All Dependencies can be installed via *apt* and *pip* packet managers.  
+If you have not installed `python(3.12)` yet or your default `python(3)` version is older than `3.12`, install it first and make sure, it is set as default
+or you address it with `python3.12` (see https://ubuntuhandbook.org/index.php/2023/05/install-python-3-12-ubuntu/).  
+With that out of the way, you can continue installing the non-python dependencies via apt:
+```sh
+$ sudo apt install python3-venv doxygen graphviz cmake libcmocka-dev
+```
+Next, navigate to or open a terminal in the main directory of the freshly downloaded repository (SourceToDoc).  
+There, create a virtual environment and activate it:
+```sh
+$ python -m venv venv
+$ source venv/bin/activate
+```
+Within the virtual environment (likely indicated by a `(venv)` at the beginning of your command line), you can install the python dependencies:
+Python dependencies: (additional requirements are not required for python includes, but for running the test coverage part of the toolchain)
+```sh
+$ sudo pip install -r requirements.txt
+$ sudo pip install -r requirements_additional.txt
+$ sudo pip install pytest  # only required if you want to run the unit tests for this toolchain
+```
+Now, you should be able to run the whole toolchain!
+
+### Windows
+Various Dependencies have to be installed manually on Windows.
+Most of them have installer executables:
+(Where applicable, make sure, the box for adding it to the Windows Path is ticked!)
+- Python 3.12: https://www.python.org/downloads/.
+- Doxygen: https://www.doxygen.nl/download.html
+- Graphviz: https://graphviz.org/download/
+- CMake: https://cmake.org/download/ (Technically available from pip, could be moved there, but is also required for CMocka build)
+You should at least reboot once after all of them are installed, to ensure, Path is updated.
+
+The final one (CMocka) is more complicated, as it has to be built from source. 
+A Guide how to set it up can be found here: https://sam.hooke.me/note/2022/04/setting-up-cmocka/  
+What is not mentioned in the guide, is that mingw32 (and mingw32-make) have to be installed: https://sourceforge.net/projects/mingw/ (make sure to manually enable mingw32-make)  
+Additionally, an implementation of `strtok_r()` has to be added in `cmocka.c` (a public domain implementation of this function by Charlie Gordon can be found [here](http://groups.google.com/group/comp.lang.c/msg/2ab1ecbb86646684)).  
+If you do not plan to use the Test Coverage Evaluation part of the toolchain, you can skip these cmocka-related steps.
+
+All remaining Dependencies can be installed via the *pip* packet manager.
+To do so, navigate to or open a PowerShell terminal in the main directory of the freshly downloaded repository (SourceToDoc).  
+There, create a virtual environment and activate it:
+```sh
+$ python -m venv venv
+$ venv\Scripts\Activate.ps1
+```
+Within the virtual environment (likely indicated by a `(venv)` at the beginning of your command line), you can install the python dependencies:
+Python dependencies:
+```sh
+$ sudo pip install -r requirements.txt
+$ sudo pip install -r requirements_additional.txt
+$ sudo pip install pytest  # only required if you want to run the unit tests for this toolchain
+```
+Now, you should be able to run the whole toolchain!
+
+
+## Usage
+To run the toolchain in its most basic version, you have to provide at least the name of the directory (`<PROJECT_NAME>`) containing the source of the project, you want to document:   
+(the `<PROJECT_NAME>` directory and your terminal instance should be in the same directory, where `main.py` is located and the Python virtual environment should be active)
+
+```sh
 $ python main.py --project_name <PROJECT_NAME>
 ```
-Depending on the software project you try to documemnt, you may not get the most out of the generated documentation. The source code may contain incorrectly formatted docstrings, which causes symbols (function/variable/class names etc.) not to be recognized/linked correctly or the entire docstring not to appear in the documentation at all.  
+Depending on the software project you try to document, you may not get the most out of the generated documentation. The source code may contain incorrectly formatted docstrings, which causes symbols (function/variable/class names etc.) not to be recognized/linked correctly or the entire docstring not to appear in the documentation at all.  
   
 An additional component of the toolchain, the *comment converter*, can be enabled to preprocess the encountered docstrings. Thus, the **recommended** basic version to run the toolchain is as follows:  
-(this will modify the source code)
+(this will modify the source code (more precisely: change // and /* ... /* on symbols to /** ... */ in this case))
 ```sh
-python main.py --project_name <PROJECT_NAME> --converter # Change // and /* ... /* on symbols to /** ... */
+$ python main.py --project_name <PROJECT_NAME> --converter
 ```
 Just enabling the *comment converter* like this will likely solve the issue of docstrings not being recognized. For even better results (where symbols are resolved more correctly), an OpenAI-API-compatible LLM can be used to preprocess docstrings:
 ```sh
-# For C files
-python main.py --project_name test --converter c_function_comment_llm --src_path <path> --openai_base_url <url> --openai_api_key <key> --llm_model <model>
-# or for C++ files
-python main.py --project_name test --converter cxx_function_comment_llm --src_path <path> --openai_base_url <url> --openai_api_key <key> --llm_model <model>
+$ python main.py --project_name test --project_path <path> --converter function_comment_llm --cc_openai_base_url <url> --cc_openai_api_key <key> --cc_llm_model <model>
 ```
 
 If desired, all components of the toolchain can be disabled individually (`disable_doc_gen`for *documentation generation* and `disable_test_cov` for *test coverage evaluation*).  
-Some recommended additional options would be `--project_author` and `--project_year`.  
+Some recommended additional options would be `--project_number` and `--project_brief`.  
 For all possible options, see:
-```
+```sh
 $ python main.py --help
 ```
 
-## Setup
+## File Hierarchy
 TODO
 
-## File Hierarchy
-TODO: this probably deserves it's own file in ``doc`` AND IS REDUNDANT (switch to doxygen-only as main!)
-```
-<PROJECT>
-├───doc
-│   └───<tbd.>
-├───out
-│   ├───doc
-│   │   └───<PROJECT>
-│   │       ├───.doctrees
-│   │       │   ├───doc
-│   │       │   │   └───<PROJECT>
-│   │       │   │       └───src
-│   │       │   │           └───exhale
-│   │       │   │               └───<...doctree>
-│   │       │   ├───environment.pickle
-│   │       │   └───index.doctree
-│   │       ├───_sources
-│   │       │   ├───doc
-│   │       │   │   └───<PROJECT>
-│   │       │   │       └───src
-│   │       │   │           └───exhale
-│   │       │   │               └───<...rst.txt>
-│   │       │   └───index.rst.txt
-│   │       ├───_static
-│   │       │   └───<...>
-│   │       ├───doc
-│   │       │   └───<PROJECT>
-│   │       │           └───src
-│   │       │               └───exhale
-│   │       │                   └───<...html>
-│   │       ├───src
-│   │       │   ├───doxygen
-│   │       │   │    └───xml
-│   │       │   │        └───<...>
-│   │       │   └───exhale
-│   │       │       ├───<...rst>
-│   │       │       └───<...rst.include>
-│   │       ├───genindex.html
-│   │       ├───index.html
-│   │       ├───search.html
-│   │       ├───searchindex.js
-│   │       └───<...>
-│   ├───conf.py
-│   └───index.rst
-├───sourcetodoc
-│   └───helpers.py
-├───submodules
-│   └───doxygen-awesome-css (submodule)
-|       └───<...>
-└───main.py
-```
-The `out` directory and all of its contents are automatically generated after running `main.py`. ``out`` 
-should generally contain everything generated by the toolchain.\
-\
-`conf.py` and `ìndex.rst` are the "main config files" for sphinx. If any manual modifications are desired, 
-Sphinx must be executed manually with `sphinx-build -b html . <PATH TO out>`, because running `main.py` again 
-will reset them.\
-`doc` contains the generated documentation, which should be most of, if not all, of the toolchain's output.
-Here, it first contains a directory with the input project's name. This way `doc` is intended as a collection of 
-documentation of potentially multiple input projects. An option to swap the order of these directories will be 
-added to better suite the use case of simply generating a `doc` folder to paste right into the input project.\
-The innermost of these two directory serves as the root directory for the generated documentation by 
-containing the main page (``index.html``), the alphabetical index page (`genindex.html`) and the search page 
-(`search.html` + `searchindex.js`). Additionally, it also contains various further directories with pages 
-linked in/accessible via ``index.html``, but also various intermediate artifacts (doxygen, breathe, rst and 
-rst.txt files) generated within the toolchain. Unfortunately, this whole "intermediate situation" is a little 
-bit convoluted, because some of the tools do not allow to specify all output paths for their intermediate 
-artifacts. By default, these artefacts are not deleted automatically, because they could serve a further 
-purpose not considered within this toolchain (yet) or may be edited to the users' liking before manually 
-running Sphinx again.\
-``.doctrees`` contains doxygen's intermediate files (doctrees) and mimics the hierarchy within `out` to 
-`src/exhale`. doxygen's XML output is located in `src/doxygen/xml`. \
-``src/exhale`` contains the .rst and .rst.include files generated by exhale.\
-``_sources`` also follows the structure until ``src/exhale``, but contains Sphinx intermediate text files 
-(.rst.txt). This structure is seen once again, but from the perspective of ``out/doc/<PROJECT>`` starting 
-from ``doc`` and containing the final .html files, representing the doxygen XML output, generated by Sphinx.\
-Finally, ``_static`` contains style information mostly dependent on the selected Sphinx HTML template.
  

@@ -4,7 +4,7 @@ from argparse import Namespace
 import shutil
 from typing import Optional
 
-from sourcetodoc.docstring.cli import comment
+from sourcetodoc.docstring.cli import run_comment_converter
 from sourcetodoc.helpers import delete_directory_if_exists
 from sourcetodoc.cli.ConfiguredParser import ConfiguredParser
 from sourcetodoc.testcoverage.cover_meson import *
@@ -14,12 +14,24 @@ if __name__ == "__main__":
     parser = ConfiguredParser()
     args: Namespace = parser.parse_args()
 
-    html_theme: str = "sphinx_rtd_theme"
-    exhale_root_file_name: str = f"root_{args.project_name}"
+    # Non-trivial argument requirements
+    if args.converter is not None:
+        if args.project_name is None:
+            raise ValueError(
+                f"Missing argument: --project_name\n"
+                f"When using the documentation generation or test coverage evaluation parts of the toolchain, "
+                f"a project name must be provided!"
+            )
+    elif args.project_name is None and args.project_path is None:
+        raise ValueError(
+            f"Missing argument: --project_path OR --project_name\n"
+            f"Path to project source files must be either provided explicitly (--project_path) or indirectly via "
+            f"the project name (--project_name) "
+        )
 
-    # Paths
-    generated_docs_main_path: Path = Path("out")  # Path conf.py will be placed, everything Sphinx related is rel. to it
-    project_path: Path = generated_docs_main_path.parent.absolute() / Path(args.project_name) if (args.input is None) else args.input
+    #region paths
+    generated_docs_main_path: Path = Path("out")  # Path conf.py will be placed, everything Doxygen/Sphinx related is rel. to it
+    project_path: Path = generated_docs_main_path.parent.absolute() / Path(args.project_name) if (args.project_path is None) else Path(args.project_path)
     doxygen_awesome_submodule_path: Path \
         = generated_docs_main_path.parent.absolute() / Path("submodules") / Path("doxygen-awesome-css")
 
@@ -27,18 +39,17 @@ if __name__ == "__main__":
     doc_path_abs: Path = generated_docs_main_path.absolute() / doc_path
     doc_source_path: Path = doc_path / Path("src")
     doc_source_path_abs: Path = doc_path_abs / Path("src")
-    doxygen_path: Path = Path()
-    warning_log_file_path: Path = doxygen_path / Path("doxygen_warnings.txt")
     if args.apidoc_toolchain == "doxygen-only":
-        doxygen_path = doc_path_abs
+        doxygen_path: Path = doc_path_abs
     elif args.apidoc_toolchain == "sphinx-based":
-        doxygen_path = doc_source_path_abs / Path("doxygen")
+        doxygen_path: Path = doc_source_path_abs / Path("doxygen")
+    doxygen_warning_log_file_path: Path = doxygen_path / Path("doxygen_warnings.txt")
+    doxygen_stylesheet_path: Path | None = doxygen_awesome_submodule_path / Path("doxygen-awesome.css") if (args.dg_html_theme == "doxygen-awesome") else None
     sphinx_path: Path = doc_path_abs  # Sphinx (or rather its index.html) is the "main artifact"
     exhale_containment_path: Path = doc_source_path / Path("exhale")
     exhale_containment_path_abs: Path = doc_source_path_abs / Path("exhale")
     exhale_include_path: Path = doc_path / exhale_containment_path
-    graphviz_dot_path: Path | None = Path(args.graphviz_dot_path) if args.graphviz_dot_path is not None else None
-    stylesheet_path: Path | None = doxygen_awesome_submodule_path / Path("doxygen-awesome.css") if (args.doxygen_html_theme == "doxygen-awesome") else None
+    #endregion paths
 
     # conditions
     doxygen_xml_required: bool = not args.apidoc_toolchain == "doxygen-only"
@@ -53,21 +64,26 @@ if __name__ == "__main__":
             readme_file_path = potential_readme_file
             break
 
-    # file contents
+    # additional sphinx-specific
+    sphinx_html_theme: str = "sphinx_rtd_theme"
+    exhale_root_file_name: str = f"root_{args.project_name}"
+
+    #region file contents
     DOXYFILE_CONTENT: str = f"""
         # Project related configuration options
         DOXYFILE_ENCODING      = UTF-8
         PROJECT_NAME           = {args.project_name}
+        PROJECT_AUTHOR         = {args.project_author}
         PROJECT_NUMBER         = {args.project_number}
         PROJECT_BRIEF          = {args.project_brief}
         PROJECT_LOGO           = {args.project_logo if (args.project_logo is not None and Path(args.project_logo).is_file()) else ""}
         PROJECT_ICON           = {args.project_icon if (args.project_icon is not None and Path(args.project_icon).is_file()) else ""}
         OUTPUT_DIRECTORY       = {str(doxygen_path).replace('\\', '\\\\')}
-        CREATE_SUBDIRS         = YES
+        CREATE_SUBDIRS         = NO
         ALLOW_UNICODE_NAMES    = NO
-        OUTPUT_LANGUAGE        = {args.output_language}
-        BRIEF_MEMBER_DESC      = {"YES" if args.no_brief_member_desc else "NO"}
-        REPEAT_BRIEF           = {"YES" if args.no_repeat_brief else "NO"}
+        OUTPUT_LANGUAGE        = {args.dg_output_language}
+        BRIEF_MEMBER_DESC      = {"YES" if args.dg_no_brief_member_desc else "NO"}
+        REPEAT_BRIEF           = {"YES" if args.dg_no_repeat_brief else "NO"}
         ABBREVIATE_BRIEF       = "The $name class" \
                                  "The $name widget" \
                                  "The $name file" \
@@ -79,10 +95,10 @@ if __name__ == "__main__":
                                  a \
                                  an \
                                  the
-        ALWAYS_DETAILED_SEC    = {"YES" if args.always_detailed_sec else "NO"}
-        INLINE_INHERITED_MEMB  = {"YES" if args.inline_inherited_memb else "NO"}
-        FULL_PATH_NAMES        = {"YES" if args.disable_full_path_names else "NO"}
-        FULL_PATH_NAMES        = {"YES" if args.disable_full_path_names else "NO"}
+        ALWAYS_DETAILED_SEC    = {"YES" if args.dg_always_detailed_sec else "NO"}
+        INLINE_INHERITED_MEMB  = {"YES" if args.dg_inline_inherited_memb else "NO"}
+        FULL_PATH_NAMES        = {"YES" if args.dg_disable_full_path_names else "NO"}
+        FULL_PATH_NAMES        = {"YES" if args.dg_disable_full_path_names else "NO"}
         STRIP_FROM_PATH        = {str(project_path).replace('\\', '\\\\')}
         STRIP_FROM_INC_PATH    = 
         SHORT_NAMES            = NO
@@ -92,65 +108,65 @@ if __name__ == "__main__":
         MULTILINE_CPP_IS_BRIEF = NO
         PYTHON_DOCSTRING       = YES
         INHERIT_DOCS           = YES
-        SEPARATE_MEMBER_PAGES  = {"YES" if args.separate_member_pages else "NO"}
-        TAB_SIZE               = {args.tab_size}
+        SEPARATE_MEMBER_PAGES  = {"YES" if args.dg_separate_member_pages else "NO"}
+        TAB_SIZE               = {args.dg_tab_size}
         ALIASES                =
-        OPTIMIZE_OUTPUT_FOR_C  = {"YES" if args.optimize_output_for_c else "NO"}
+        OPTIMIZE_OUTPUT_FOR_C  = {"YES" if args.dg_optimize_output_for_c else "NO"}
         OPTIMIZE_OUTPUT_JAVA   = NO
         OPTIMIZE_FOR_FORTRAN   = NO
         OPTIMIZE_OUTPUT_VHDL   = NO
         OPTIMIZE_OUTPUT_SLICE  = NO
         EXTENSION_MAPPING      = 
         MARKDOWN_SUPPORT       = YES
-        TOC_INCLUDE_HEADINGS   = {args.toc_include_headings}
-        MARKDOWN_ID_STYLE      = {args.markdown_id_style}
+        TOC_INCLUDE_HEADINGS   = {args.dg_toc_include_headings}
+        MARKDOWN_ID_STYLE      = {args.dg_markdown_id_style}
         AUTOLINK_SUPPORT       = YES
         BUILTIN_STL_SUPPORT    = YES
         CPP_CLI_SUPPORT        = NO
-        SIP_SUPPORT            = {"YES" if args.sip_support else "NO"}
-        IDL_PROPERTY_SUPPORT   = {"YES" if args.disable_idl_property_support else "NO"}
+        SIP_SUPPORT            = {"YES" if args.dg_sip_support else "NO"}
+        IDL_PROPERTY_SUPPORT   = {"YES" if args.dg_disable_idl_property_support else "NO"}
         DISTRIBUTE_GROUP_DOC   = NO
-        GROUP_NESTED_COMPOUNDS = {"YES" if args.group_nested_compounds else "NO"}
-        SUBGROUPING            = {"YES" if args.disable_subgrouping else "NO"}
-        INLINE_GROUPED_CLASSES = {"YES" if args.inline_grouped_classes else "NO"}
-        INLINE_SIMPLE_STRUCTS  = {"YES" if args.inline_simple_structs else "NO"}
-        TYPEDEF_HIDES_STRUCT   = {"YES" if args.typedef_hides_struct else "NO"}
-        LOOKUP_CACHE_SIZE      = {2 if args.small_lookup_cache else 9}
+        GROUP_NESTED_COMPOUNDS = {"YES" if args.dg_group_nested_compounds else "NO"}
+        SUBGROUPING            = {"YES" if args.dg_disable_subgrouping else "NO"}
+        INLINE_GROUPED_CLASSES = {"YES" if args.dg_inline_grouped_classes else "NO"}
+        INLINE_SIMPLE_STRUCTS  = {"YES" if args.dg_inline_simple_structs else "NO"}
+        TYPEDEF_HIDES_STRUCT   = {"YES" if args.dg_typedef_hides_struct else "NO"}
+        LOOKUP_CACHE_SIZE      = {2 if args.dg_small_lookup_cache else 9}
         NUM_PROC_THREADS       = 0
-        TIMESTAMP              = {args.timestamp}
+        TIMESTAMP              = {args.dg_timestamp}
         
         # Build related configuration options
         EXTRACT_ALL             = YES
-        EXTRACT_PRIVATE         = {"YES" if args.disable_extract_private else "NO"}
-        EXTRACT_PRIV_VIRTUAL    = {"YES" if args.disable_extract_private_virtual else "NO"}
-        EXTRACT_PACKAGE         = {"YES" if args.disable_extract_package else "NO"}
-        EXTRACT_STATIC          = {"YES" if args.disable_extract_static else "NO"}
-        EXTRACT_LOCAL_CLASSES   = {"YES" if args.disable_extract_local_classes else "NO"}
+        EXTRACT_PRIVATE         = {"YES" if args.dg_disable_extract_private else "NO"}
+        EXTRACT_PRIV_VIRTUAL    = {"YES" if args.dg_disable_extract_private_virtual else "NO"}
+        EXTRACT_PACKAGE         = {"YES" if args.dg_disable_extract_package else "NO"}
+        EXTRACT_STATIC          = {"YES" if args.dg_disable_extract_static else "NO"}
+        EXTRACT_LOCAL_CLASSES   = {"YES" if args.dg_disable_extract_local_classes else "NO"}
         EXTRACT_LOCAL_METHODS   = NO
-        EXTRACT_ANON_NSPACES    = {"YES" if args.disable_extract_anon_namespaces else "NO"}
+        EXTRACT_ANON_NSPACES    = {"YES" if args.dg_disable_extract_anon_namespaces else "NO"}
         RESOLVE_UNNAMED_PARAMS  = YES
         HIDE_FRIEND_COMPOUNDS   = YES
         HIDE_IN_BODY_DOCS       = NO
         INTERNAL_DOCS           = YES
         CASE_SENSE_NAMES        = SYSTEM
-        HIDE_SCOPE_NAMES        = {"YES" if args.hide_scope_names else "NO"}
-        HIDE_COMPOUND_REFERENCE = {"YES" if args.hide_compound_reference else "NO"}
-        SHOW_HEADERFILE         = {"YES" if args.disable_show_headerfile else "NO"}
-        SHOW_INCLUDE_FILES      = {"YES" if args.disable_show_include_files else "NO"}
-        SHOW_GROUPED_MEMB_INC   = {"YES" if args.disable_show_grounded_member_include else "NO"}
+        HIDE_SCOPE_NAMES        = {"YES" if args.dg_hide_scope_names else "NO"}
+        HIDE_COMPOUND_REFERENCE = {"YES" if args.dg_hide_compound_reference else "NO"}
+        SHOW_HEADERFILE         = {"YES" if args.dg_disable_show_headerfile else "NO"}
+        SHOW_INCLUDE_FILES      = {"YES" if args.dg_disable_show_include_files else "NO"}
+        SHOW_GROUPED_MEMB_INC   = {"YES" if args.dg_disable_show_grouped_member_include else "NO"}
         
         # Configuration options related to warning and progress messages
         QUIET                  = NO
-        WARNINGS               = {"YES" if args.disable_doxygen_warnings else "NO"}
+        WARNINGS               = {"YES" if args.dg_disable_warnings else "NO"}
         WARN_IF_DOC_ERROR      = YES
         WARN_IF_INCOMPLETE_DOC = YES
         WARN_AS_ERROR          = NO
-        WARN_LOGFILE           = {str(warning_log_file_path).replace('\\', '\\\\')}
+        WARN_LOGFILE           = {str(doxygen_warning_log_file_path).replace('\\', '\\\\')}
         
         # Configuration options related to the input files
         INPUT                   = {str(project_path).replace('\\', '\\\\')}
-        INPUT_ENCODING          = {args.input_encoding}
-        INPUT_FILE_ENCODING     = {"" if (args.input_file_encoding is None) else args.input_file_encoding}
+        INPUT_ENCODING          = {args.dg_input_encoding}
+        INPUT_FILE_ENCODING     = {"" if (args.dg_input_file_encoding is None) else args.dg_input_file_encoding}
         FILE_PATTERNS           =    *.c \
                                      *.cc \
                                      *.cxx \
@@ -204,7 +220,7 @@ if __name__ == "__main__":
                                      *.ice \
                                      *.txt
         RECURSIVE               = YES
-        EXCLUDE_SYMLINKS        = {"YES" if args.exclude_symlinks else "NO"}
+        EXCLUDE_SYMLINKS        = {"YES" if args.dg_exclude_symlinks else "NO"}
         #IMAGE_PATH             =
         #INPUT_FILTER           =
         #FILTER_PATTERNS        =
@@ -213,11 +229,11 @@ if __name__ == "__main__":
         USE_MDFILE_AS_MAINPAGE  = {"" if (readme_file_path is None) else str(readme_file_path).replace('\\', '\\\\')}
         
         # Configuration options related to source browsing
-        SOURCE_BROWSER          = {"YES" if args.disable_source_browser else "NO"}
-        INLINE_SOURCES          = {"YES" if args.inline_sources else "NO"}
-        STRIP_CODE_COMMENTS     = {"YES" if args.disable_strip_code_comments else "NO"}
-        REFERENCED_BY_RELATION  = {"YES" if args.disable_referenced_by_relation else "NO"}
-        REFERENCES_RELATION     = {"YES" if args.disable_references_relation else "NO"}
+        SOURCE_BROWSER          = {"YES" if args.dg_disable_source_browser else "NO"}
+        INLINE_SOURCES          = {"YES" if args.dg_inline_sources else "NO"}
+        STRIP_CODE_COMMENTS     = {"YES" if args.dg_disable_strip_code_comments else "NO"}
+        REFERENCED_BY_RELATION  = {"YES" if args.dg_disable_referenced_by_relation else "NO"}
+        REFERENCES_RELATION     = {"YES" if args.dg_disable_references_relation else "NO"}
         #REFERENCES_LINK_SOURCE  =
         #SOURCE_TOOLTIPS         =
         #USE_HTAGS               =
@@ -234,10 +250,10 @@ if __name__ == "__main__":
         GENERATE_HTML         = {"YES" if doxygen_html_required else "NO"}
         HTML_OUTPUT           = {str(Path("")) if (args.apidoc_toolchain == "doxygen-only") else "html"}
         HTML_FILE_EXTENSION   = .html
-        HTML_HEADER           = {"" if (args.html_header is None) else str(args.html_header).replace('\\', '\\\\')}
-        HTML_FOOTER           = {"" if (args.html_footer is None) else str(args.html_footer).replace('\\', '\\\\')}
-        HTML_STYLESHEET       = {str(stylesheet_path).replace('\\', '\\\\') if (stylesheet_path is not None) else ""}
-        HTML_EXTRA_STYLESHEET = {"" if (args.html_extra_stylesheet is None) else str(args.html_extra_stylesheet).replace('\\', '\\\\')}
+        HTML_HEADER           = {"" if (args.dg_html_header is None) else str(args.dg_html_header).replace('\\', '\\\\')}
+        HTML_FOOTER           = {"" if (args.dg_html_footer is None) else str(args.dg_html_footer).replace('\\', '\\\\')}
+        HTML_STYLESHEET       = {str(doxygen_stylesheet_path).replace('\\', '\\\\') if (doxygen_stylesheet_path is not None) else ""}
+        HTML_EXTRA_STYLESHEET = {"" if (args.dg_html_extra_stylesheet is None) else str(args.dg_html_extra_stylesheet).replace('\\', '\\\\')}
         
         # Configuration options related to the LaTeX output
         GENERATE_LATEX         = NO
@@ -247,7 +263,7 @@ if __name__ == "__main__":
         # Configuration options related to the man page output
         
         # Configuration options related to the XML output
-        GENERATE_XML            = {"YES" if (doxygen_xml_required or args.disable_generate_doxygen_xml) else "NO"}
+        GENERATE_XML            = {"YES" if (doxygen_xml_required or args.dg_disable_generate_xml) else "NO"}
         XML_OUTPUT              = xml
         XML_PROGRAMLISTING      = YES
         XML_NS_MEMB_FILE_SCOPE  = YES
@@ -256,36 +272,57 @@ if __name__ == "__main__":
         
         # Configuration options related to the preprocessor
         ENABLE_PREPROCESSING    = YES
-        MACRO_EXPANSION         = {"YES" if args.disable_macro_expansion else "NO"}
+        MACRO_EXPANSION         = {"YES" if args.dg_disable_macro_expansion else "NO"}
         EXPAND_ONLY_PREDEF      = NO
-        SKIP_FUNCTION_MACROS    = {"YES" if args.disable_skip_function_macros else "NO"}
+        SKIP_FUNCTION_MACROS    = {"YES" if args.dg_disable_skip_function_macros else "NO"}
         
         # Configuration options related to diagram generator tools
-
+        HIDE_UNDOC_RELATIONS    = NO
+        HAVE_DOT                = {"YES" if args.dg_disable_dot_graphs else "NO"}
+        DOT_NUM_THREADS         = 0
+        #DOT_COMMON_ATTR         =
+        #DOT_EDGE_ATTR           = 
+        #DOT_NODE_ATTR           = 
+        #DOT_FONTPATH            =
+        CLASS_GRAPH             = {"YES" if args.dg_disable_dot_graphs else "NO"}
+        COLLABORATION_GRAPH     = {"YES" if args.dg_disable_dot_graphs else "NO"}
+        GROUP_GRAPHS            = {"YES" if args.dg_disable_dot_graphs else "NO"}
+        UML_LOOK                = {"YES" if args.dg_disable_uml_look else "NO"}
+        UML_LIMIT_NUM_FIELDS    = {args.dg_uml_limit_num_fields if not args.dg_uml_limit_num_fields == 0 else 100}
+        DOT_UML_DETAILS         = {args.dg_dot_uml_details}
+        DOT_WRAP_THRESHOLD      = 20
+        TEMPLATE_RELATIONS      = {"YES" if args.dg_disable_template_relations else "NO"}
+        INCLUDE_GRAPH           = {"YES" if args.dg_disable_dot_graphs else "NO"}
+        INCLUDED_BY_GRAPH       = {"YES" if args.dg_disable_dot_graphs else "NO"}
+        CALL_GRAPH              = {"YES" if args.dg_disable_dot_graphs else "NO"}
+        CALLER_GRAPH            = {"YES" if args.dg_disable_dot_graphs else "NO"}
+        GRAPHICAL_HIERARCHY     = {"YES" if args.dg_disable_dot_graphs else "NO"}
+        DIRECTORY_GRAPH         = {"YES" if args.dg_disable_dot_graphs else "NO"}
+        DIR_GRAPH_MAX_DEPTH     = 25
+        DOT_IMAGE_FORMAT        = {args.dg_dot_image_format}
+        INTERACTIVE_SVG         = YES
+        DOT_PATH                = 
+        DOTFILE_DIRS            = 
+        DIA_PATH                = 
+        DIAFILE_DIRS            = 
+        PLANTUML_JAR_PATH       =
+        PLANTUML_CFG_FILE       = 
+        PLANTUML_INCLUDE_PATH   = 
+        DOT_GRAPH_MAX_NODES     = 1000
+        MAX_DOT_GRAPH_DEPTH     = 0
+        DOT_MULTI_TARGETS       = YES
+        GENERATE_LEGEND         = YES
+        DOT_CLEANUP             = {"YES" if args.dg_disable_dot_cleanup else "NO"}
+        MSCGEN_TOOL             = 
+        MSCFILE_DIRS            =
+        
+        # not properly inplemented but still set:
         # OPTIMIZE_OUTPUT_FOR_C  = YES
         SORT_MEMBERS_CTORS_1ST = YES
         GENERATE_AUTOGEN_DEF   = YES # EXPERIMENTAL
         HIDE_UNDOC_RELATIONS   = YES
         GENERATE_TREEVIEW = YES
-        HAVE_DOT = YES
-        CLASS_GRAPH = YES
-        COLLABORATION_GRAPH = YES
-        UML_LOOK = YES
-        UML_LIMIT_NUM_FIELDS   = 50
-        DOT_UML_DETAILS = YES
-        TEMPLATE_RELATIONS     = YES
-        INCLUDE_GRAPH = YES
-        INCLUDED_BY_GRAPH = YES
-        CALL_GRAPH = YES
-        CALLER_GRAPH = YES
-        GRAPHICAL_HIERARCHY = YES
-        DIRECTORY_GRAPH = YES
-        DOT_IMAGE_FORMAT = svg
-        INTERACTIVE_SVG = YES
-        DOT_PATH = {str(graphviz_dot_path) if graphviz_dot_path is not None else ""}
-        DOT_MULTI_TARGETS      = YES
-        DOT_GRAPH_MAX_NODES = 100
-        HTML_COLORSTYLE = {"DARK" if not (args.doxygen_html_theme == "doxygen_awesome") else "LIGHT"}  # required with Doxygen >= 1.9.5
+        HTML_COLORSTYLE = {"DARK" if not (args.dg_html_theme == "doxygen_awesome") else "LIGHT"}  # required with Doxygen >= 1.9.5
     """
 
     INDEX_RST_CONTENT: str = f"""
@@ -330,7 +367,6 @@ if __name__ == "__main__":
     doxygen_path: Path = Path(r"{str(doxygen_path)}")
     sphinx_path: Path = Path(r"{str(sphinx_path)}")
     exhale_path: Path = Path(r"{str(exhale_containment_path)}")
-    graphviz_dot_path: Path = Path(r"{str(graphviz_dot_path)}")
             
     graphviz_output_format = "svg"
     # graphviz_dot_args = ["-Gbgcolor=#FF00FF", "-Ncolor=#ffffff", "-Ecolor=#00ff00"]
@@ -345,12 +381,12 @@ if __name__ == "__main__":
     # -- Options for HTML output -------------------------------------------------
     # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
     
-    html_theme = "{html_theme}"
+    html_theme = "{sphinx_html_theme}"
     
     extensions = ["sphinx.ext.graphviz", "sphinx.ext.autodoc", "sphinx.ext.autosummary", "myst_parser"]
     """
 
-    CONF_PY_EXHALE_EXTENSION = f"""
+    CONF_PY_EXHALE_EXTENSION: str = f"""
     # -- Additional configuration ---------------------------------------------------
     
     extensions += ["breathe", "exhale"]
@@ -403,11 +439,12 @@ if __name__ == "__main__":
     }}
     
     """
+    #endregion file contents
 
     # docstring preprocessing
     if args.converter is not None:
         print("\nComment Conversion:\n")
-        comment(parser, **vars(args))
+        run_comment_converter(parser, project_path, **vars(args))
 
     if args.disable_doc_gen:
         print("\nDocumentation Generation:\n")
@@ -415,13 +452,18 @@ if __name__ == "__main__":
         delete_directory_if_exists(doc_path_abs)
         doc_path_abs.mkdir(parents=True, exist_ok=True)
         doxygen_path.mkdir(parents=True, exist_ok=True)
-        default_dot = shutil.which("dot")
-        if default_dot is None and graphviz_dot_path is None:
-            parser.error("dot.(exe) was not found in PATH")
-        elif graphviz_dot_path is not None and not graphviz_dot_path.exists():
-            parser.error(f"--graphviz_dot_path: {graphviz_dot_path} does not exist")
         chdir(generated_docs_main_path)
 
+        # check non-python requirements
+        default_dot = shutil.which("dot")
+        if default_dot is None:
+            parser.error("dot (graphviz) was not found in PATH")
+        default_doxygen = shutil.which("doxygen")
+        if default_doxygen is None:
+            parser.error("doxygen was not found in PATH")
+        if args.dg_html_theme == "doxygen-awesome" and not doxygen_stylesheet_path.is_file():
+            parser.error("The stylesheet for doxygen-awesome was not found at its expected path. Try:\n$ git submodule update --init")
+        
         if args.apidoc_toolchain == "doxygen-only":
             # generate config file for Doxygen
             with open(Path("Doxyfile.in"), "w+") as doxyfile:
@@ -432,6 +474,7 @@ if __name__ == "__main__":
 
         elif args.apidoc_toolchain == "sphinx-based":
             # this path is only here for reference and may be (partially) broken
+            #region sphinx-based
             print("!!! Disclaimer: Using sphinx-based is currently not recommended and may not work at all.")
 
             sphinx_path.mkdir(parents=True, exist_ok=True)
@@ -461,6 +504,8 @@ if __name__ == "__main__":
             # run sphinx again
             # maybe some cleanup is necessary?
             #system(f"sphinx-build -b html . {sphinx_path}")
+
+            #endregion sphinx-based
     
     if args.disable_test_cov:
         print("\nTest Coverage Evaluation:\n")

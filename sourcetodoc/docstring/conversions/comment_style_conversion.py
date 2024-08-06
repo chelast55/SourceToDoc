@@ -4,8 +4,8 @@ from ..comment_style import CommentStyle, CommentStyler
 from ..conversion import (ConvEmpty, Conversion, ConvPresent, ConvResult,
                           ConvUnsupported)
 from ..extractor import Comment
-from ..extractors.c_extractor import CType
-from ..extractors.cxx_extractor import CXXType
+from ..extractors.c_type import CType
+from ..extractors.cxx_type import CXXType
 
 
 class CommentStyleConversion(Conversion[Any]):

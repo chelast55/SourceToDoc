@@ -2,11 +2,11 @@
 - project_number:
     help: Project version/revision number
     type: str
-    default: unknown
+    default: unknown number
 - project_brief:
     help: One-line/short description of the project
     type: str
-    default:
+    default: no brief
 - project_logo:
     help: Path to project logo or icon (max 200x55px) for use within documentation
     type: str
@@ -15,222 +15,245 @@
     help: Path to project icon for use in the tabs
     type: str
     default:
-- output_language:
+- dg_output_language:
     help: Language used for all constant output within documentation
     type: str
     choices: [Afrikaans, Arabic, Armenian, Brazilian, Bulgarian, Catalan, Chinese, Chinese-Traditional, Croatian, Czech, Danish, Dutch, English (United States), Esperanto, Farsi (Persian), Finnish, French, German, Greek, Hindi, Hungarian, Indonesian, Italian, Japanese, Japanese-en (Japanese with English messages), Korean, Korean-en (Korean with English messages), Latvian, Lithuanian, Macedonian, Norwegian, Persian (Farsi), Polish, Portuguese, Romanian, Russian, Serbian, Serbian-Cyrillic, Slovak, Slovene, Spanish, Swedish, Turkish, Ukrainian and Vietnamese]
     default: English
-- no_brief_member_desc:
+- dg_no_brief_member_desc:
     help: Include brief member descriptions after the members listed in file/class documentation (similar to Javadoc)
     type: bool
     default: True
-- no_repeat_brief:
+- dg_no_repeat_brief:
     help: Repeat the brief description of member/function before detailed description
     type: bool
     default: True
-- always_detailed_sec:
+- dg_always_detailed_sec:
     help: When REPEAT_BRIEF enabled, generate detailed section even when only brief exists
     type: bool
     default: False
-- inline_inherited_memb:
+- dg_inline_inherited_memb:
     help: Show inherited members as members of child class
     type: bool
     default: False
-- disable_full_path_names:
+- dg_disable_full_path_names:
     help: Disable referencing files by their full (relative?) path instead of just the shortest possible unique path
     type: bool
     default: True
-- separate_member_pages:
+- dg_separate_member_pages:
     help: Split members of files/classes/namespaces into separate pages
     type: bool
     default: False
-- tab_size:
+- dg_tab_size:
     help: Number of spaces to replace tabs in code snippets with
     type: int
     choices: range(1, 16)
     default: 4
-- optimize_output_for_c:
+- dg_optimize_output_for_c:
     help: Change some terminology to be more tailored to C (not C++), omit list of all members, etc.
     type: bool
     default: false
-- toc_include_headings:
+- dg_toc_include_headings:
     help: If MARKDOWN_SUPPORT is enabled, all headers up to this level are included in table of contents
     type: int
     choices: range(0, 99)
     default: 5
-- markdown_id_style:
+- dg_markdown_id_style:
     help: Specify algorithm for generating markdown heading IDs (DOXYGEN or GITHUB)
     type: str
     choices: [DOXYGEN, GITHUB]
     default: DOXYGEN
-- sip_support:
+- dg_sip_support:
     help: If whole project consists of SIP (Python bindings for C generator), enable to to use public inheritance when not explicitly protected.
     type: bool
     default: false
-- disable_idl_property_support:
+- dg_disable_idl_property_support:
     help: Disable using properties for getters/setters where applicable (IDL support requires Microsoft IDL to be present)
     type: bool
     default: true
-- group_nested_compounds:
+- dg_group_nested_compounds:
     help: Enable to automatically add nested structs/classes to group when "parent" is added (otherwise \ingroup is required)
     type: bool
     default: false
-- disable_subgrouping:
+- dg_disable_subgrouping:
     help: Disable allowing class member groups of the same type (i. e. group of public functions) (can be disabled per class by \nosubgrouping)
     type: bool
     default: true
-- inline_grouped_classes:
+- dg_inline_grouped_classes:
     help: Enable to show group members inside group they are included instead of on separate pages (does not work with SEPARATE_MEMBER_PAGES)
     type: bool
     default: false
-- inline_simple_structs:
+- dg_inline_simple_structs:
     help: Enable to inline structs/classes only containing typedefs and public data fields to page of their parent class/namespace
     type: bool
     default: false
-- typedef_hides_struct:
+- dg_typedef_hides_struct:
     help: Enable to refer to typedefed struct/uniion/enum by name of typedef instead of listing typedefs as members
     type: bool
     default: false
-- small_lookup_cache:
+- dg_small_lookup_cache:
     help: Decrease size of type/symbol lookup cache (only use when memory consumption becomes an issue)
     type: bool
     default: false
-- timestamp:
+- dg_timestamp:
     help: Specify whether and how to add timestamp to each page (YES, NO, DATETIME or DATE) (relevant when trying to compare output of multiple runs)
     type: str
     choices: [DATETIME, DATE, NO]
     default: DATETIME
 
 # Build related configuration options
-- disable_extract_private:
+- dg_disable_extract_private:
     help: Disable to include private members in documentation
     type: bool
     default: True
-- disable_extract_private_virtual:
+- dg_disable_extract_private_virtual:
     help: Disable to include private virtual methods in documentation
     type: bool
     default: True
-- disable_extract_package:
+- dg_disable_extract_package:
     help: Disable to include members with package or internal scope in documentation
     type: bool
     default: True
-- disable_extract_static:
+- dg_disable_extract_static:
     help: Disable to include static members of files in documentation
     type: bool
     default: True
-- disable_extract_local_classes:
+- dg_disable_extract_local_classes:
     help: Disable to include locally defined structs/classes in documentation (not for Java)
     type: bool
     default: True
-- disable_extract_anon_namespaces:
+- dg_disable_extract_anon_namespaces:
     help: Disable to include members of anonymous namespaces in documentation
     type: bool
     default: True
-- hide_scope_names:
+- dg_hide_scope_names:
     help: Enable to hide full class and namescape scopes in documentaiton
     type: bool
     default: False
-- hide_compound_reference:
+- dg_hide_compound_reference:
     help: Enable to hide class reference etc. on documentation pages
     type: bool
     default: False
-- disable_show_headerfile:
+- dg_disable_show_headerfile:
     help: Disable to show which header file to include to use a class
     type: bool
     default: True
-- disable_show_include_files:
+- dg_disable_show_include_files:
     help: Disable to show which files a file includes in its documentation
     type: bool
     default: True
-- disable_show_grounded_member_include:
+- dg_disable_show_grouped_member_include:
     help: Disable to show which file to include to use a group member
     type: bool
     default: True
 
 # Configuration options related to warning and progress messages
-- disable_doxygen_warnings:
+- dg_disable_warnings:
     help: Disable generating warning messages to stderr
     type: bool
     default: true
 
 
 # Configuration options related to the input files
-- input:
-    help: Path to files/directories containing a project's documented source files
-    type: Path
-    default:
-- input_encoding:
+- dg_input_encoding:
     help: Expected chracter encoding of the source files (output will be UTF-8, see https://www.gnu.org/software/libiconv/ for possible input encodings)
     type: str
     # very long list TODO choices:
     default: UTF-8
-- input_file_encoding:
-    help: List of patterns to specify encodings for individual (groups of) files (pattern=encoding (like *.php=ISO-8859-1))
+- dg_input_file_encoding:
+    help: List of patterns to specify encodings for individual (groups of) files (pattern=encoding (like *.php=ISO-8859-1)). Should only be used, if encodings are not consistent across different file types (i. e. source code is ASCII but .md-files are written in Japanese and use non-ASCII characters)
     type: list
     default:
-- exclude_symlinks:
+- dg_exclude_symlinks:
     help: Enable to exclude files that are symlinks from the documentation
     type: bool
     default: False
 
 # Configuration options related to source browsing
-- disable_source_browser:
+- dg_disable_source_browser:
     help: Disable generating a list of source files to cross-reference in documentation
     type: bool
     default: True
-- inline_sources:
+- dg_inline_sources:
     help: Enable to inline function bodies, macros, enums or list initialized variables directly into documentation
     type: bool
     default: False
-- disable_strip_code_comments:
+- dg_disable_strip_code_comments:
     help: Disable to remove "special command blocks" from source code fragments in documentation
     type: bool
     default: True
-- disable_referenced_by_relation:
+- dg_disable_referenced_by_relation:
     help: Disable to list all documented functions referencing it for each documented entity
     type: bool
     default: True
-- disable_references_relation:
+- dg_disable_references_relation:
     help: Disable to list all documented entities called/used for each documented function
     type: bool
     default: True
 
 # Configuration options related to the HTML output
-- html_header:
+- dg_html_header:
     help: Path to an optional custom HTML header (use "doxygen -w html new_header.html new_footer.html new_stylesheet.css" to generate a template)
     type: Path
     default:
-- html_footer:
+- dg_html_footer:
     help: Path to an optional custom HTML footer (use "doxygen -w html new_header.html new_footer.html new_stylesheet.css" to generate a template)
     type: Path
     default:
-- html_extra_stylesheet:
+- dg_html_extra_stylesheet:
     help: Path to an optional additional stylesheet that can override parts of the main stylesheet
     type: Path
     default:
-- doxygen_html_theme:
+- dg_html_theme:
     help: Whether to use a custom CSS theme for doxygen html output (by default "Doxygen Awesome" for a more modern look) or the standard (arguably more dated-looking) theme.
     type: str
     choices: [standard, doxygen-awesome]
     default: doxygen-awesome
 
 # Configuration options related to the XML output
-- disable_generate_doxygen_xml:
+- dg_disable_generate_xml:
     help: Disable generating XML files capturing the projects structure and documentation (only when not using Sphinx)
     type: bool
     default: True
 
 # Configuration options related to the preprocessor
-- disable_macro_expansion:
+- dg_disable_macro_expansion:
     help: Disable expanding macros (instead only conditional compilation is performed)
     type: bool
     default: True
-- disable_skip_function_macros:
+- dg_disable_skip_function_macros:
     help: Disable removing all references to function-like macros (one-liner, all upper-case, not semicolon at end) (mostly used for boiler-plate and could confuse parser)
     type: bool
     default: True
 
 # Configuration options related to diagram generator tools
-- graphviz_dot_path:
-    help: Path to the Graphviz dot executable
+- dg_disable_dot_graphs:
+    help: Disable generating various graphs (class collaboration, header include, function call, ...) automatically generated from source code
+    type: bool
+    default: True
+- dg_disable_uml_look:
+    help: Disable making inheritance/collaboration diagrams look more like UML class diagrams
+    type: bool
+    default: True
+- dg_uml_limit_num_fields:
+    help: When UML_LOOK is enabled, specify the max. number of field/methods (1-100, 0 for no limit)
+    type: int
+    default: 50
+- dg_dot_uml_details:
+    help: Select, how detailed UML-style graphs should be ("SIMPLIFIED" disables types/arguments for class members, "NONE" removes class members completely)
     type: str
+    choices: [ALL, SIMPLIFIED, NONE]
+    default: True
+- dg_disable_template_relations:
+    help: Disable including template/instance-relations in class/collaboration graphs
+    type: bool
+    default: True
+- dg_dot_image_format:
+    help: Set the image format of all graphs generated by doxygen/dot (set to SVG the graphs will be interactive)
+    type: str
+    choices: [png, jpg, gif, svg, png:gd, png:gd:gd, png:cairo, png:cairo:gd, png:cairo:cairo, png:cairo:gdiplus, png:gdiplus, png:gdiplus:gdiplus]
+    default: svg
+- dg_disable_dot_cleanup:
+    help: Disable deleting temporary intermediate dot/msc files after generating graphs
+    type: bool
+    default: True
