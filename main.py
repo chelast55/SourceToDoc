@@ -386,7 +386,7 @@ if __name__ == "__main__":
     extensions = ["sphinx.ext.graphviz", "sphinx.ext.autodoc", "sphinx.ext.autosummary", "myst_parser"]
     """
 
-    CONF_PY_EXHALE_EXTENSION = f"""
+    CONF_PY_EXHALE_EXTENSION: str = f"""
     # -- Additional configuration ---------------------------------------------------
     
     extensions += ["breathe", "exhale"]
