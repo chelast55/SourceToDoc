@@ -22,14 +22,45 @@ $ python -m venv venv
 $ source venv/bin/activate
 ```
 Within the virtual environment (likely indicated by a `(venv)` at the beginning of your command line), you can install the python dependencies:
-Python dependencies:
+Python dependencies: (additional requirements are not required for python includes, but for running the test coverage part of the toolchain)
 ```sh
 $ sudo pip install -r requirements.txt
+$ sudo pip install -r requirements_additional.txt
+$ sudo pip install pytest  # only required if you want to run the unit tests for this toolchain
 ```
 Now, you should be able to run the whole toolchain!
 
 ### Windows
-TODO
+Various Dependencies have to be installed manually on Windows.
+Most of them have installer executables:
+(Where applicable, make sure, the box for adding it to the Windows Path is ticked!)
+- Python 3.12: https://www.python.org/downloads/.
+- Doxygen: https://www.doxygen.nl/download.html
+- Graphviz: https://graphviz.org/download/
+- CMake: https://cmake.org/download/ (Technically available from pip, could be moved there, but is also required for CMocka build)
+You should at least reboot once after all of them are installed, to ensure, Path is updated.
+
+The final one (CMocka) is more complicated, as it has to be built from source. 
+A Guide how to set it up can be found here: https://sam.hooke.me/note/2022/04/setting-up-cmocka/  
+What is not mentioned in the guide, is that mingw32 (and mingw32-make) have to be installed: https://sourceforge.net/projects/mingw/ (make sure to manually enable mingw32-make)  
+Additionally, an implementation of `strtok_r()` has to be added in `cmocka.c` (a public domain implementation of this function by Charlie Gordon can be found [here](http://groups.google.com/group/comp.lang.c/msg/2ab1ecbb86646684)).  
+If you do not plan to use the Test Coverage Evaluation part of the toolchain, you can skip these cmocka-related steps.
+
+All remaining Dependencies can be installed via the *pip* packet manager.
+To do so, navigate to or open a PowerShell terminal in the main directory of the freshly downloaded repository (SourceToDoc).  
+There, create a virtual environment and activate it:
+```sh
+$ python -m venv venv
+$ venv\Scripts\Activate.ps1
+```
+Within the virtual environment (likely indicated by a `(venv)` at the beginning of your command line), you can install the python dependencies:
+Python dependencies:
+```sh
+$ sudo pip install -r requirements.txt
+$ sudo pip install -r requirements_additional.txt
+$ sudo pip install pytest  # only required if you want to run the unit tests for this toolchain
+```
+Now, you should be able to run the whole toolchain!
 
 
 ## Usage
