@@ -7,6 +7,7 @@ from pathlib import Path
 
 SILENT_FLAG: bool = False
 
+
 def delete_directory_if_exists(directory_path: Path):
     """
     Checks if a given path is a directory and deletes it and all of its contents, without asking questions.

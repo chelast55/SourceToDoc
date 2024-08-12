@@ -84,16 +84,16 @@ if __name__ == "__main__":
         OUTPUT_LANGUAGE        = {args.dg_output_language}
         BRIEF_MEMBER_DESC      = {"YES" if args.dg_no_brief_member_desc else "NO"}
         REPEAT_BRIEF           = {"YES" if args.dg_no_repeat_brief else "NO"}
-        ABBREVIATE_BRIEF       = "The $name class" \
-                                 "The $name widget" \
-                                 "The $name file" \
-                                 is \
-                                 provides \
-                                 specifies \
-                                 contains \
-                                 represents \
-                                 a \
-                                 an \
+        ABBREVIATE_BRIEF       = "The $name class" \\
+                                 "The $name widget" \\
+                                 "The $name file" \\
+                                 is \\
+                                 provides \\
+                                 specifies \\
+                                 contains \\
+                                 represents \\
+                                 a \\
+                                 an \\
                                  the
         ALWAYS_DETAILED_SEC    = {"YES" if args.dg_always_detailed_sec else "NO"}
         INLINE_INHERITED_MEMB  = {"YES" if args.dg_inline_inherited_memb else "NO"}
@@ -167,57 +167,57 @@ if __name__ == "__main__":
         INPUT                   = {str(project_path).replace('\\', '\\\\')}
         INPUT_ENCODING          = {args.dg_input_encoding}
         INPUT_FILE_ENCODING     = {"" if (args.dg_input_file_encoding is None) else args.dg_input_file_encoding}
-        FILE_PATTERNS           =    *.c \
-                                     *.cc \
-                                     *.cxx \
-                                     *.cxxm \
-                                     *.cpp \
-                                     *.cppm \
-                                     *.ccm \
-                                     *.c++ \
-                                     *.c++m \
-                                     *.java \
-                                     *.ii \
-                                     *.ixx \
-                                     *.ipp \
-                                     *.i++ \
-                                     *.inl \
-                                     *.idl \
-                                     *.ddl \
-                                     *.odl \
-                                     *.h \
-                                     *.hh \
-                                     *.hxx \
-                                     *.hpp \
-                                     *.h++ \
-                                     *.ixx \
-                                     *.l \
-                                     *.cs \
-                                     *.d \
-                                     *.php \
-                                     *.php4 \
-                                     *.php5 \
-                                     *.phtml \
-                                     *.inc \
-                                     *.m \
-                                     *.markdown \
-                                     *.md \
-                                     *.mm \
-                                     *.dox \
-                                     *.py \
-                                     *.pyw \
-                                     *.f90 \
-                                     *.f95 \
-                                     *.f03 \
-                                     *.f08 \
-                                     *.f18 \
-                                     *.f \
-                                     *.for \
-                                     *.vhd \
-                                     *.vhdl \
-                                     *.ucf \
-                                     *.qsf \
-                                     *.ice \
+        FILE_PATTERNS           =    *.c \\
+                                     *.cc \\
+                                     *.cxx \\
+                                     *.cxxm \\
+                                     *.cpp \\
+                                     *.cppm \\
+                                     *.ccm \\
+                                     *.c++ \\
+                                     *.c++m \\
+                                     *.java \\
+                                     *.ii \\
+                                     *.ixx \\
+                                     *.ipp \\
+                                     *.i++ \\
+                                     *.inl \\
+                                     *.idl \\
+                                     *.ddl \\
+                                     *.odl \\
+                                     *.h \\
+                                     *.hh \\
+                                     *.hxx \\
+                                     *.hpp \\
+                                     *.h++ \\
+                                     *.ixx \\
+                                     *.l \\
+                                     *.cs \\
+                                     *.d \\
+                                     *.php \\
+                                     *.php4 \\
+                                     *.php5 \\
+                                     *.phtml \\
+                                     *.inc \\
+                                     *.m \\
+                                     *.markdown \\
+                                     *.md \\
+                                     *.mm \\
+                                     *.dox \\
+                                     *.py \\
+                                     *.pyw \\
+                                     *.f90 \\
+                                     *.f95 \\
+                                     *.f03 \\
+                                     *.f08 \\
+                                     *.f18 \\
+                                     *.f \\
+                                     *.for \\
+                                     *.vhd \\
+                                     *.vhdl \\
+                                     *.ucf \\
+                                     *.qsf \\
+                                     *.ice \\
                                      *.txt
         RECURSIVE               = YES
         EXCLUDE_SYMLINKS        = {"YES" if args.dg_exclude_symlinks else "NO"}

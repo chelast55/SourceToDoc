@@ -10,7 +10,8 @@ git clone --recurse-submodules https://github.com/chelast55/SourceToDoc.git
 When using Linux, you have to begin the following example commands with `python3` instad of `python`, if you have not installed `python-is-python3`.  
 All Dependencies can be installed via *apt* and *pip* packet managers.  
 If you have not installed `python(3.12)` yet or your default `python(3)` version is older than `3.12`, install it first (`python3.12` and `python3.12-venv` via apt) and make sure 
-to address it with `python3.12`.
+to address it with `python3.12`.  
+In case you are required to add something to apt and `apt-add` can not be found, try `sudo apt install software-properties-common`.  
 With that out of the way, you can continue installing the non-python dependencies via apt:
 ```sh
 sudo apt install python3-venv doxygen graphviz cmake libcmocka-dev
@@ -92,6 +93,46 @@ python main.py --help
 ```
 
 ## File Hierarchy
-TODO
-
- 
+The following structure assumes that `--apidoc_toolchain` is set to `doxygen-only` as it is the only currently maintained option.
+For legacy documentation regarding `sphinx-based`, see [here](doc/file_hierachy_REDUNDANT.md).
+```
+SourceToDoc
+├───<PROJECT>
+│   └───<...>
+├───doc
+│   ├───DoxygenParamEvaluation.md
+│   └───<...>
+├───out
+│   ├───doc
+│   │   └───<PROJECT>
+│   │       ├───<...>
+│   │       └───index.html
+│   └───testcoverage
+│   │   └───<PROJECT>
+│   │       ├───<...>
+│   │       └───index.html
+├───sourcetodoc
+│   ├───cli
+│   │   ├───<...yaml>
+│   │   └───<...py>
+│   ├───docstring
+│   │   ├───conversions
+│   │   │   └───<...py>
+│   │   └───extractors
+│   │       └───<...py>
+│   ├───testcoverage
+│   │   └───<...py>
+│   └───helpers.py
+├───submodules
+│   └───doxygen-awesome-css (submodule)
+│       └───<...> # should not be empty
+├───LICENSE
+├───main.py
+├───README.md
+└───requirements.txt
+```
+The output of this toolchain will be entirely contained withing `out`.
+If no components were disabled, there will be both a `doc` and `testcoverage` subdirectory containing the respective html output, centered around an `index.html` each.  
+Following the "flat layout", `sourcetodoc` contains the source code of the toolchain, separated into its components.  
+`submodules` should, as of now, only contain `doxygen-awesome-css`, but it should be filled with content, if installed correctly.  
+Additional documentation for this toolchain can be found in `doc` (including `DoxygenParamEvaluation.md`, which covers all Doxygen parameters and why and how they are accessible via the toolchain's CLI).
