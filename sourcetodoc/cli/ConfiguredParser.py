@@ -2,10 +2,10 @@
 Contains a CLI argument parser class that automatically supports the functionality defined in various YAML files.
 """
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from yaml import safe_load as yaml_safe_load
-from typing import Any, Optional, Final
+from typing import Any, Optional, Final, Sequence
 
 ARGS_YAML_PATHS: list[Path] = [
     Path("args_base.yaml"),
@@ -48,6 +48,19 @@ More obscure:
                     Could either be a single string or a list of strings (hierarchy of subparsers)
                     Note, that only one subparser can be "active" at a time.
 """
+
+PREDEFINED_ARGS: list[dict[str, dict[str, Any]]] = [
+    {
+        "config": {
+            "help": f"Path to a (YAML) configuration file, containing a \"configuration\" for an execution of the toolchain. "
+                    f"It should only contain one top-level dictionary with (parameter,value)-pairs (except \"config\" and \"help\"). "
+                    f"Calling arguments manually still overwrites the configuration from the file.",
+            "type": "Path",
+            "default": None
+        }
+    }
+]
+
 
 class ConfiguredParser(ArgumentParser):
 
@@ -107,8 +120,54 @@ class ConfiguredParser(ArgumentParser):
         """
         ArgumentParser.__init__(self)
         self._args: list[dict[str, dict[str, Any]]] = self.load_yamls_combined_and_check_structure(ARGS_YAML_PATHS)
+        self._args += PREDEFINED_ARGS
         self._subparsers_lookup: dict[str, Optional[ConfiguredParser.SubparserReference]] = {}  # workaround for no public way to access subparsers of a parser
         self._add_arguments_from_dict()
+
+    def parse_args(self,
+                   args: Optional[Sequence[str]] = None,
+                   namespace: Optional[Namespace] = None) -> Namespace:
+
+        parsed_args: Namespace = super().parse_args(args, namespace)
+        parsed_args_dict_reference: dict[str, Any] = vars(parsed_args)
+
+        # get CLI arg values from config YAML file (if --config is used)
+        if "config" in parsed_args:
+            if not Path(parsed_args.config).is_file():
+                raise OSError(f"{parsed_args.config} is not a file")
+            else:
+                with open(parsed_args.config, 'r') as yaml_file:
+                    yaml_content = yaml_safe_load(yaml_file)
+                    if yaml_content is None:  # check for empty config file
+                        raise ValueError(f"{parsed_args.config} is an empty file. Is this the correct config file?")
+                    elif not isinstance(yaml_content, dict):  # check if config file is one large YAML dict
+                        raise ValueError(
+                            f"{parsed_args.config} is not formatted correctly. "
+                            f"It should only contain (parameter,value)-pairs (or lines of \"parameter: value\" in YAML syntax)"
+                        )
+                    else:
+                        encountered_args: set[str] = set()  # TODO: Duplikaterkennung
+                        for arg_name in yaml_content.keys():
+                            # check if parameters are strings
+                            if not isinstance(arg_name, str):
+                                raise TypeError(f"\"{arg_name}\" in {parsed_args.config} is not a string, but {type(arg_name)}.")
+
+                            # check if arg attempts to set value for help or config
+                            if arg_name in ["help", "config"]:
+                                raise KeyError(
+                                    f"\"{arg_name}\" is not a parameter that can be set in a config file.")
+
+                            # check if arg exists (was added to the ConfiguredParser instance as an accepted CLI argument)
+                            if arg_name not in self.get_valid_args_list():
+                                raise KeyError(
+                                    f"\"{arg_name}\" is not a recognized CLI argument. Possible arguments:\n{self.get_valid_args_list()}")
+
+                            # ensure value is interpreted as the correct type and add it
+                            correct_arg_value_type: type = eval(self.get_valid_arg_details(arg_name)["type"])
+                            parsed_args_dict_reference[arg_name] = correct_arg_value_type(yaml_content[arg_name])
+                            # TODO: implement bool handling
+                            # TODO: ensure config does not overwrite, but is overwritten by manual paramaters
+        return parsed_args
 
     def get_cli_args(self) -> list[dict[str, dict[str, Any]]]:
         """
@@ -119,7 +178,7 @@ class ConfiguredParser(ArgumentParser):
         Returns
         -------
         list[dict[str, dict[str, Any]]]
-            List of all CLI args supported by this ConfiguredParser.
+            List of all CLI args (and their configuration) supported by this ConfiguredParser.
         """
         return list(self._args)
 
@@ -133,6 +192,35 @@ class ConfiguredParser(ArgumentParser):
             Hierarchy of subparsers supported by this ConfiguredParser.
         """
         return dict(self._subparsers_lookup)
+
+    def get_valid_args_list(self) -> list[str]:
+        """
+        Get a list of all CLI args supported by this ConfiguredParser.
+
+        The list only contains the ars' names.
+        For further details, use get_cli_args() instead.
+
+        Returns
+        -------
+        list[str]
+            List of all CLI args supported by this ConfiguredParser.
+        """
+        valid_args: list = []
+        for arg in self._args:
+            key: str = list(arg.keys())[0]
+            valid_args.append(key)
+        return valid_args
+
+    def get_valid_arg_details(self, desired_arg: str) -> dict[str, Any]:
+        """
+        TODO: document
+        """
+        valid_arg_details: dict[str, Any] = {}
+        for arg in self._args:
+            if desired_arg in arg.keys():
+                valid_arg_details = arg[desired_arg]
+                break
+        return valid_arg_details
 
     @staticmethod
     def load_yaml_and_check_structure(args_yaml_path: Path) -> list[dict[str, dict[str, Any]]]:
@@ -176,9 +264,17 @@ class ConfiguredParser(ArgumentParser):
                             f"The single key acts a the arg's name."
                         )
                     arg_name: str = list(arg.keys())[0]
+
+                    # check if arg shadows any predefined args (help, config, ...)
+                    predefined_arg_keys: list = []
+                    for predefined_arg in PREDEFINED_ARGS:
+                        predefined_arg_keys.append(predefined_arg.keys())
+                    if arg_name == "help" or arg_name in predefined_arg_keys:
+                        raise KeyError(f"\"{arg_name}\" can not be chosen as an argument name, because it already exists as a predefined argument")
+
                     arg_params: dict[str, Any] = arg[arg_name]
                     for required_param in REQUIRED_ARG_PARAMS:
-                        if not required_param in arg_params.keys():  # check for required parameters missing
+                        if required_param not in arg_params.keys():  # check for required parameters missing
                             if not (required_param == "type" and "action" in arg_params.keys()):  # special case, 'action' does not work with 'type'
                                 raise KeyError(
                                     f"Required parameter \"{required_param}\" missing in \"{arg_name}\" ({args_yaml_path}).\n"
@@ -186,18 +282,18 @@ class ConfiguredParser(ArgumentParser):
                                 )
                     for key in arg_params.keys():
                         if not isinstance(key, str):  # check for all keys being strings
-                            raise TypeError(f"\"{key}\" in \"{arg_name}\" ({args_yaml_path}) is not a string.")
-                        if not key in (REQUIRED_ARG_PARAMS + OPTIONAL_ARG_PARAMS):  # check for parameters to be supported
+                            raise TypeError(f"\"{key}\" in \"{arg_name}\" ({args_yaml_path}) is not a string, but {type(key)}.")
+                        if key not in (REQUIRED_ARG_PARAMS + OPTIONAL_ARG_PARAMS):  # check for parameters to be supported
                             raise KeyError(
                                 f"\"{key}\" in \"{arg_name}\" ({args_yaml_path}) is not a supported parameter for a CLI argument.\n"
                                 f"Supported parameters: {REQUIRED_ARG_PARAMS + OPTIONAL_ARG_PARAMS}"
                         )
                         if key == "subparser":
-                            if isinstance(arg_params["subparser"], str): # single subparser as a string
+                            if isinstance(arg_params["subparser"], str):  # single subparser as a string
                                 arg_params["subparser"] = [
                                     arg_params["subparser"]]  # easiest, if it is always a list internally
                             elif not isinstance(arg_params["subparser"], list):
-                                raise TypeError(f"Subparser(s) for {arg_name} is neither of type or or list[str]: {arg_params["subparser"]}")
+                                raise TypeError(f"Subparser(s) for {arg_name} is neither of type str or list[str]: {arg_params["subparser"]}")
                             else:  # case: subparser hierarchy given as a list
                                 for subparser in arg_params["subparser"]:
                                     if not isinstance(subparser, str):
@@ -293,7 +389,7 @@ class ConfiguredParser(ArgumentParser):
 
             add_argument_kwargs: dict[str, Any] = {"help": arg_params["help"]}
 
-            if "type" in arg_params.keys() and not arg_params["type"] == "bool":  
+            if "type" in arg_params.keys() and not arg_params["type"] == "bool":
                 add_argument_kwargs["type"] = eval(arg_params["type"])  # having any type set causes most(?) actions (store_true/store_false/etc.) to fail
 
             if "default" in arg_params.keys():
