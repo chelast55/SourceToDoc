@@ -448,6 +448,13 @@ if __name__ == "__main__":
 
     if args.disable_doc_gen:
         print("\nDocumentation Generation:\n")
+
+        # check if a README file was found
+        if readme_file_path is not None:
+            print(f"README found at {readme_file_path}")
+        else:
+            print(f"Could not find a file easily identifiable as a \"README\" :/")
+
         # delete artifacts from prior builds and ensure paths exist TODO: move to end as cleanup, when debugging is done
         delete_directory_if_exists(doc_path_abs)
         doc_path_abs.mkdir(parents=True, exist_ok=True)
@@ -463,6 +470,8 @@ if __name__ == "__main__":
             parser.error("doxygen was not found in PATH")
         if args.dg_html_theme == "doxygen-awesome" and not doxygen_stylesheet_path.is_file():
             parser.error("The stylesheet for doxygen-awesome was not found at its expected path. Try:\n$ git submodule update --init")
+
+
         
         if args.apidoc_toolchain == "doxygen-only":
             # generate config file for Doxygen
