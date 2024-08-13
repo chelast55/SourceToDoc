@@ -135,4 +135,4 @@ The output of this toolchain will be entirely contained withing `out`.
 If no components were disabled, there will be both a `doc` and `testcoverage` subdirectory containing the respective html output, centered around an `index.html` each.  
 Following the "flat layout", `sourcetodoc` contains the source code of the toolchain, separated into its components.  
 `submodules` should, as of now, only contain `doxygen-awesome-css`, but it should be filled with content, if installed correctly.  
-Additional documentation for this toolchain can be found in `doc` (including `DoxygenParamEvaluation.md`, which covers all Doxygen parameters and why and how they are accessible via the toolchain's CLI).
+Additional documentation for this toolchain can be found in `doc` (including [`DoxygenParamEvaluation.md`](doc/DoxygenParamEvaluation.md), which covers all Doxygen parameters and why and how they are accessible via the toolchain's CLI).
