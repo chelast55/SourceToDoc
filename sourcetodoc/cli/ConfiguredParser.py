@@ -38,9 +38,10 @@ Recommended:
     - "choices":    limit acceptable value range (either a list, range or other container in string representation)
 
 More obscure:
-    - "action":     one of ["store", "store_const", "store_true", "append", "append_const", "count", "help", 'version"]
-                    defaults to "store_true" when type is "bool" and not specified otherwise
-    - "const":      store a const value
+    - "action":     one of ["store", "store_const", "store_true", "append", "append_const", "count", "help", "version"]
+                    Automatically set to "store_true"/"store false" when type is "bool" and no action is specified.
+                    Note, that "type" can not be used when "action" is used
+    - "const":      store a const value (becomes required of "action" is set to "store_const")
     - "dest":       specify the attribute name used in the result namespace
     - "metavar":    alternate display name for the argument as shown in help
     - "nargs":      number of times the argument can be used
@@ -136,7 +137,7 @@ class ConfiguredParser(ArgumentParser):
             if not Path(parsed_args.config).is_file():
                 raise OSError(f"{parsed_args.config} is not a file")
             else:
-                with open(parsed_args.config, 'r') as yaml_file:
+                with (open(parsed_args.config, 'r') as yaml_file):
                     yaml_content = yaml_safe_load(yaml_file)
                     if yaml_content is None:  # check for empty config file
                         raise ValueError(f"{parsed_args.config} is an empty file. Is this the correct config file?")
@@ -162,26 +163,59 @@ class ConfiguredParser(ArgumentParser):
                                     f"\"{arg_name}\" is not a recognized CLI argument. Possible arguments:\n{self.get_valid_args_list()}")
 
                             # ensure value is interpreted as the correct type
-                            correct_arg_value_type: type = eval(self.get_valid_arg_details(arg_name)["type"])
+                            if "type" in self.get_valid_arg_details(arg_name):
+                                correct_arg_value_type: type = eval(self.get_valid_arg_details(arg_name)["type"])
 
-                            # check if parsed arg matches its default
-                            # (CLI should overwrite config, so only use config value if parsed value IS default)
-                            if (
-                                    self.get_valid_arg_details(arg_name)["default"] is None
-                                    and parsed_args_dict_reference[arg_name] is None
-                            ) or (
-                                    self.get_valid_arg_details(arg_name)["type"] is bool
-                                    and bool(parsed_args_dict_reference[arg_name]) is self.get_valid_arg_details(arg_name)["default"]
-                            ) or (
-                                    self.get_valid_arg_details(arg_name)["type"] is not bool
-                                    and correct_arg_value_type(parsed_args_dict_reference[arg_name]) == self.get_valid_arg_details(arg_name)["default"]
-                            ):
-                                if "type" in self.get_valid_arg_details(arg_name) and self.get_valid_arg_details(arg_name)["type"] is bool:
-                                    parsed_args_dict_reference[arg_name] = not parsed_args_dict_reference[arg_name]
+                                # check if parsed arg matches its default
+                                # (CLI should overwrite config, so only use config value if parsed value IS default)
+                                if (
+                                        "default" not in self.get_valid_arg_details(arg_name)
+                                        and parsed_args_dict_reference[arg_name] is None
+                                ) or (
+                                        self.get_valid_arg_details(arg_name)["default"] is None
+                                        and parsed_args_dict_reference[arg_name] is None
+                                ) or (
+                                        self.get_valid_arg_details(arg_name)["type"] is bool
+                                        and bool(parsed_args_dict_reference[arg_name]) is self.get_valid_arg_details(arg_name)["default"]
+                                ) or (
+                                        self.get_valid_arg_details(arg_name)["type"] is not bool
+                                        and correct_arg_value_type(parsed_args_dict_reference[arg_name]) == self.get_valid_arg_details(arg_name)["default"]
+                                ):
+                                    if self.get_valid_arg_details(arg_name)["type"] is bool:
+                                        parsed_args_dict_reference[arg_name] = not parsed_args_dict_reference[arg_name]
+                                    else:
+                                        parsed_args_dict_reference[arg_name] = correct_arg_value_type(yaml_content[arg_name])
                                 else:
-                                    parsed_args_dict_reference[arg_name] = correct_arg_value_type(yaml_content[arg_name])
-                            else:
-                                print(f"Warning! \"{arg_name}\" set to \"{yaml_content[arg_name]}\" in config, but will be overwritten with \"{parsed_args_dict_reference[arg_name]}\"")
+                                    print(f"Warning! \"{arg_name}\" set to \"{yaml_content[arg_name]}\" in config, but will be overwritten with \"{parsed_args_dict_reference[arg_name]}\"")
+                            elif "action" in self.get_valid_arg_details(arg_name):
+                                match parsed_args.action:
+                                    case "store":
+                                        raise RuntimeError(
+                                            f"action {parsed_args.action} is not implemented for config files yet :/")
+                                    case "store_const":
+                                        raise RuntimeError(
+                                            f"action {parsed_args.action} is not implemented for config files yet :/")
+                                    case "store_true":
+                                        raise RuntimeError(
+                                            f"action {parsed_args.action} is not implemented for config files yet :/")
+                                    case "store_false":
+                                        raise RuntimeError(
+                                            f"action {parsed_args.action} is not implemented for config files yet :/")
+                                    case "append":
+                                        raise RuntimeError(
+                                            f"action {parsed_args.action} is not implemented for config files yet :/")
+                                    case "append_const":
+                                        raise RuntimeError(
+                                            f"action {parsed_args.action} is not implemented for config files yet :/")
+                                    case "count":
+                                        raise RuntimeError(
+                                            f"action {parsed_args.action} is not implemented for config files yet :/")
+                                    case "help":
+                                        raise ValueError(
+                                            f"\"{arg_name}\": action {parsed_args.action} is not supported for config files")
+                                    case "version":
+                                        raise ValueError(
+                                            f"\"{arg_name}\": action {parsed_args.action} is not supported for config files")
         return parsed_args
 
     def get_cli_args(self) -> list[dict[str, dict[str, Any]]]:
@@ -303,6 +337,11 @@ class ConfiguredParser(ArgumentParser):
                                 f"\"{key}\" in \"{arg_name}\" ({args_yaml_path}) is not a supported parameter for a CLI argument.\n"
                                 f"Supported parameters: {REQUIRED_ARG_PARAMS + OPTIONAL_ARG_PARAMS}"
                         )
+                        if key == "action" and arg_params["action"] == "store_const" and "const" not in arg_params.keys():  # special case, 'const' is required when using 'store_const'
+                            raise KeyError(
+                                f"Required parameter \"const\" missing in \"{arg_name}\" ({args_yaml_path}).\n"
+                                f"Required parameters: {REQUIRED_ARG_PARAMS} AND \"const\" because \"action\" is set to \"store_const\""
+                            )
                         if key == "subparser":
                             if isinstance(arg_params["subparser"], str):  # single subparser as a string
                                 arg_params["subparser"] = [
@@ -469,6 +508,7 @@ class ConfiguredParser(ArgumentParser):
 
             # add argument to (lowest level sub)parser (duplicate arguments already ruled out)
             target_parser.add_argument(*add_argument_args, **add_argument_kwargs)
+
 
 if __name__ == "__main__":
     # short test:
