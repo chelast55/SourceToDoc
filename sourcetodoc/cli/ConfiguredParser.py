@@ -161,7 +161,7 @@ class ConfiguredParser(ArgumentParser):
                                 raise KeyError(
                                     f"\"{arg_name}\" is not a recognized CLI argument. Possible arguments:\n{self.get_valid_args_list()}")
 
-                            # ensure value is interpreted as the correct type and add it
+                            # ensure value is interpreted as the correct type
                             correct_arg_value_type: type = eval(self.get_valid_arg_details(arg_name)["type"])
 
                             # check if parsed arg matches its default
@@ -176,11 +176,12 @@ class ConfiguredParser(ArgumentParser):
                                     self.get_valid_arg_details(arg_name)["type"] is not bool
                                     and correct_arg_value_type(parsed_args_dict_reference[arg_name]) == self.get_valid_arg_details(arg_name)["default"]
                             ):
-                                parsed_args_dict_reference[arg_name] = correct_arg_value_type(yaml_content[arg_name])
+                                if "type" in self.get_valid_arg_details(arg_name) and self.get_valid_arg_details(arg_name)["type"] is bool:
+                                    parsed_args_dict_reference[arg_name] = not parsed_args_dict_reference[arg_name]
+                                else:
+                                    parsed_args_dict_reference[arg_name] = correct_arg_value_type(yaml_content[arg_name])
                             else:
                                 print(f"Warning! \"{arg_name}\" set to \"{yaml_content[arg_name]}\" in config, but will be overwritten with \"{parsed_args_dict_reference[arg_name]}\"")
-
-                            # TODO: implement bool handling
         return parsed_args
 
     def get_cli_args(self) -> list[dict[str, dict[str, Any]]]:
