@@ -58,11 +58,21 @@ if __name__ == "__main__":
     # locate README
     readme_file_path: Optional[Path] = None
     potential_readme_files: list[Path] = [file for file in project_path.glob("**/*") if file.is_file()]
-    for potential_readme_file in potential_readme_files:
+    for potential_readme_file in potential_readme_files:  # search for specific "generic" README, in case there are multiple readme files
         if potential_readme_file.is_file() \
-        and "READ" in str(potential_readme_file).upper() and "ME" in str(potential_readme_file).upper():
+        and (
+                "README.MD" in str(potential_readme_file).upper()[-9:] or
+                "README" in str(potential_readme_file).upper()[-6:] or
+                "README.TXT" in str(potential_readme_file).upper()[-10:]
+        ):
             readme_file_path = potential_readme_file
             break
+    if readme_file_path is None:  # broader search if no README is found in first step
+        for potential_readme_file in potential_readme_files:
+            if potential_readme_file.is_file() \
+            and "READ" in str(potential_readme_file).upper() and "ME" in str(potential_readme_file).upper():
+                readme_file_path = potential_readme_file
+                break
 
     # additional doxygen
     match args.dg_dot_uml_details:
