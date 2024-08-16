@@ -146,7 +146,6 @@ class ConfiguredParser(ArgumentParser):
                             f"It should only contain (parameter,value)-pairs (or lines of \"parameter: value\" in YAML syntax)"
                         )
                     else:
-                        encountered_args: set[str] = set()  # TODO: Duplikaterkennung
                         for arg_name in yaml_content.keys():
                             # check if parameters are strings
                             if not isinstance(arg_name, str):
@@ -164,9 +163,24 @@ class ConfiguredParser(ArgumentParser):
 
                             # ensure value is interpreted as the correct type and add it
                             correct_arg_value_type: type = eval(self.get_valid_arg_details(arg_name)["type"])
-                            parsed_args_dict_reference[arg_name] = correct_arg_value_type(yaml_content[arg_name])
+
+                            # check if parsed arg matches its default
+                            # (CLI should overwrite config, so only use config value if parsed value IS default)
+                            if (
+                                    self.get_valid_arg_details(arg_name)["default"] is None
+                                    and parsed_args_dict_reference[arg_name] is None
+                            ) or (
+                                    self.get_valid_arg_details(arg_name)["type"] is bool
+                                    and bool(parsed_args_dict_reference[arg_name]) is self.get_valid_arg_details(arg_name)["default"]
+                            ) or (
+                                    self.get_valid_arg_details(arg_name)["type"] is not bool
+                                    and correct_arg_value_type(parsed_args_dict_reference[arg_name]) == self.get_valid_arg_details(arg_name)["default"]
+                            ):
+                                parsed_args_dict_reference[arg_name] = correct_arg_value_type(yaml_content[arg_name])
+                            else:
+                                print(f"Warning! \"{arg_name}\" set to \"{yaml_content[arg_name]}\" in config, but will be overwritten with \"{parsed_args_dict_reference[arg_name]}\"")
+
                             # TODO: implement bool handling
-                            # TODO: ensure config does not overwrite, but is overwritten by manual paramaters
         return parsed_args
 
     def get_cli_args(self) -> list[dict[str, dict[str, Any]]]:
