@@ -92,6 +92,22 @@ For all possible options, see:
 python main.py --help
 ```
 
+An alternative way to set CLI options (one that does not involve stringing together multiple options to one long command) is to specify them in a config file.
+This file should use [YAML syntax](https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html) and consist of one large dictionary.
+For flag arguments (i.e. arguments that do not parse a value), the value can be left empty. This should look somewhat like this:
+```
+argument: value1
+flag_argument: 
+another_argument: value2
+
+```
+The toolchain will use configurations from the config file specified with `--config`. When this option is used, arguments can still be given via the command line and will even overwrite values for the same argument specified in the config file.  
+A more practical example can be found in [example_config.yaml](example_config.yaml). 
+It should be equivalent to the command line example of the simplest recommended use (with converter enabled, but without LLM), but expecting a project in `example_project`.
+````sh
+python main.py --config example_config.yaml
+````
+
 ## File Hierarchy
 The following structure assumes that `--apidoc_toolchain` is set to `doxygen-only` as it is the only currently maintained option.
 For legacy documentation regarding `sphinx-based`, see [here](doc/file_hierachy_REDUNDANT.md).
@@ -135,4 +151,4 @@ The output of this toolchain will be entirely contained withing `out`.
 If no components were disabled, there will be both a `doc` and `testcoverage` subdirectory containing the respective html output, centered around an `index.html` each.  
 Following the "flat layout", `sourcetodoc` contains the source code of the toolchain, separated into its components.  
 `submodules` should, as of now, only contain `doxygen-awesome-css`, but it should be filled with content, if installed correctly.  
-Additional documentation for this toolchain can be found in `doc` (including `DoxygenParamEvaluation.md`, which covers all Doxygen parameters and why and how they are accessible via the toolchain's CLI).
+Additional documentation for this toolchain can be found in `doc` (including [`DoxygenParamEvaluation.md`](doc/DoxygenParamEvaluation.md), which covers all Doxygen parameters and why and how they are accessible via the toolchain's CLI).

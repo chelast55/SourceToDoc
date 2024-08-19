@@ -1,7 +1,7 @@
 - project_name:
     help: Name of the project. If no project path is given, it is assumed to be a directory called <project_name> in the same directory as main.py
     type: str
-    default: unknown
+    default:
 - project_author:
     help: Author(s) of the project to process
     type: str

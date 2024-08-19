@@ -109,7 +109,8 @@ def _get_conversion(parser: ArgumentParser, **kwargs: str) -> Conversion[Any] | 
                 pattern, replacement = pattern_and_replacement
                 conversion = FindAndReplaceConversion(pattern, replacement)
         case _:
-            message = "Choices for --converter:\n" + "\n".join(e for e in _ConverterNames)
+            message = (f"Choices for --converter:\n{"\n".join(e for e in _ConverterNames)}\n\n"
+                       f"Got \"{kwargs["converter"]}\" instead")
             parser.error(message)
 
     if arg_helper.has_missing_args():
