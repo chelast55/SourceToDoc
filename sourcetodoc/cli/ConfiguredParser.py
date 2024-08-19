@@ -38,7 +38,7 @@ Recommended:
     - "choices":    limit acceptable value range (either a list, range or other container in string representation)
 
 More obscure:
-    - "action":     one of ["store" (default), "store_const", "store_true", "append", "append_const", "count", "help", "version"]
+    - "action":     one of ["store" (default), "store_const", "store_true", "append", "append_const", "count"]
                     Automatically set to "store_true"/"store false" when type is "bool" and no action is specified.
                     Note, that "type" can not be used when "store_const" or "append_const" is used
     - "const":      store a const value (becomes required of "action" is set to "store_const")
@@ -58,6 +58,13 @@ PREDEFINED_ARGS: list[dict[str, dict[str, Any]]] = [
                     f"Calling arguments manually still overwrites the configuration from the file.",
             "type": "Path",
             "default": None
+        }
+    },
+    {
+        "version": {
+            "help": f"Prints version information and exits when invoked",
+            "action": "version",
+            "version": None
         }
     }
 ]
@@ -99,7 +106,7 @@ class ConfiguredParser(ArgumentParser):
         def __repr__(self):
             return str(self)
 
-    def __init__(self):
+    def __init__(self, version: str = None):
         """
         CLI argument parser class that is preconfigured to support the functionality defined in various YAML files.
 
@@ -110,6 +117,7 @@ class ConfiguredParser(ArgumentParser):
         The YAML loading/parsing fucntionality can be accessed statically.
 
         Intended optional keyword arguments:
+            - version -- Version information to be printed when invoking --version (and enables --version)
             - prog -- The name of the program (default: ``os.path.basename(sys.argv[0])``)
             - usage -- A usage message (default: auto-generated from arguments)
             - description -- A description of what the program does
@@ -121,6 +129,11 @@ class ConfiguredParser(ArgumentParser):
         """
         ArgumentParser.__init__(self)
         self._args: list[dict[str, dict[str, Any]]] = self.load_yamls_combined_and_check_structure(ARGS_YAML_PATHS)
+        version_arg_definition: dict[str, Any] = next(d for d in PREDEFINED_ARGS if "version" in d.keys())
+        if version is None:
+            PREDEFINED_ARGS.remove(version_arg_definition)
+        else:
+            version_arg_definition["version"]["version"] = version
         self._args += PREDEFINED_ARGS
         self._subparsers_lookup: dict[str, Optional[ConfiguredParser.SubparserReference]] = {}  # workaround for no public way to access subparsers of a parser
         self._add_arguments_from_dict()
@@ -224,6 +237,9 @@ class ConfiguredParser(ArgumentParser):
                                     case "append_const":
                                         raise RuntimeError(
                                             f"action {arg_details["action"]} is not implemented for config files yet :/")
+                                    case "help", "version":
+                                        raise ValueError(
+                                            f"\"{arg_name}\": action {arg_details["action"]} is not supported for config files")
         return parsed_args
 
     def get_cli_args(self) -> list[dict[str, dict[str, Any]]]:
@@ -350,6 +366,12 @@ class ConfiguredParser(ArgumentParser):
                                 f"\"{key}\" in \"{arg_name}\" ({args_yaml_path}) is not a supported parameter for a CLI argument.\n"
                                 f"Supported parameters: {REQUIRED_ARG_PARAMS + OPTIONAL_ARG_PARAMS}"
                         )
+
+                        if key == "action" and arg_params["action"] in ["help", "version"]:  # filter out invalid actions
+                            raise KeyError(
+                                f"action = \"{arg_params["action"]}\" in \"{arg_name}\" ({args_yaml_path}) is reserved "
+                                f"for --{arg_params["action"]} and thus not allowed here."
+                            )
 
                         if key == "subparser":
                             if isinstance(arg_params["subparser"], str):  # single subparser as a string
@@ -488,6 +510,9 @@ class ConfiguredParser(ArgumentParser):
 
             if "nargs" in arg_params.keys():
                 add_argument_kwargs["nargs"] = arg_params["nargs"]
+
+            if "version" in arg_params.keys():
+                add_argument_kwargs["version"] = arg_params["version"]
 
             # add argument (while considering and handling subparsers)
             target_parser: ArgumentParser = self
