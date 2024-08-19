@@ -59,11 +59,31 @@ if __name__ == "__main__":
     # locate README
     readme_file_path: Optional[Path] = None
     potential_readme_files: list[Path] = [file for file in project_path.glob("**/*") if file.is_file()]
-    for potential_readme_file in potential_readme_files:
+    for potential_readme_file in potential_readme_files:  # search for specific "generic" README, in case there are multiple readme files
         if potential_readme_file.is_file() \
-        and "READ" in str(potential_readme_file).upper() and "ME" in str(potential_readme_file).upper():
+        and (
+                "README.MD" in str(potential_readme_file).upper()[-9:] or
+                "README" in str(potential_readme_file).upper()[-6:] or
+                "README.TXT" in str(potential_readme_file).upper()[-10:]
+        ):
             readme_file_path = potential_readme_file
             break
+    if readme_file_path is None:  # broader search if no README is found in first step
+        for potential_readme_file in potential_readme_files:
+            if potential_readme_file.is_file() \
+            and "READ" in str(potential_readme_file).upper() and "ME" in str(potential_readme_file).upper():
+                readme_file_path = potential_readme_file
+                break
+
+    # additional doxygen
+    match args.dg_dot_uml_details:
+        case "ALL":
+            dot_uml_details_translated: str = "YES"
+        case "SIMPLIFIED":
+            dot_uml_details_translated: str = "NO"
+        case "NONE":
+            dot_uml_details_translated: str = "NONE"
+
 
     # additional sphinx-specific
     sphinx_html_theme: str = "sphinx_rtd_theme"
@@ -74,7 +94,6 @@ if __name__ == "__main__":
         # Project related configuration options
         DOXYFILE_ENCODING      = UTF-8
         PROJECT_NAME           = {args.project_name}
-        PROJECT_AUTHOR         = {args.project_author}
         PROJECT_NUMBER         = {args.project_number}
         PROJECT_BRIEF          = {args.project_brief}
         PROJECT_LOGO           = {args.project_logo if (args.project_logo is not None and Path(args.project_logo).is_file()) else ""}
@@ -85,16 +104,16 @@ if __name__ == "__main__":
         OUTPUT_LANGUAGE        = {args.dg_output_language}
         BRIEF_MEMBER_DESC      = {"YES" if args.dg_no_brief_member_desc else "NO"}
         REPEAT_BRIEF           = {"YES" if args.dg_no_repeat_brief else "NO"}
-        ABBREVIATE_BRIEF       = "The $name class" \
-                                 "The $name widget" \
-                                 "The $name file" \
-                                 is \
-                                 provides \
-                                 specifies \
-                                 contains \
-                                 represents \
-                                 a \
-                                 an \
+        ABBREVIATE_BRIEF       = "The $name class" \\
+                                 "The $name widget" \\
+                                 "The $name file" \\
+                                 is \\
+                                 provides \\
+                                 specifies \\
+                                 contains \\
+                                 represents \\
+                                 a \\
+                                 an \\
                                  the
         ALWAYS_DETAILED_SEC    = {"YES" if args.dg_always_detailed_sec else "NO"}
         INLINE_INHERITED_MEMB  = {"YES" if args.dg_inline_inherited_memb else "NO"}
@@ -168,57 +187,57 @@ if __name__ == "__main__":
         INPUT                   = {str(project_path).replace('\\', '\\\\')}
         INPUT_ENCODING          = {args.dg_input_encoding}
         INPUT_FILE_ENCODING     = {"" if (args.dg_input_file_encoding is None) else args.dg_input_file_encoding}
-        FILE_PATTERNS           =    *.c \
-                                     *.cc \
-                                     *.cxx \
-                                     *.cxxm \
-                                     *.cpp \
-                                     *.cppm \
-                                     *.ccm \
-                                     *.c++ \
-                                     *.c++m \
-                                     *.java \
-                                     *.ii \
-                                     *.ixx \
-                                     *.ipp \
-                                     *.i++ \
-                                     *.inl \
-                                     *.idl \
-                                     *.ddl \
-                                     *.odl \
-                                     *.h \
-                                     *.hh \
-                                     *.hxx \
-                                     *.hpp \
-                                     *.h++ \
-                                     *.ixx \
-                                     *.l \
-                                     *.cs \
-                                     *.d \
-                                     *.php \
-                                     *.php4 \
-                                     *.php5 \
-                                     *.phtml \
-                                     *.inc \
-                                     *.m \
-                                     *.markdown \
-                                     *.md \
-                                     *.mm \
-                                     *.dox \
-                                     *.py \
-                                     *.pyw \
-                                     *.f90 \
-                                     *.f95 \
-                                     *.f03 \
-                                     *.f08 \
-                                     *.f18 \
-                                     *.f \
-                                     *.for \
-                                     *.vhd \
-                                     *.vhdl \
-                                     *.ucf \
-                                     *.qsf \
-                                     *.ice \
+        FILE_PATTERNS           =    *.c \\
+                                     *.cc \\
+                                     *.cxx \\
+                                     *.cxxm \\
+                                     *.cpp \\
+                                     *.cppm \\
+                                     *.ccm \\
+                                     *.c++ \\
+                                     *.c++m \\
+                                     *.java \\
+                                     *.ii \\
+                                     *.ixx \\
+                                     *.ipp \\
+                                     *.i++ \\
+                                     *.inl \\
+                                     *.idl \\
+                                     *.ddl \\
+                                     *.odl \\
+                                     *.h \\
+                                     *.hh \\
+                                     *.hxx \\
+                                     *.hpp \\
+                                     *.h++ \\
+                                     *.ixx \\
+                                     *.l \\
+                                     *.cs \\
+                                     *.d \\
+                                     *.php \\
+                                     *.php4 \\
+                                     *.php5 \\
+                                     *.phtml \\
+                                     *.inc \\
+                                     *.m \\
+                                     *.markdown \\
+                                     *.md \\
+                                     *.mm \\
+                                     *.dox \\
+                                     *.py \\
+                                     *.pyw \\
+                                     *.f90 \\
+                                     *.f95 \\
+                                     *.f03 \\
+                                     *.f08 \\
+                                     *.f18 \\
+                                     *.f \\
+                                     *.for \\
+                                     *.vhd \\
+                                     *.vhdl \\
+                                     *.ucf \\
+                                     *.qsf \\
+                                     *.ice \\
                                      *.txt
         RECURSIVE               = YES
         EXCLUDE_SYMLINKS        = {"YES" if args.dg_exclude_symlinks else "NO"}
@@ -290,7 +309,7 @@ if __name__ == "__main__":
         GROUP_GRAPHS            = {"YES" if args.dg_disable_dot_graphs else "NO"}
         UML_LOOK                = {"YES" if args.dg_disable_uml_look else "NO"}
         UML_LIMIT_NUM_FIELDS    = {args.dg_uml_limit_num_fields if not args.dg_uml_limit_num_fields == 0 else 100}
-        DOT_UML_DETAILS         = {args.dg_dot_uml_details}
+        DOT_UML_DETAILS         = {dot_uml_details_translated}
         DOT_WRAP_THRESHOLD      = 20
         TEMPLATE_RELATIONS      = {"YES" if args.dg_disable_template_relations else "NO"}
         INCLUDE_GRAPH           = {"YES" if args.dg_disable_dot_graphs else "NO"}
@@ -442,6 +461,10 @@ if __name__ == "__main__":
     """
     #endregion file contents
 
+    # general stuff
+    if not project_path.exists():
+        raise OSError(f"No project at {project_path}. Path does not exist :/")
+
     # docstring preprocessing
     if args.converter is not None:
         print("\nComment Conversion:\n")
@@ -449,6 +472,13 @@ if __name__ == "__main__":
 
     if args.disable_doc_gen:
         print("\nDocumentation Generation:\n")
+
+        # check if a README file was found
+        if readme_file_path is not None:
+            print(f"README found at {readme_file_path}")
+        else:
+            print(f"Could not find a file easily identifiable as a \"README\" :/")
+
         # delete artifacts from prior builds and ensure paths exist TODO: move to end as cleanup, when debugging is done
         delete_directory_if_exists(doc_path_abs)
         doc_path_abs.mkdir(parents=True, exist_ok=True)
@@ -464,7 +494,7 @@ if __name__ == "__main__":
             parser.error("doxygen was not found in PATH")
         if args.dg_html_theme == "doxygen-awesome" and not doxygen_stylesheet_path.is_file():
             parser.error("The stylesheet for doxygen-awesome was not found at its expected path. Try:\n$ git submodule update --init")
-        
+
         if args.apidoc_toolchain == "doxygen-only":
             # generate config file for Doxygen
             with open(Path("Doxyfile.in"), "w+") as doxyfile:
