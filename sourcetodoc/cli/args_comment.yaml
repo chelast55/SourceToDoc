@@ -1,7 +1,8 @@
 - converter:
     help: The converter to use to convert comments
-    action: store_const
+    nargs: "?"
     const: "default"
+    type: str
 - cc_replace:
     help: |
       The method to replace comments.
