@@ -30,13 +30,14 @@ if __name__ == "__main__":
         )
 
     #region paths
-    generated_docs_main_path: Path = Path("out")  # Path conf.py will be placed, everything Doxygen/Sphinx related is rel. to it
-    project_path: Path = generated_docs_main_path.parent.absolute() / Path(args.project_name) if (args.project_path is None) else Path(args.project_path)
+    out_path: Path = Path("out").absolute()  # Path conf.py will be placed, everything Doxygen/Sphinx related is rel. to it
+    root_path: Path = out_path.parent.absolute()
+    project_path: Path = root_path / Path(args.project_name) if (args.project_path is None) else Path(args.project_path)
     doxygen_awesome_submodule_path: Path \
-        = generated_docs_main_path.parent.absolute() / Path("submodules") / Path("doxygen-awesome-css")
+        = root_path / Path("submodules") / Path("doxygen-awesome-css")
 
     doc_path: Path = Path("doc") / Path(args.project_name)  # TODO: option to reverse those with a CLI parameter
-    doc_path_abs: Path = generated_docs_main_path.absolute() / doc_path
+    doc_path_abs: Path = out_path / doc_path
     doc_source_path: Path = doc_path / Path("src")
     doc_source_path_abs: Path = doc_path_abs / Path("src")
     if args.apidoc_toolchain == "doxygen-only":
@@ -452,7 +453,7 @@ if __name__ == "__main__":
         delete_directory_if_exists(doc_path_abs)
         doc_path_abs.mkdir(parents=True, exist_ok=True)
         doxygen_path.mkdir(parents=True, exist_ok=True)
-        chdir(generated_docs_main_path)
+        chdir(out_path)
 
         # check non-python requirements
         default_dot = shutil.which("dot")
@@ -507,22 +508,24 @@ if __name__ == "__main__":
 
             #endregion sphinx-based
     
+    # coverage
     if args.disable_test_cov:
         print("\nTest Coverage Evaluation:\n")
-        # coverage
-        if args.create_coverage_report == True and args.coverage_type == "meson":
+        chdir(root_path)
+        if args.tc_coverage_type == "meson":
+            # TODO: allocate variables like project_path (the inline-if)
             meson_build_location: Path = project_path
             build_folder_name: Path = Path("build")
+            keep_build_folder: bool = False
             meson_setup_args: list[str] = []
-            if args.meson_build_location is not None:
-                meson_build_location = Path(args.meson_build_location)
-            if args.build_folder_name is not None:
-                build_folder_name = args.build_folder_name
-            if args.meson_setup_args is not None:
+            if args.tc_meson_build_location is not None:
+                meson_build_location = Path(args.tc_meson_build_location)
+            if args.tc_build_folder_name is not None:
+                build_folder_name = args.tc_build_folder_name
+            if args.tc_keep_build_folder is not None:
+                keep_build_folder = args.tc_keep_build_folder
+            if args.tc_meson_setup_args is not None:
                 # TODO: str to list or change meson_setup_args in yaml to list if possible
                 pass
-            # TODO: pass cleanup bool to method
-            run_meson(meson_build_location, build_folder_name, meson_setup_args)
+            run_meson(meson_build_location, build_folder_name, keep_build_folder, meson_setup_args)
 
-            # Link coverage and documentation.
-            pass

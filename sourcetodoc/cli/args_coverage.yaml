@@ -1,7 +1,3 @@
-- tc_create_coverage_report:
-    help: Wether to create a coverage report or skip this step.
-    type: bool
-    default: True
 - tc_coverage_type:
     help: Choose your backend. Currently implemented, meson.
     type: str
@@ -13,10 +9,10 @@
 - tc_build_folder_name:
     help: Name the build folder will have. Can be nested (sub / build). Existing folder will be deleted.
     type: str
-- tc_cleanup:
-    help: Wether to delete the build folder after use or not.
+- tc_keep_build_folder:
+    help: Use to not delete the newly created build folder in the target project.
     type: bool
-    default: True
+    default: False
 - tc_meson_setup_args:
     help: Arguments passed to the Meson Setup step. --backend is not allowed!
     type: list
