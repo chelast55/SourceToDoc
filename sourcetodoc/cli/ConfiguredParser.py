@@ -137,7 +137,7 @@ class ConfiguredParser(ArgumentParser):
             if not Path(parsed_args.config).is_file():
                 raise OSError(f"{parsed_args.config} is not a file")
             else:
-                with (open(parsed_args.config, 'r') as yaml_file):
+                with open(parsed_args.config, 'r') as yaml_file:
                     yaml_content = yaml_safe_load(yaml_file)
                     if yaml_content is None:  # check for empty config file
                         raise ValueError(f"{parsed_args.config} is an empty file. Is this the correct config file?")
@@ -162,60 +162,68 @@ class ConfiguredParser(ArgumentParser):
                                 raise KeyError(
                                     f"\"{arg_name}\" is not a recognized CLI argument. Possible arguments:\n{self.get_valid_args_list()}")
 
+                            arg_details: dict[str, Any] = dict(self.get_valid_arg_details(arg_name))
+                            if not "dest" in arg_details.keys():
+                                arg_details["dest"] = arg_name
                             # case: no store const action ('type' required)
-                            if "type" in self.get_valid_arg_details(arg_name):
-                                correct_arg_value_type: type = eval(self.get_valid_arg_details(arg_name)["type"])
+                            if "type" in arg_details:
+                                correct_arg_value_type: type = eval(arg_details["type"])
 
                                 # check if parsed arg matches its default
                                 # (CLI should overwrite config, so only use config value if parsed value IS default)
                                 if (
-                                        "default" not in self.get_valid_arg_details(arg_name)
+                                        "default" not in arg_details
                                         and parsed_args_dict_reference[arg_name] is None
                                 ) or (
-                                        self.get_valid_arg_details(arg_name)["default"] is None
+                                        arg_details["default"] is None
                                         and parsed_args_dict_reference[arg_name] is None
                                 ) or (
-                                        self.get_valid_arg_details(arg_name)["type"] is bool
-                                        and bool(parsed_args_dict_reference[arg_name]) is self.get_valid_arg_details(arg_name)["default"]
+                                        arg_details["type"] is bool
+                                        and bool(parsed_args_dict_reference[arg_name]) is arg_details["default"]
                                 ) or (
-                                        self.get_valid_arg_details(arg_name)["type"] is not bool
-                                        and correct_arg_value_type(parsed_args_dict_reference[arg_name]) == self.get_valid_arg_details(arg_name)["default"]
+                                        arg_details["type"] is not bool
+                                        and correct_arg_value_type(parsed_args_dict_reference[arg_name]) == arg_details["default"]
                                 ):
-                                    if self.get_valid_arg_details(arg_name)["type"] is bool:  # special case: bool values get flipped if flag is set
-                                        parsed_args_dict_reference[arg_name] = not parsed_args_dict_reference[arg_name]
+                                    # special case: bool values get flipped if flag is set
+                                    if arg_details["type"] is bool:
+                                        parsed_args_dict_reference[arg_details["dest"]] = not parsed_args_dict_reference[arg_details["dest"]]
+                                    elif "action" not in arg_details or arg_details["action"] == "store":
+                                        # special case for nargs=="?"
+                                        if "nargs" in arg_details.keys() and arg_details["nargs"] == "?" and arg_details["nargs"] is not None:
+                                            parsed_args_dict_reference[arg_details["dest"]] = arg_details["const"]
+                                        # "default" case
+                                        else:
+                                            parsed_args_dict_reference[arg_details["dest"]] = correct_arg_value_type(yaml_content[arg_name])
                                     else:
-                                        parsed_args_dict_reference[arg_name] = correct_arg_value_type(yaml_content[arg_name])
+                                        match arg_details["action"]:
+                                            case "append":
+                                                raise RuntimeError(
+                                                    f"action {arg_details["action"]} is not implemented for config files yet :/")
+                                            case "count":
+                                                raise RuntimeError(
+                                                    f"action {arg_details["action"]} is not implemented for config files yet :/")
+                                            case "extend":
+                                                raise RuntimeError(
+                                                    f"action {arg_details["action"]} is not implemented for config files yet :/")
+                                            case "help", "version":
+                                                raise ValueError(
+                                                    f"\"{arg_name}\": action {arg_details["action"]} is not supported for config files")
                                 else:
                                     print(f"Warning! \"{arg_name}\" set to \"{yaml_content[arg_name]}\" in config, but will be overwritten with \"{parsed_args_dict_reference[arg_name]}\"")
 
                             # case: args performs store const action ('type' not allowed)
-                            elif "action" in self.get_valid_arg_details(arg_name):
-                                match self.get_valid_arg_details(arg_name)["action"]:
-                                    case "store":
-                                        raise RuntimeError(
-                                            f"action {self.get_valid_arg_details(arg_name)["action"]} is not implemented for config files yet :/")
+                            elif "action" in arg_details:
+                                match arg_details["action"]:
                                     case "store_const":
-                                        if "const" in self.get_valid_arg_details(arg_name):  # stays None otherwise
-                                            parsed_args_dict_reference[arg_name] = self.get_valid_arg_details(arg_name)["const"]
+                                        if "const" in arg_details:  # stays None otherwise
+                                            parsed_args_dict_reference[arg_details["dest"]] = arg_details["const"]
                                     case "store_true":
-                                        parsed_args_dict_reference[arg_name] = True
+                                        parsed_args_dict_reference[arg_details["dest"]] = True
                                     case "store_false":
-                                        parsed_args_dict_reference[arg_name] = False
-                                    case "append":
-                                        raise RuntimeError(
-                                            f"action {self.get_valid_arg_details(arg_name)["action"]} is not implemented for config files yet :/")
+                                        parsed_args_dict_reference[arg_details["dest"]] = False
                                     case "append_const":
                                         raise RuntimeError(
-                                            f"action {self.get_valid_arg_details(arg_name)["action"]} is not implemented for config files yet :/")
-                                    case "count":
-                                        raise RuntimeError(
-                                            f"action {self.get_valid_arg_details(arg_name)["action"]} is not implemented for config files yet :/")
-                                    case "extend":
-                                        raise RuntimeError(
-                                            f"action {self.get_valid_arg_details(arg_name)["action"]} is not implemented for config files yet :/")
-                                    case "help", "version":
-                                        raise ValueError(
-                                            f"\"{arg_name}\": action {self.get_valid_arg_details(arg_name)["action"]} is not supported for config files")
+                                            f"action {arg_details["action"]} is not implemented for config files yet :/")
         return parsed_args
 
     def get_cli_args(self) -> list[dict[str, dict[str, Any]]]:
