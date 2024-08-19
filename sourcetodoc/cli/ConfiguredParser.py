@@ -38,9 +38,9 @@ Recommended:
     - "choices":    limit acceptable value range (either a list, range or other container in string representation)
 
 More obscure:
-    - "action":     one of ["store", "store_const", "store_true", "append", "append_const", "count", "help", "version"]
+    - "action":     one of ["store" (default), "store_const", "store_true", "append", "append_const", "count", "help", "version"]
                     Automatically set to "store_true"/"store false" when type is "bool" and no action is specified.
-                    Note, that "type" can not be used when "action" is used
+                    Note, that "type" can not be used when "store_const" or "append_const" is used
     - "const":      store a const value (becomes required of "action" is set to "store_const")
     - "dest":       specify the attribute name used in the result namespace
     - "metavar":    alternate display name for the argument as shown in help
@@ -133,7 +133,7 @@ class ConfiguredParser(ArgumentParser):
         parsed_args_dict_reference: dict[str, Any] = vars(parsed_args)
 
         # get CLI arg values from config YAML file (if --config is used)
-        if "config" in parsed_args:
+        if parsed_args.config is not None:
             if not Path(parsed_args.config).is_file():
                 raise OSError(f"{parsed_args.config} is not a file")
             else:
@@ -162,7 +162,7 @@ class ConfiguredParser(ArgumentParser):
                                 raise KeyError(
                                     f"\"{arg_name}\" is not a recognized CLI argument. Possible arguments:\n{self.get_valid_args_list()}")
 
-                            # ensure value is interpreted as the correct type
+                            # case: no store const action ('type' required)
                             if "type" in self.get_valid_arg_details(arg_name):
                                 correct_arg_value_type: type = eval(self.get_valid_arg_details(arg_name)["type"])
 
@@ -181,41 +181,41 @@ class ConfiguredParser(ArgumentParser):
                                         self.get_valid_arg_details(arg_name)["type"] is not bool
                                         and correct_arg_value_type(parsed_args_dict_reference[arg_name]) == self.get_valid_arg_details(arg_name)["default"]
                                 ):
-                                    if self.get_valid_arg_details(arg_name)["type"] is bool:
+                                    if self.get_valid_arg_details(arg_name)["type"] is bool:  # special case: bool values get flipped if flag is set
                                         parsed_args_dict_reference[arg_name] = not parsed_args_dict_reference[arg_name]
                                     else:
                                         parsed_args_dict_reference[arg_name] = correct_arg_value_type(yaml_content[arg_name])
                                 else:
                                     print(f"Warning! \"{arg_name}\" set to \"{yaml_content[arg_name]}\" in config, but will be overwritten with \"{parsed_args_dict_reference[arg_name]}\"")
+
+                            # case: args performs store const action ('type' not allowed)
                             elif "action" in self.get_valid_arg_details(arg_name):
-                                match parsed_args.action:
+                                match self.get_valid_arg_details(arg_name)["action"]:
                                     case "store":
                                         raise RuntimeError(
-                                            f"action {parsed_args.action} is not implemented for config files yet :/")
+                                            f"action {self.get_valid_arg_details(arg_name)["action"]} is not implemented for config files yet :/")
                                     case "store_const":
-                                        raise RuntimeError(
-                                            f"action {parsed_args.action} is not implemented for config files yet :/")
+                                        if "const" in self.get_valid_arg_details(arg_name):  # stays None otherwise
+                                            parsed_args_dict_reference[arg_name] = self.get_valid_arg_details(arg_name)["const"]
                                     case "store_true":
-                                        raise RuntimeError(
-                                            f"action {parsed_args.action} is not implemented for config files yet :/")
+                                        parsed_args_dict_reference[arg_name] = True
                                     case "store_false":
-                                        raise RuntimeError(
-                                            f"action {parsed_args.action} is not implemented for config files yet :/")
+                                        parsed_args_dict_reference[arg_name] = False
                                     case "append":
                                         raise RuntimeError(
-                                            f"action {parsed_args.action} is not implemented for config files yet :/")
+                                            f"action {self.get_valid_arg_details(arg_name)["action"]} is not implemented for config files yet :/")
                                     case "append_const":
                                         raise RuntimeError(
-                                            f"action {parsed_args.action} is not implemented for config files yet :/")
+                                            f"action {self.get_valid_arg_details(arg_name)["action"]} is not implemented for config files yet :/")
                                     case "count":
                                         raise RuntimeError(
-                                            f"action {parsed_args.action} is not implemented for config files yet :/")
-                                    case "help":
+                                            f"action {self.get_valid_arg_details(arg_name)["action"]} is not implemented for config files yet :/")
+                                    case "extend":
+                                        raise RuntimeError(
+                                            f"action {self.get_valid_arg_details(arg_name)["action"]} is not implemented for config files yet :/")
+                                    case "help", "version":
                                         raise ValueError(
-                                            f"\"{arg_name}\": action {parsed_args.action} is not supported for config files")
-                                    case "version":
-                                        raise ValueError(
-                                            f"\"{arg_name}\": action {parsed_args.action} is not supported for config files")
+                                            f"\"{arg_name}\": action {self.get_valid_arg_details(arg_name)["action"]} is not supported for config files")
         return parsed_args
 
     def get_cli_args(self) -> list[dict[str, dict[str, Any]]]:
@@ -324,7 +324,11 @@ class ConfiguredParser(ArgumentParser):
                     arg_params: dict[str, Any] = arg[arg_name]
                     for required_param in REQUIRED_ARG_PARAMS:
                         if required_param not in arg_params.keys():  # check for required parameters missing
-                            if not (required_param == "type" and "action" in arg_params.keys()):  # special case, 'action' does not work with 'type'
+                            if not (  # special case, 'type' does not work with these const-storing actions
+                                    required_param == "type"
+                                    and "action" in arg_params.keys()
+                                    and arg_params["action"] in ["store_const", "store_true", "store_false", "append_const"]
+                            ):
                                 raise KeyError(
                                     f"Required parameter \"{required_param}\" missing in \"{arg_name}\" ({args_yaml_path}).\n"
                                     f"Required parameters: {REQUIRED_ARG_PARAMS}"
@@ -332,16 +336,13 @@ class ConfiguredParser(ArgumentParser):
                     for key in arg_params.keys():
                         if not isinstance(key, str):  # check for all keys being strings
                             raise TypeError(f"\"{key}\" in \"{arg_name}\" ({args_yaml_path}) is not a string, but {type(key)}.")
+
                         if key not in (REQUIRED_ARG_PARAMS + OPTIONAL_ARG_PARAMS):  # check for parameters to be supported
                             raise KeyError(
                                 f"\"{key}\" in \"{arg_name}\" ({args_yaml_path}) is not a supported parameter for a CLI argument.\n"
                                 f"Supported parameters: {REQUIRED_ARG_PARAMS + OPTIONAL_ARG_PARAMS}"
                         )
-                        if key == "action" and arg_params["action"] == "store_const" and "const" not in arg_params.keys():  # special case, 'const' is required when using 'store_const'
-                            raise KeyError(
-                                f"Required parameter \"const\" missing in \"{arg_name}\" ({args_yaml_path}).\n"
-                                f"Required parameters: {REQUIRED_ARG_PARAMS} AND \"const\" because \"action\" is set to \"store_const\""
-                            )
+
                         if key == "subparser":
                             if isinstance(arg_params["subparser"], str):  # single subparser as a string
                                 arg_params["subparser"] = [
