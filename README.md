@@ -119,14 +119,13 @@ SourceToDoc
 │   ├───DoxygenParamEvaluation.md
 │   └───<...>
 ├───out
-│   ├───doc
-│   │   └───<PROJECT>
-│   │       ├───<...>
-│   │       └───index.html
-│   └───testcoveragereport
-│   │   └───<PROJECT>
-│   │       ├───<...>
-│   │       └───index.html
+│   └───<PROJECT>
+│       ├───doc
+│       │   ├───<...>
+│       │   └───index.html
+│       └───testcoveragereport
+│           ├───<...>
+│           └───index.html
 ├───sourcetodoc
 │   ├───cli
 │   │   ├───<...yaml>
@@ -147,7 +146,8 @@ SourceToDoc
 ├───README.md
 └───requirements.txt
 ```
-The output of this toolchain will be entirely contained withing `out`.
+The output of this toolchain will be entirely contained withing `out`.  
+There will be a directory for each project processed by the toolchain, which contains the respective output.  
 If no components were disabled, there will be both a `doc` and `testcoveragereport` subdirectory containing the respective html output, centered around an `index.html` each.  
 Following the "flat layout", `sourcetodoc` contains the source code of the toolchain, separated into its components.  
 `submodules` should, as of now, only contain `doxygen-awesome-css`, but it should be filled with content, if installed correctly.  
