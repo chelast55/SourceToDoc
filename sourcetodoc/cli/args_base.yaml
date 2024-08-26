@@ -19,16 +19,11 @@
     type: str
     choices: [sphinx-based, doxygen-only]
     default: doxygen-only
-#- doc_hierarchy:
-#    help: (Not implemented yet) The order in which the "doc" and project name directories are placed within the hierarchy of the generated api documentation.
-#    type: str
-#    choices: [doc_first, project_name_first]
-#    default: doc_first
-#- wizard:
-#    help: Planned feature. Not implemented yet :/
-#    type: bool
-#    short: W
-#    default: False
+- wizard:
+    help: Enable guided "wizard" for settings the most important CLI args based on questions and answers
+    type: bool
+    short: W
+    default: False
 - disable_doc_gen:
     help: Disable the documentation generation part of the toolchain. 
     type: bool

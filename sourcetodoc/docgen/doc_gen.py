@@ -6,7 +6,7 @@ from sourcetodoc.common.Config import Config
 from sourcetodoc.common.helpers import delete_directory_if_exists
 
 
-def run_doc_gen(config: Config):
+def run_documentation_generation(config: Config):
     """
     Run the documentation generation part of the toolchain.
 

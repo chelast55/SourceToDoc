@@ -1,9 +1,9 @@
 from os import chdir
 
+from sourcetodoc.cli.ConfiguredParser import ConfiguredParser
 from sourcetodoc.common.Config import Config
 from sourcetodoc.docstring.cli import run_comment_converter
-from sourcetodoc.cli.ConfiguredParser import ConfiguredParser
-from sourcetodoc.docgen.doc_gen import run_doc_gen
+from sourcetodoc.docgen.doc_gen import run_documentation_generation
 from sourcetodoc.testcoverage.cover_meson import *
 
 
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     # documentation generation
     if config.args.disable_doc_gen:
         print("\nDocumentation Generation:\n")
-        run_doc_gen(config)
+        run_documentation_generation(config)
     
     # coverage
     if config.args.disable_test_cov:
