@@ -1,18 +1,18 @@
-- create_coverage_report:
-    help: 
-    type: bool
-    default: True
-- coverage_type:
-    help:
+- tc_coverage_type:
+    help: Choose your backend. Currently implemented, meson.
     type: str
     choices: [meson, tbd]
     default: meson
-- meson_build_location:
-    help:
+- tc_meson_build_location:
+    help: Path to the root directory of the project. Where a "meson.build" file should be located.
     type: str
-- build_folder_name:
-    help:
+- tc_build_folder_name:
+    help: Name the build folder will have. Can be nested (sub / build). Existing folder will be deleted.
     type: str
-- meson_setup_args:
-    help:
-    type: str
+- tc_keep_build_folder:
+    help: Use to not delete the newly created build folder in the target project.
+    type: bool
+    default: False
+- tc_meson_setup_args:
+    help: Arguments passed to the Meson Setup step. --backend is not allowed!
+    type: list
