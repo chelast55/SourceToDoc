@@ -12,7 +12,6 @@ class Config:
         self.root_path: Path = Path()
         self.project_path: Path = Path()
         self.doxygen_awesome_submodule_path: Path = Path()
-
         self.doc_path: Path = Path()
         self.doc_path_abs: Path = Path()
         self.doc_source_path: Path = Path()
@@ -32,7 +31,9 @@ class Config:
         self.CONF_PY_CONTENT: str = ""
         self.CONF_PY_EXHALE_EXTENSION: str = ""
 
-    def initialize(self):
+    def initialize(self, args: Namespace):
+        self.args = args
+
         # Non-trivial argument requirements
         if self.args.converter is not None:
             if self.args.project_name is None:
@@ -54,7 +55,7 @@ class Config:
         self.project_path = self.root_path / Path(self.args.project_name) if (self.args.project_path is None) else Path(self.args.project_path)
         self.doxygen_awesome_submodule_path = self.root_path / Path("submodules") / Path("doxygen-awesome-css")
     
-        self.doc_path = Path("doc") / Path(self.args.project_name)  # TODO: option to reverse those with a CLI parameter
+        self.doc_path = Path(self.args.project_name) / Path("doc")
         self.doc_path_abs = self.out_path / self.doc_path
         self.doc_source_path = self.doc_path / Path("src")
         self.doc_source_path_abs = self.doc_path_abs / Path("src")
@@ -80,19 +81,18 @@ class Config:
         # locate README
         potential_readme_files: list[Path] = [file for file in self.project_path.glob("**/*") if file.is_file()]
         for potential_readme_file in potential_readme_files:  # search for specific "generic" README, in case there are multiple readme files
-            if potential_readme_file.is_file() \
-                    and (
+            if potential_readme_file.is_file() and (
                     "README.MD" in str(potential_readme_file).upper()[-9:] or
                     "README" in str(potential_readme_file).upper()[-6:] or
                     "README.TXT" in str(potential_readme_file).upper()[-10:]
             ):
-                readme_file_path = potential_readme_file
+                self.readme_file_path = potential_readme_file
                 break
         if self.readme_file_path is None:  # broader search if no README is found in first step
             for potential_readme_file in potential_readme_files:
                 if potential_readme_file.is_file() \
                         and "READ" in str(potential_readme_file).upper() and "ME" in str(potential_readme_file).upper():
-                    readme_file_path = potential_readme_file
+                    self.readme_file_path = potential_readme_file
                     break
     
         # additional doxygen
@@ -267,7 +267,7 @@ class Config:
                 #FILTER_PATTERNS        =
                 #FILTER_SOURCE_FILES    =
                 #FILTER_SOURCE_PATTERNS =
-                USE_MDFILE_AS_MAINPAGE  = {"" if (readme_file_path is None) else str(readme_file_path).replace('\\', '\\\\')}
+                USE_MDFILE_AS_MAINPAGE  = {"" if (self.readme_file_path is None) else str(self.readme_file_path).replace('\\', '\\\\')}
         
                 # Configuration options related to source browsing
                 SOURCE_BROWSER          = {"YES" if self.args.dg_disable_source_browser else "NO"}
