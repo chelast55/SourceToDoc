@@ -22,6 +22,18 @@ MSG_ASK_CONVERTER: str = ("Do you want to use the Comment Converter tool? (yes/n
 MSG_ASK_DOCGEN: str = "Do you want to use the Documentation Generation tool? (yes/no)\n"
 MSG_ASK_TESTCOV: str = ("Do you want to use the Testcoverage Evaluation tool? (yes/no)\n"
                         "(to use properly, make sure the project in \"$\" is set up to build correctly)\n")
+MSG_ASK_PROJECT_NUMBER: str = "Please provide the software version number of \"$\": (leave empty if unknown)\n"
+MSG_ASK_PROJECT_BRIEF: str = "Please provide a short/one-line description of \"$\":\n"
+MSG_ASK_DG_TIMESTAMP: str = "Do you want to add a timestamp of when it was generated documentation? (yes/no)\n"
+MSG_ASK_DG_DISABLE_EXTRACT_PRIVATE: str = "Do you want to include private members in the documentation? (yes/no)\n"
+MSG_ASK_DG_DISABLE_EXTRACT_ANON_NAMESPACES: str = ("Do you want to include members of anonymous namespaces in the "
+                                                   "documentation? (yes/no)\n")
+MSG_ASK_DG_DISABLE_DOT_GRAPHS: str = ("Do you want to generate various interactivr graphs (class collaboration, header "
+                                      "include, function call, ...) from source code? (yes/no)\n"
+                                      "(recommended for better architectural visualization, but will take more time)\n")
+MSG_ASK_DG_HTML_THEME: str = ("Doxygen-generated documentation can look somewhat dated by todays standards. "
+                              "Do you want to use \"doxygen-awesome\" "
+                              "(a custom theme for a more modern look)? (yes/no)\n")
 
 
 def run_wizard(args: Namespace):
@@ -67,6 +79,49 @@ def run_wizard(args: Namespace):
         if type(temp_answer_docgen) is str:
             print_with_replace(MSG_UNACCEPTED_ANSWER, temp_answer_docgen)
     args.disable_doc_gen = temp_answer_docgen
+
+    if temp_answer_docgen:
+        temp_answer_project_number: str = input_with_replace(MSG_ASK_PROJECT_NUMBER, args.project_name)
+        if not temp_answer_project_number == "":
+            args.project_number = temp_answer_project_number
+        temp_answer_project_brief: str = input_with_replace(MSG_ASK_PROJECT_BRIEF, args.project_name)
+        if not temp_answer_project_brief == "":
+            args.project_brief = temp_answer_project_brief
+
+        temp_answer_timestamp: bool | str = ""
+        while type(temp_answer_timestamp) is str:
+            temp_answer_timestamp = input_expect_bool(MSG_ASK_DG_TIMESTAMP)
+            if type(temp_answer_timestamp) is str:
+                print_with_replace(MSG_UNACCEPTED_ANSWER, temp_answer_timestamp)
+        args.dg_timestamp = "DATETIME" if temp_answer_timestamp else "NO"
+
+        temp_answer_extract_private: bool | str = ""
+        while type(temp_answer_extract_private) is str:
+            temp_answer_extract_private = input_expect_bool(MSG_ASK_DG_DISABLE_EXTRACT_PRIVATE)
+            if type(temp_answer_extract_private) is str:
+                print_with_replace(MSG_UNACCEPTED_ANSWER, temp_answer_extract_private)
+        args.dg_disable_extract_private = temp_answer_extract_private
+
+        temp_answer_extract_anon_namespaces: bool | str = ""
+        while type(temp_answer_extract_anon_namespaces) is str:
+            temp_answer_extract_anon_namespaces = input_expect_bool(MSG_ASK_DG_DISABLE_EXTRACT_ANON_NAMESPACES)
+            if type(temp_answer_extract_anon_namespaces) is str:
+                print_with_replace(MSG_UNACCEPTED_ANSWER, temp_answer_extract_anon_namespaces)
+        args.dg_disable_extract_anon_namespaces = temp_answer_extract_anon_namespaces
+
+        temp_answer_dot_graphs: bool | str = ""
+        while type(temp_answer_dot_graphs) is str:
+            temp_answer_dot_graphs = input_expect_bool(MSG_ASK_DG_DISABLE_DOT_GRAPHS)
+            if type(temp_answer_dot_graphs) is str:
+                print_with_replace(MSG_UNACCEPTED_ANSWER, temp_answer_dot_graphs)
+        args.dg_disable_dot_graphs = temp_answer_dot_graphs
+
+        temp_answer_html_theme: bool | str = ""
+        while type(temp_answer_html_theme) is str:
+            temp_answer_html_theme = input_expect_bool(MSG_ASK_DG_HTML_THEME)
+            if type(temp_answer_html_theme) is str:
+                print_with_replace(MSG_UNACCEPTED_ANSWER, temp_answer_html_theme)
+        args.dg_html_theme = "doxygen-awesome" if temp_answer_html_theme else "standard"
 
     # test coverage evaluation?
     temp_answer_testcov: bool | str = ""
