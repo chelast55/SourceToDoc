@@ -65,7 +65,14 @@ Now, you should be able to run the whole toolchain!
 
 
 ## Usage
-To run the toolchain in its most basic version, you have to provide at least the name of the directory (`<PROJECT_NAME>`) containing the source of the project, you want to document:   
+The easiest way to run the toolchain is to use the "wizard", which gives a "guided tour" through the most important parameters and lets you set one after another.
+Note, that this may not be the fastest way and not all possible CLI parameters to control the toolchain are available.  
+To run the toolchain with the wizard enabled run the following in a terminal opened in the toolchain's main directory (same level as `main.py`):
+```sh
+python main.py -W
+```
+
+When not using the wizard, to run the toolchain in its most basic version, you have to provide at least the name of the directory (`<PROJECT_NAME>`) containing the source of the project, you want to document:   
 (the `<PROJECT_NAME>` directory and your terminal instance should be in the same directory, where `main.py` is located and the Python virtual environment should be active)
 
 ```sh
