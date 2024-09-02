@@ -22,13 +22,19 @@ MSG_ASK_CONVERTER: str = ("Do you want to use the Comment Converter tool? (yes/n
 MSG_ASK_DOCGEN: str = "Do you want to use the Documentation Generation tool? (yes/no)\n"
 MSG_ASK_TESTCOV: str = ("Do you want to use the Testcoverage Evaluation tool? (yes/no)\n"
                         "(to use properly, make sure the project in \"$\" is set up to build correctly)\n")
+MSG_ASK_LLM: str = ("Do you want to use an LLM for the conversion? (yes/no)\n"
+                    "(this may generate many API call, so some publicly available models may not willingly handle "
+                    "processing the whole source code)\n")
+MSG_ASK_CC_OPENAI_BASE_URL: str = "Please provide the \"OpenAI base URL\" of the LLM host:\n(could also be localhost)\n"
+MSG_ASK_CC_OPENAI_API_KEY: str = "Please provide the \"OpenAI API key\" for the LLM host:\n"
+MSG_ASK_CC_LLM_MODEL: str = "Please provide the name of the LLM model you want to use:\n"
 MSG_ASK_PROJECT_NUMBER: str = "Please provide the software version number of \"$\": (leave empty if unknown)\n"
 MSG_ASK_PROJECT_BRIEF: str = "Please provide a short/one-line description of \"$\":\n"
 MSG_ASK_DG_TIMESTAMP: str = "Do you want to add a timestamp of when it was generated documentation? (yes/no)\n"
 MSG_ASK_DG_DISABLE_EXTRACT_PRIVATE: str = "Do you want to include private members in the documentation? (yes/no)\n"
 MSG_ASK_DG_DISABLE_EXTRACT_ANON_NAMESPACES: str = ("Do you want to include members of anonymous namespaces in the "
                                                    "documentation? (yes/no)\n")
-MSG_ASK_DG_DISABLE_DOT_GRAPHS: str = ("Do you want to generate various interactivr graphs (class collaboration, header "
+MSG_ASK_DG_DISABLE_DOT_GRAPHS: str = ("Do you want to generate various interactive graphs (class collaboration, header "
                                       "include, function call, ...) from source code? (yes/no)\n"
                                       "(recommended for better architectural visualization, but will take more time)\n")
 MSG_ASK_DG_HTML_THEME: str = ("Doxygen-generated documentation can look somewhat dated by todays standards. "
@@ -71,6 +77,21 @@ def run_wizard(args: Namespace):
         if type(temp_answer_converter) is str:
             print_with_replace(MSG_UNACCEPTED_ANSWER, temp_answer_converter)
     args.converter = "default" if temp_answer_converter else None
+
+    if temp_answer_converter:  # LLM? + related parameters
+        temp_answer_llm: bool | str = ""
+        while type(temp_answer_llm) is str:
+            temp_answer_llm = input_expect_bool(MSG_ASK_LLM)
+            if type(temp_answer_llm) is str:
+                print_with_replace(MSG_UNACCEPTED_ANSWER, temp_answer_llm)
+
+        if temp_answer_llm:
+            args.converter = "function_comment_llm"
+
+            args.cc_openai_base_url = input(MSG_ASK_CC_OPENAI_BASE_URL)
+            args.cc_openai_api_key = input(MSG_ASK_CC_OPENAI_API_KEY)
+            args.cc_llm_model = input(MSG_ASK_CC_LLM_MODEL)
+
 
     # documentation generation?
     temp_answer_docgen: bool | str = ""

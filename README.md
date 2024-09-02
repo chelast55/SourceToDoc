@@ -80,7 +80,7 @@ An additional component of the toolchain, the *comment converter*, can be enable
 python main.py --project_name <PROJECT_NAME> --converter
 ```
 Just enabling the *comment converter* like this will likely solve the issue of docstrings not being recognized. For even better results (where symbols are resolved more correctly), 
-an OpenAI-API-compatible LLM can be used to preprocess docstrings:
+an OpenAI-API-compatible Large Language Model (LLM) can be used to preprocess docstrings:
 ```sh
 python main.py --project_name test --project_path <path> --converter function_comment_llm --cc_openai_base_url <url> --cc_openai_api_key <key> --cc_llm_model <model>
 ```
@@ -102,8 +102,9 @@ another_argument: value2
 
 ```
 The toolchain will use configurations from the config file specified with `--config`. When this option is used, arguments can still be given via the command line and will even overwrite values for the same argument specified in the config file.  
-A more practical example can be found in [example_config.yaml](example_config.yaml). 
-It should be equivalent to the command line example of the simplest recommended use (with converter enabled, but without LLM), but expecting a project in `example_project`.
+More practical examples can be found in [doc/examples] and include the following:
+- [example_config.yaml](doc/examples/example_config.yaml): Equivalent to the command line example of the simplest recommended use (with converter enabled, but without LLM), but expecting a project in `example_project`.
+- [example_config_with_llm.yaml](doc/examples/example_config_with_llm.yaml): Equivalent for the command line example featuring an LLM (assuming the LLM is "llama3" running via [Ollama](https://ollama.com/))
 ````sh
 python main.py --config example_config.yaml
 ````
