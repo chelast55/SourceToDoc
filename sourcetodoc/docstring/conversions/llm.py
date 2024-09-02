@@ -33,7 +33,6 @@ class LLM:
         RuntimeError
             If the reponse message is None.
         """
-
         response = self.client.chat.completions.create(
             model=self.model,
             seed=0,

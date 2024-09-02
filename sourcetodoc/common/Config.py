@@ -2,6 +2,8 @@ from argparse import Namespace
 from pathlib import Path
 from typing import Optional
 
+from sourcetodoc.common.wizard import run_wizard
+
 
 class Config:
     
@@ -33,6 +35,10 @@ class Config:
 
     def initialize(self, args: Namespace):
         self.args = args
+
+        # wizard
+        if self.args.wizard:
+            run_wizard(self.args)
 
         # Non-trivial argument requirements
         if self.args.converter is not None:
