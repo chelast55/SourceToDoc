@@ -30,7 +30,7 @@ MSG_ASK_CC_OPENAI_API_KEY: str = "Please provide the \"OpenAI API key\" for the 
 MSG_ASK_CC_LLM_MODEL: str = "Please provide the name of the LLM model you want to use:\n"
 MSG_ASK_PROJECT_NUMBER: str = "Please provide the software version number of \"$\": (leave empty if unknown)\n"
 MSG_ASK_PROJECT_BRIEF: str = "Please provide a short/one-line description of \"$\":\n"
-MSG_ASK_DG_TIMESTAMP: str = "Do you want to add a timestamp of when it was generated documentation? (yes/no)\n"
+MSG_ASK_DG_TIMESTAMP: str = "Do you want to add a timestamp of when documentation was generated? (yes/no)\n"
 MSG_ASK_DG_DISABLE_EXTRACT_PRIVATE: str = "Do you want to include private members in the documentation? (yes/no)\n"
 MSG_ASK_DG_DISABLE_EXTRACT_ANON_NAMESPACES: str = ("Do you want to include members of anonymous namespaces in the "
                                                    "documentation? (yes/no)\n")
