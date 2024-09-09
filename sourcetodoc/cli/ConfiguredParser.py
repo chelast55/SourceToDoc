@@ -148,7 +148,7 @@ class ConfiguredParser(ArgumentParser):
         # get CLI arg values from config YAML file (if --config is used)
         if parsed_args.config is not None:
             if not Path(parsed_args.config).is_file():
-                raise OSError(f"{parsed_args.config} is not a file")
+                raise OSError(f"\"{parsed_args.config}\" is not a file")
             else:
                 with open(parsed_args.config, 'r') as yaml_file:
                     yaml_content = yaml_safe_load(yaml_file)
@@ -202,8 +202,11 @@ class ConfiguredParser(ArgumentParser):
                                         parsed_args_dict_reference[arg_details["dest"]] = not parsed_args_dict_reference[arg_details["dest"]]
                                     elif "action" not in arg_details or arg_details["action"] == "store":
                                         # special case for nargs=="?"
-                                        if "nargs" in arg_details.keys() and arg_details["nargs"] == "?" and arg_details["nargs"] is not None:
-                                            parsed_args_dict_reference[arg_details["dest"]] = arg_details["const"]
+                                        if "nargs" in arg_details.keys() and arg_details["nargs"] == "?":
+                                            if yaml_content[arg_name] is not None:
+                                                parsed_args_dict_reference[arg_details["dest"]] = correct_arg_value_type(yaml_content[arg_name])
+                                            else:
+                                                parsed_args_dict_reference[arg_details["dest"]] = arg_details["const"]
                                         # "default" case
                                         else:
                                             parsed_args_dict_reference[arg_details["dest"]] = correct_arg_value_type(yaml_content[arg_name])

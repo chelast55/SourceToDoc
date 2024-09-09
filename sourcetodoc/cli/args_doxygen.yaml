@@ -2,11 +2,11 @@
 - project_number:
     help: Project version/revision number
     type: str
-    default: unknown number
+    default: ""
 - project_brief:
     help: One-line/short description of the project
     type: str
-    default: no brief
+    default: ""
 - project_logo:
     help: Path to project logo or icon (max 200x55px) for use within documentation
     type: str
@@ -127,7 +127,7 @@
     type: bool
     default: True
 - dg_hide_scope_names:
-    help: Enable to hide full class and namescape scopes in documentaiton
+    help: Enable to hide full class and namespace scopes in documentation
     type: bool
     default: False
 - dg_hide_compound_reference:

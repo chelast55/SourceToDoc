@@ -1,0 +1,5 @@
+project_name: example_project
+converter: "function_comment_llm"
+cc_openai_base_url: http://localhost:11434/v1
+cc_openai_api_key: ollama
+cc_llm_model: llama3
