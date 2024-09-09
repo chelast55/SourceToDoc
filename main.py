@@ -9,8 +9,7 @@ from sourcetodoc.testcoverage.cover_meson import *
 
 if __name__ == "__main__":
     parser: ConfiguredParser = ConfiguredParser()
-    config = Config()
-    config.initialize(parser.parse_args())
+    config = Config(parser.parse_args())
 
     # general stuff
     if not config.project_path.exists():

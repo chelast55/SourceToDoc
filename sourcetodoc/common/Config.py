@@ -7,8 +7,8 @@ from sourcetodoc.common.wizard import run_wizard
 
 class Config:
     
-    def __init__(self):
-        self.args: Namespace = Namespace()
+    def __init__(self, args: Namespace):
+        self.args: Namespace = args
 
         self.out_path: Path = Path()
         self.root_path: Path = Path()
@@ -32,9 +32,6 @@ class Config:
         self.INDEX_RST_CONTENT: str = ""
         self.CONF_PY_CONTENT: str = ""
         self.CONF_PY_EXHALE_EXTENSION: str = ""
-
-    def initialize(self, args: Namespace):
-        self.args = args
 
         # wizard
         if self.args.wizard:
