@@ -8,6 +8,7 @@ from sourcetodoc.docstring.cli import run_comment_converter
 from sourcetodoc.helpers import delete_directory_if_exists
 from sourcetodoc.cli.ConfiguredParser import ConfiguredParser
 from sourcetodoc.testcoverage.cover_meson import *
+from sourcetodoc.testcoverage.linker import *
 
 
 if __name__ == "__main__":
@@ -558,4 +559,9 @@ if __name__ == "__main__":
                 # TODO: str to list or change meson_setup_args in yaml to list if possible
                 pass
             run_meson(meson_build_location, build_folder_name, keep_build_folder, meson_setup_args)
+        # elif
 
+        # Link coverage report and documentation TODO
+        link_tc_report_and_documentation_main(out_path, args.project_name)
+        link_all_tc_report_and_documentation_files(Path("out"), args.project_name)
+        

@@ -11,7 +11,6 @@ NINJA_TEST: list[str] = ["ninja", "test"]
 NINJA_COVERAGE: list[str] = ["ninja", "coverage-html"]
 #endregion
 
-# TODO: cleanup bool implementation
 def run_meson(meson_build_location: Path, build_folder_name: Path = Path("build"), keep_build_folder: bool = False, meson_setup_args: list[str] = []):
     """
     Produce a test coverage report using the Meson + Ninja build system.
@@ -27,7 +26,7 @@ def run_meson(meson_build_location: Path, build_folder_name: Path = Path("build"
     """
     build_folder: Path = meson_build_location / build_folder_name
     report_folder: Path = build_folder / "meson-logs" / "coveragereport"
-    out_folder: Path = Path("out") / "testcoveragereport"
+    out_folder: Path = Path("out") / "testcoveragereport" #TODO wenn out path änderung - out_path als parameter der methode
 
     if build_folder.exists() and build_folder.is_dir():
         print(f"Deleting {build_folder}")
@@ -38,7 +37,6 @@ def run_meson(meson_build_location: Path, build_folder_name: Path = Path("build"
     subprocess.run(NINJA_COVERAGE, cwd=build_folder)
 
     copytree(report_folder, out_folder, dirs_exist_ok=True)
-    # TODO: deleting build folder!
     if not keep_build_folder:
         rmtree(build_folder)
 
