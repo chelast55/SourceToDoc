@@ -1,43 +1,34 @@
 from pathlib import Path
 
-def link_tc_report_and_documentation_main(out_path: Path, project_name: str):
+def link_tc_report_and_documentation_main(out_path: Path):
     # Link coverage and documentation.
-    # modify tcreport
-    # TODO: Path-Änderung
-    tc_report_main_file_path: Path = out_path / "testcoveragereport" / "index.html"
+    tc_report_path: Path = out_path / "testcoveragereport"
+    tc_report_main_file_path: Path = tc_report_path / "index.html"
     marker_line_in_tc_file: str = f"""<tr><td class="title">LCOV - code coverage report</td></tr>"""
-    # TODO: Path-Änderung
-    link_to_dg_main_file: str = f"""    <tr><td class="headerItem" style="text-align: center"><a href="../doc/{project_name}/index.html">Go to the documentation.</a></td></tr>\n"""
-    # with open(tc_report_main_file_path, "r+") as tc_report_file:
-    #     tc_lines: list[str] = tc_report_file.readlines()
-    #     for i, line in enumerate(tc_lines):
-    #         if tc_marker_line in line:
-    #             tc_lines.insert(i + 1, marker_line_in_tc_file)
-    #             break
-    #     tc_report_file.seek(0)
-    #     tc_report_file.writelines(tc_lines)
-    _insert_link(tc_report_main_file_path, marker_line_in_tc_file, link_to_dg_main_file)
-    # TODO add link in all index files
+    
+    dg_main_file_path: Path = out_path / "doc" / "index.html"
+    marker_line_in_dg_file: str = f"""</div><!--header-->"""
+
+    # modify tcreport
+    # link_to_dg_main_file: str = f"""    <tr><td class="headerItem" style="text-align: center"><a href="../../../{dg_main_file_path}">Go to the documentation.</a></td></tr>\n"""
+    # _insert_link(tc_report_main_file_path, marker_line_in_tc_file, link_to_dg_main_file)
+    for tc_index_file in tc_report_path.glob("**/index*.html"):
+        if len(tc_index_file.suffixes) == 1:
+            # Amount of ../ in the relative path of the link is dependant on the depth of the file. Therefore we add ../ till we're above the out folder. 
+            relative_depth_correction: str = ""
+            # '- 1' cuz '.' is part of the parents if its a relative path and we dont want to be above the SourceToDoc folder.
+            for _ in range(len(tc_index_file.parents) - 1): relative_depth_correction += "../"
+            link_to_dg_main_file: str = f"""    <tr><td class="headerItem" style="text-align: center"><a href="{relative_depth_correction}{dg_main_file_path}">Go to the documentation.</a></td></tr>\n"""
+            _insert_link(tc_index_file, marker_line_in_tc_file, link_to_dg_main_file)
+
 
     # modify docs
-    # TODO: Path-Änderung
-    dg_main_file_path: Path = out_path / "doc" / Path(project_name) / "index.html"
-    marker_line_in_dg_file: str = f"""</div><!--header-->"""
-    # TODO: Path-Änderung
-    link_to_tc_main_file: str = f"""<div class="contents"><div class="textblock"><h2 class="anchor"><a href="../../testcoveragereport/index.html">Go to the code coverage report.</a></h2></div></div>\n"""
-    # with open(dg_main_file_path, "r+") as dg_file:
-    #     dg_lines: list[str] = dg_file.readlines()
-    #     for i, line in enumerate(dg_lines):
-    #         if dg_marker_line in line:
-    #             dg_lines.insert(i, marker_line_in_dg_file)
-    #             break
-    #     dg_file.seek(0)
-    #     dg_file.writelines(dg_lines)
+    link_to_tc_main_file: str = f"""<div class="contents"><div class="textblock"><h2 class="anchor"><a href="../../../{tc_report_main_file_path}">Go to the code coverage report.</a></h2></div></div>\n"""
     _insert_link(dg_main_file_path, marker_line_in_dg_file, link_to_tc_main_file, 0)
 
 # TODO? Link subfolder index files to somewhere???
 
-def link_all_tc_report_and_documentation_files(out_path: Path, project_name: str):
+def link_all_tc_report_and_documentation_files(out_path: Path):
     """Find and link all test coverage class files with their respective documentation files.
 
     Assumptions: out_path is a relative path (like "out/" and not "/out/").
@@ -47,9 +38,8 @@ def link_all_tc_report_and_documentation_files(out_path: Path, project_name: str
     Contained marker lines are always present in tc and dg outputs.
     
     """
-    # TODO: Path-Änderung
     tc_report_path: Path = out_path / "testcoveragereport"
-    dg_path: Path = out_path / "doc" / Path(project_name)
+    dg_path: Path = out_path / "doc"
 
     # Find all tc classes/files
     tc_class_files: list[Path] = _find_all_classes(tc_report_path)
@@ -65,14 +55,12 @@ def link_all_tc_report_and_documentation_files(out_path: Path, project_name: str
         dg_class_file: Path = next(dg_path.glob(dg_class_name), None)
 
         # Link .gcov file in the doxygen
-        # TODO: Path-Änderung
         marker_line_in_dg_file: str = f"""</div><!--header-->"""
         link_to_tc_class_file: str = f"""<div class="contents"><div class="textblock"><h2 class="anchor"><a href="../../../{tc_class_file}">Go to the code coverage report of this file.</a></h2></div></div>\n"""
         _insert_link(dg_class_file, marker_line_in_dg_file, link_to_tc_class_file, 0)
         
         # Link doxygen in all three tc files
         marker_line_in_tc_files: str = f"""<tr><td class="title">LCOV - code coverage report</td></tr>"""
-        # TODO: Path-Änderung
         # Amount of ../ in the relative path of the link is dependant on the depth of the file. Therefore we add ../ till we're above the out folder. 
         relative_depth_correction: str = ""
         # '- 1' cuz '.' is part of the parents if its a relative path and we dont want to be above the SourceToDoc folder.

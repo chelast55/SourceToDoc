@@ -46,10 +46,10 @@ if __name__ == "__main__":
             if config.args.tc_meson_setup_args is not None:
                 # TODO: str to list or change meson_setup_args in yaml to list if possible
                 pass
-            run_meson(meson_build_location, build_folder_name, keep_build_folder, meson_setup_args)
+            run_meson(config.testcoveragereport_path, meson_build_location, build_folder_name, keep_build_folder, meson_setup_args)
         # elif
 
-        # Link coverage report and documentation TODO
-        link_tc_report_and_documentation_main(out_path, args.project_name)
-        link_all_tc_report_and_documentation_files(Path("out"), args.project_name)
+        # Link coverage report and documentation
+        link_tc_report_and_documentation_main(config.out_path_relative / Path(config.args.project_name))
+        link_all_tc_report_and_documentation_files(config.out_path_relative / Path(config.args.project_name))
         

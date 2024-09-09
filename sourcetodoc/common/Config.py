@@ -10,6 +10,7 @@ class Config:
     def __init__(self):
         self.args: Namespace = Namespace()
 
+        self.out_path_relative: Path = Path()
         self.out_path: Path = Path()
         self.root_path: Path = Path()
         self.project_path: Path = Path()
@@ -25,6 +26,7 @@ class Config:
         self.exhale_containment_path: Path = Path()
         self.exhale_containment_path_abs: Path = Path()
         self.exhale_include_path: Path = Path()
+        self.testcoveragereport_path: Path = Path()
 
         self.readme_file_path: Optional[Path] = None
 
@@ -56,7 +58,8 @@ class Config:
             )
     
         # region paths
-        self.out_path = Path("out").absolute()  # Path conf.py will be placed, everything Doxygen/Sphinx related is rel. to it
+        self.out_path_relative = Path("out")
+        self.out_path = self.out_path_relative.absolute()  # Path conf.py will be placed, everything Doxygen/Sphinx related is rel. to it
         self.root_path = self.out_path.parent.absolute()
         self.project_path = self.root_path / Path(self.args.project_name) if (self.args.project_path is None) else Path(self.args.project_path)
         self.doxygen_awesome_submodule_path = self.root_path / Path("submodules") / Path("doxygen-awesome-css")
@@ -78,6 +81,8 @@ class Config:
         self.exhale_containment_path = self.doc_source_path / Path("exhale")
         self.exhale_containment_path_abs = self.doc_source_path_abs / Path("exhale")
         self.exhale_include_path = self.doc_path / self.exhale_containment_path
+
+        self.testcoveragereport_path = self.out_path / Path(self.args.project_name) / Path("testcoveragereport")
         # endregion paths
     
         # conditions
