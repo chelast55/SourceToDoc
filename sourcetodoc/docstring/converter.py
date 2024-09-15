@@ -89,13 +89,24 @@ class Converter:
             self._convert_file(file, self.cxx_extractor)
 
     def _convert_file(self, file: Path, extractor: Extractor[CType] | Extractor[CXXType]) -> None:
-        code = file.read_text()
-        result = self._convert_string(code, extractor)
+        code: str = ""
+        try:  # try reading file as utf-8
+            code = file.read_text()
+        except UnicodeDecodeError as ue:
+            print(ue)
+            print(f"{str(file)} could not be decoded as utf-8. Re-attempting decode as ISO-8859-1 (latin-1):")
+            try:  # try reading file as latin-1
+                code = file.read_text(encoding="ISO-8859-1")
+            except UnicodeDecodeError as le:
+                print(le)
+
+        result: str = self._convert_string(code, extractor)
         if result != code:
             print(f"\"{file}\" was updated")
             file.write_text(result)
-        else:
-            print(f"\"{file}\" has not changed")
+            return
+
+        print(f"\"{file}\" has not changed")
 
     def _convert_string(
             self,
