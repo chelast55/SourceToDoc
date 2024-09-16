@@ -1,5 +1,7 @@
 # SourceToDoc
-Forschungsprojekt INF 2024 "Reverse Engineering of Documentation and Design for Independently Developed Safety-Related Projects"
+Forschungsprojekt INF 2024 "Reverse Engineering of Documentation and Design for Independently Developed Safety-Related Projects"  
+
+TODO: Abstract
 
 ## Setup
 To ensure that all submodules are also cloned, use the following command:
@@ -115,6 +117,11 @@ More practical examples can be found in [doc/examples] and include the following
 ````sh
 python main.py --config example_config.yaml
 ````
+
+## Compatibility and Known Limitations
+TODO
+
+For evaluation results see [EvaluationResults.md](doc/EvaluationResults.md)
 
 ## File Hierarchy
 The following structure assumes that `--apidoc_toolchain` is set to `doxygen-only` as it is the only currently maintained option.
