@@ -49,6 +49,7 @@ if __name__ == "__main__":
         # elif
 
         # Link coverage report and documentation
-        link_tc_report_and_documentation_main(config.out_path_relative / Path(config.args.project_name))
-        link_all_tc_report_and_documentation_files(config.out_path_relative / Path(config.args.project_name))
+        if config.args.disable_doc_gen:  # can not link TC report to generated documentation, if no documentation was generated
+            link_tc_report_and_documentation_main(config.out_path_relative / Path(config.args.project_name))
+            link_all_tc_report_and_documentation_files(config.out_path_relative / Path(config.args.project_name))
         

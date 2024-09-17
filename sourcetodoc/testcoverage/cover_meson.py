@@ -35,7 +35,8 @@ def run_meson(out_folder: Path, meson_build_location: Path, build_folder_name: P
     subprocess.run(NINJA_TEST, cwd=build_folder)
     subprocess.run(NINJA_COVERAGE, cwd=build_folder)
 
-    copytree(report_folder, out_folder, dirs_exist_ok=True)
+    if report_folder.exists() and report_folder.is_dir():  # if build failed or is impossible, there is nothing to copy
+        copytree(report_folder, out_folder, dirs_exist_ok=True)
     if not keep_build_folder:
         rmtree(build_folder)
 
