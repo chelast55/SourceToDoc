@@ -1,4 +1,5 @@
 from os import chdir
+from time import time
 
 from sourcetodoc.cli.ConfiguredParser import ConfiguredParser
 from sourcetodoc.common.Config import Config
@@ -9,6 +10,7 @@ from sourcetodoc.testcoverage.linker import *
 
 
 if __name__ == "__main__":
+    t_start: float = time()
     parser: ConfiguredParser = ConfiguredParser()
     config = Config(parser.parse_args())
 
@@ -16,15 +18,21 @@ if __name__ == "__main__":
     if not config.project_path.exists():
         raise OSError(f"No project at {config.project_path}. Path does not exist :/")
 
+    t_setup: float = time()
+
     # docstring preprocessing
     if config.args.converter is not None:
         print("\nComment Conversion:\n")
         run_comment_converter(parser, config.project_path, **vars(config.args))
 
+    t_converter: float = time()
+
     # documentation generation
     if config.args.disable_doc_gen:
         print("\nDocumentation Generation:\n")
         run_documentation_generation(config)
+
+    t_docgen: float = time()
     
     # coverage
     if config.args.disable_test_cov:
@@ -52,4 +60,17 @@ if __name__ == "__main__":
         if config.args.disable_doc_gen:  # can not link TC report to generated documentation, if no documentation was generated
             link_tc_report_and_documentation_main(config.out_path_relative / Path(config.args.project_name))
             link_all_tc_report_and_documentation_files(config.out_path_relative / Path(config.args.project_name))
+
+    t_coverage: float = time()
+
+    if config.args.measure_runtime:
+        print("\n")
+        print(f"Runtime measurements:\n"
+              f"\n"
+              f"Toolchain Setup: {t_setup - t_start} seconds\n"
+              f"Comment Converter: {t_converter - t_setup} seconds\n"
+              f"Documentation Generation: {t_docgen - t_converter} seconds\n"
+              f"Test Coverage Evaluation: {t_coverage - t_docgen} seconds\n"
+              f"\n"
+              f"Total toolchain runtime: {t_coverage - t_start}")
         
