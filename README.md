@@ -16,8 +16,10 @@ to address it with `python3.12`.
 In case you are required to add something to apt and `apt-add` can not be found, try `sudo apt install software-properties-common`.  
 With that out of the way, you can continue installing the non-python dependencies via apt:
 ```sh
-sudo apt install python3-venv doxygen graphviz cmake libcmocka-dev
+sudo apt install python3-venv doxygen graphviz cmake libcmocka-dev lcov
 ```
+`graphviz` is only necessary when generating the various graphics is desired.
+`cmake`, `libcmocka-dev` and `lcov` are only required when evaluating test coverage is desired.  
 Next, navigate to or open a terminal in the main directory of the freshly downloaded repository (SourceToDoc).  
 There, create a virtual environment and activate it:
 ```sh
@@ -34,6 +36,8 @@ pip install pytest  # only required if you want to run the unit tests for this t
 Now, you should be able to run the whole toolchain!
 
 ### Windows
+TODO: How to install lcov
+
 Various Dependencies have to be installed manually on Windows.
 Most of them have installer executables:
 (Where applicable, make sure, the box for adding it to the Windows Path is ticked!)
