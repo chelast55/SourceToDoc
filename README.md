@@ -41,6 +41,8 @@ Currently, the toolchain consists of three "major tools":
   - For CMake and Make projects with no existing configuration for tests/testcoverage, the user unfortunately may have to do some modifications to the CMakeList.txt/MAKEFILE
 - Interlinking of generated API documentation and test coverage reports may fail for files/directories with duplicate names (i.e. multiple `src`directories when using subprojects). however, this likely only affects interlinking of the affected files, as linking of other files, including the index pages, should still work
 - We have no known setup where interlinking of API documentation and test coverage reports work for meson projects when running on Windows
+  - issue of getting ninja recognizing a "lcov installation" on Windows
+  - Backup is to use gcovr instead of lcov, which does generate a test coverage report, but hashed filenames of gcovr output break our interlinking process
 - Running the toolchain on macOS is likely possible (with some concerns mostly regarding test coverage evaluation), but the toolchain was not tested properly in its entirety while running on macOS an we can not provide detailed installation instructions. 
 
 For more detailed evaluation results on various sample projects, see [EvaluationResults.md](doc/EvaluationResults.md)
