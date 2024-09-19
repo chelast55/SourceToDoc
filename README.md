@@ -1,7 +1,51 @@
 # SourceToDoc
-Forschungsprojekt INF 2024 "Reverse Engineering of Documentation and Design for Independently Developed Safety-Related Projects"  
 
-TODO: Abstract
+Open-source toolchain for retro-actively extracting as much information regarding documentation and design as possible from arbitrary open-source software projects' source code with a minimum amount of required prior knowledge.
+
+For instructions, go [here](#setup-and-usage).
+
+# About
+The main intention for this project was to create a tool to make it easier to evaluate open-source software for use in safety-related projects,
+where using open-source software often comes with the downside of being somewhat lacking when it comes to specification, documentation or proper evaluation/testing.  
+Although generating 100-page specification sheets out of "thin air" is an impossible deed, evaluating if software is suitably for safety applications or even properly producing extensive specifications is much easier when there already is "some foundation" rather tahn "thin air".      
+
+The toolchain is built around various open-source tools and aims to provide good usability to be accessibly to any user without much of a learning curve, while also being a powerful, feature-rich, highly configurable tool when desired.  
+Currently, the toolchain consists of three "major tools":
+- **Comment Converter:** Modify comments/non-functional sections of a project's source code to be better suited for upcoming steps. This includes: 
+  - minor formatting changes to make previously overlooked (due to improper formatting) comments appear where they refer to
+  - asking a Large Language Model to completely re-arrange contents of such "docstring comments" to better incorporate them into the later documentation as a whole
+  - various other independent "comment reformatting options"
+- **Documentation Generator:** Analyse the entire source files of a project, including source code and inline documentation, and use it, to generate elaborate (API) documentation/"wiki pages":
+  - documentation output as HTML pages ready to be hosted on a web server
+  - separate, but well-integrated pages for each file, class, function, etc. containing all available details
+  - sorting/listing options for all files, classes, functions, etc. and a general search function
+  - interlinking between all identified names of functions, fields, files, classes etc.
+  - inclusion of all found inline documentation next to the class, function, member, etc. they refer to
+  - various interactive graphics (class graphs, function call(er) graphs, file include(d by) graphs, ...) within the documentation pages, to allow for easier and better understanding of the project's architecture
+  - access to most of the underlying tool's (Doxygen) features and configurability, but more streamlined to be less convoluted and robust, to make it easier to not accidentally break the toolchain
+- **Test Coverage Evaluator:** Run all tests defined in the project (required project to build and execute properly), analyze the test coverage and generate a detailed interactive report:
+  - find out if the existing tests provide quality or if they are just for show
+  - measure combined and test coverage for each part of the project (down to per-function level) separately and identify untested sections
+  - outputs also as web-server-ready HTML pages
+  - when (API) documentation was generated, pages regarding teh same files/functions are interlinkes (i. e. test coverage site of main.cpp contains a link to API documentation of main.cpp and vice versa)
+
+## Compatibility and Known Limitations
+- Generating the dot-tool-based graphics in the API documentation can increase the runtime massively, but as long as the runtime appears to be finite, they may still be worth it :)
+- The "additional" PlantUML-based graphics are still in a more "proof of concept" state, meaning they are not included in the documentation as neatly as the dot-tool-based graphics and could potentially be bloated due to including dependencie relations transcending the projects' source files 
+- Test Coverage Evaluation supported for projects based on the following build systems:
+  - meson
+  - CMake?
+  - Make?
+- Because of the more "open" nature of build systems like CMake or Make, they are nigh impossible to automatize reliably for arbitrary software projects and the user may have to manually interfere more than desirable:
+  - For CMake and Make projects with already existing test(coverage) configurations, the user has to find out the proper arguments/"name" to run them in this way and provide them to toolchain as argument
+  - For CMake and Make projects with no existing configuration for tests/testcoverage, the user unfortunately may have to do some modifications to the CMakeList.txt/MAKEFILE
+- Interlinking of generated API documentation and test coverage reports may fail for files/directories with duplicate names (i.e. multiple `src`directories when using subprojects). however, this likely only affects interlinking of the affected files, as linking of other files, including the index pages, should still work
+- We have no known setup where interlinking of API documentation and test coverage reports work for meson projects when running on Windows
+- Running the toolchain on macOS is likely possible (with some concerns mostly regarding test coverage evaluation), but the toolchain was not tested properly in its entirety while running on macOS an we can not provide detailed installation instructions. 
+
+For more detailed evaluation results on various sample projects, see [EvaluationResults.md](doc/EvaluationResults.md)
+
+# Setup and Usage
 
 ## Setup
 To ensure that all submodules are also cloned, use the following command:
@@ -36,7 +80,8 @@ pip install pytest  # only required if you want to run the unit tests for this t
 Now, you should be able to run the whole toolchain!
 
 ### Windows
-TODO: How to install lcov
+Disclaimer: **We really do NOT recommend running the Testcoverage Evaluation part of the toolchain under Windows, if you do not ABSOLUTELY REQUIRE test coverage data in an Windows environment**.  
+The reason for this is the rather complicated installation process compared to running the toolchain under (Ubuntu) Linux and missing support for ceratin features (e. g. interlinking documentation and test coverage output for projects with meson build system (more on that later)).
 
 Various Dependencies have to be installed manually on Windows.
 Most of them have installer executables:
@@ -44,14 +89,10 @@ Most of them have installer executables:
 - Python 3.12: https://www.python.org/downloads/
 - Doxygen: https://www.doxygen.nl/download.html
 - Graphviz: https://graphviz.org/download/
-- CMake: https://cmake.org/download/
-You should at least reboot once after all of them are installed, to ensure, Path is updated.
+- CMake: https://cmake.org/download/ (only necessary for Test Coverage Evaluation)
+You should at least reboot once after all of them are installed (), to ensure, Path is updated.
 
-The final one (CMocka) is more complicated, as it has to be built from source. 
-**If you do NOT plan to use the Test Coverage Evaluation part of the toolchain, you can skip these cmocka-related steps:**  
-A Guide how to set it up can be found here: https://sam.hooke.me/note/2022/04/setting-up-cmocka/  
-What is not mentioned in the guide, is that mingw32 (and mingw32-make) have to be installed: https://sourceforge.net/projects/mingw/ (make sure to manually enable mingw32-make)  
-Additionally, an implementation of `strtok_r()` has to be added in `cmocka.c` (a public domain implementation of this function by Charlie Gordon can be found [here](http://groups.google.com/group/comp.lang.c/msg/2ab1ecbb86646684)).
+If you, despite all the warnings, **DO plan to use the Test Coverage Evaluation** part of the toolchain on Windows, **proceed with the steps described in** [SetupTestCoverageWindows.md](doc/SetupTestCoverageWindows.md) **first**. 
 
 All remaining Dependencies can be installed via the *pip* packet manager.
 To do so, navigate to or open a PowerShell terminal in the main directory of the freshly downloaded repository (SourceToDoc).  
@@ -122,10 +163,7 @@ More practical examples can be found in [doc/examples] and include the following
 python main.py --config example_config.yaml
 ````
 
-## Compatibility and Known Limitations
-TODO
-
-For evaluation results see [EvaluationResults.md](doc/EvaluationResults.md)
+# Miscellaneous
 
 ## File Hierarchy
 The following structure assumes that `--apidoc_toolchain` is set to `doxygen-only` as it is the only currently maintained option.
@@ -171,3 +209,8 @@ If no components were disabled, there will be both a `doc` and `testcoveragerepo
 Following the "flat layout", `sourcetodoc` contains the source code of the toolchain, separated into its components.  
 `submodules` should, as of now, only contain `doxygen-awesome-css`, but it should be filled with content, if installed correctly.  
 Additional documentation for this toolchain can be found in `doc` (including [`DoxygenParamEvaluation.md`](doc/DoxygenParamEvaluation.md), which covers all Doxygen parameters and why and how they are accessible via the toolchain's CLI).
+
+
+# Acknowledgements
+This project was created as part of a Bachelor's research project in association with the University of Stuttgart's Institute of Software Quality and Architecture
+( *Forschungsprojekt INF 2024 "Reverse Engineering of Documentation and Design for Independently Developed Safety-Related Projects"* ).
