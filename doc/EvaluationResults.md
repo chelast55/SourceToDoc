@@ -1,8 +1,21 @@
 # Evaluation on open-source projects
 
 ## Process
-TODO: elaborate
-`python main.py --converter --project_name NAME`
+If not stated otherwise, benchmarks were run on a Linux VM with the following specifications:
+- Virtual Box (hosted on Windows 10)
+- Ubuntu 24.04 LTS (ships with Python 3.12)
+- 8 CPU Cores (AMD Ryzen 1700X)
+- 24 GB RAM
+- Virtual Hard Drive on SSD (Samsung 750 EVO)
+- Software installed as explained in README
+
+This repository was cloned with git (main branch) and all selected sample projects were also cloned and placed as subdirectories in the root ("SourceToDoc" directory).
+After setup, the following command was run for all selected sample projects.
+```commandline
+python main.py --measure_runtime --converter --project_name NAME
+```
+
+
 
 
 ## Sample Projects Overview
@@ -47,7 +60,26 @@ for TC Eval.:
   - was still possible due to gcovr installation in outer scope from earlier installation, but gcovr reports don't support linking without method (NOT an easy fix)
   - switching to installing lcov via apt
 
+## Additional comparison Converter with vs. without LLM (FOX toolkit meson fork) *(commit 55133c5)*
+This benchmark was run on Windows 10 (AMD Ryzen 1700X, Nvidia GTX 1070, 32GB DDR4 RAM, Samsung SSD 750 EVO).  
+Fox toolkit was chosen for this "sample benchmark", because it contains many block comments near functions, that would likely help understanding the architecture, if they were to appear in the generated API documentation.
+Only the Comment Converter was used:  
+### No LLM:
+```commandline
+python main.py --measure_runtime --project_name fox --disable_doc_gen --disable_test_cov --converter
+```
+Runtime (Converter): 38.33 seconds
+
+### With LLM (llama3 via Ollama): 
+```commandline
+python main.py --measure_runtime --project_name fox --disable_doc_gen --disable_test_cov --converter function_comment_llm --cc_openai_base_url http://localhost:11434/v1 --cc_openai_api_key ollama --cc_llm_model llama3
+```
+Runtime (Converter): 1075.97 seconds
+
 ## Results 2024-09-XX+ *(commit XXXXXXX)*
+Every sample project was run twice. On one execution, `--dg_disable_dot_graphs` was added to the command.  
+TODO: something about how the CMake projects were modified
+
 |       Sample project        | File Size (MB, raw) | File Size (MB, no dot) | File Size (MB, with dot) | Runtime (s, no dot) | Runtime (s, with dot) | Overall Result | Converter | Doc. Gen. | TC Eval. | Ran through? | Logs OK? | Output OK? | Details |
 |:---------------------------:|---------------------|------------------------|--------------------------|---------------------|-----------------------|:--------------:|:---------:|:---------:|:--------:|:------------:|:--------:|:----------:|---------|
 |                             |                     |                        |                          |                     |                       |                |           |           |          |              |          |            |         |
