@@ -27,7 +27,8 @@ Currently, the toolchain consists of three "major tools":
   - find out if the existing tests provide quality or if they are just for show
   - measure combined and test coverage for each part of the project (down to per-function level) separately and identify untested sections
   - outputs also as web-server-ready HTML pages
-  - when (API) documentation was generated, pages regarding teh same files/functions are interlinkes (i. e. test coverage site of main.cpp contains a link to API documentation of main.cpp and vice versa)
+  - when (API) documentation was generated, pages regarding teh same files/functions are interlinked (i. e. test coverage site of main.cpp contains a link to API documentation of main.cpp and vice versa)
+  - might be the first open-source, publicly available, non-commercial solution for this kind of interlinking
 
 ## Compatibility and Known Limitations
 - Generating the dot-tool-based graphics in the API documentation can increase the runtime massively, but as long as the runtime appears to be finite, they may still be worth it :)
