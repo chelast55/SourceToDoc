@@ -32,3 +32,7 @@
     help: Disable the test coverage evaluation part of the toolchain. 
     type: bool
     default: True
+- measure_runtime:
+    help: Enable to measure toolchain runtime(s) and print when done.
+    type: bool
+    default: False
