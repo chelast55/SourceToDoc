@@ -14,13 +14,13 @@ class FindOption(Enum):
     """
     ALL:
         Find all functions.
-    EXCLUDE_PRIVATE_OR_PROTECTED:
+    EXCLUDE_PRIVATE_AND_PROTECTED:
         Find all public functions.
     ONLY_MAIN_FUNCTION:
         Find all functions that starts with `main(` that is not in a namespace or a class (e.g. `A::main()` will be excluded).
     """
     ALL = auto()
-    EXCLUDE_PRIVATE_OR_PROTECTED = auto()
+    EXCLUDE_PRIVATE_AND_PROTECTED = auto()
     ONLY_MAIN_FUNCTION = auto()
 
 def _is_private_or_protected(node: Cursor) -> bool:
@@ -31,7 +31,7 @@ def _always_false(node: Cursor) -> bool:
 
 def find_functions_with_libclang(compilation_db_dir: Path, find_option: FindOption) -> Iterator[FunctionIdentifier]:
     has_invalid_visibility: Callable[[Cursor], bool]
-    if find_option is FindOption.EXCLUDE_PRIVATE_OR_PROTECTED:
+    if find_option is FindOption.EXCLUDE_PRIVATE_AND_PROTECTED:
         has_invalid_visibility = _is_private_or_protected
     else:
         has_invalid_visibility = _always_false

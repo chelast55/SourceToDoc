@@ -7,6 +7,7 @@ from sourcetodoc.docstring.cli import run_comment_converter
 from sourcetodoc.docgen.doc_gen import run_documentation_generation
 from sourcetodoc.testcoverage.cover_meson import *
 from sourcetodoc.testcoverage.linker import *
+from sourcetodoc.uml.cli import run_uml_diagrams_generation
 
 
 if __name__ == "__main__":
@@ -63,6 +64,12 @@ if __name__ == "__main__":
 
     t_coverage: float = time()
 
+    # uml diagrams
+    if config.args.generate_uml_diagrams:
+        run_uml_diagrams_generation(parser, config)
+    
+    t_uml_diagrams: float = time()
+
     if config.args.measure_runtime:
         print("\n")
         print(f"Runtime measurements:\n"
@@ -71,6 +78,6 @@ if __name__ == "__main__":
               f"Comment Converter: {t_converter - t_setup} seconds\n"
               f"Documentation Generation: {t_docgen - t_converter} seconds\n"
               f"Test Coverage Evaluation: {t_coverage - t_docgen} seconds\n"
+              f"UML Diagrams Generation: {t_uml_diagrams - t_coverage} seconds \n"
               f"\n"
-              f"Total toolchain runtime: {t_coverage - t_start}")
-        
+              f"Total toolchain runtime: {t_uml_diagrams - t_start}")

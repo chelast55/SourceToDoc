@@ -1,0 +1,33 @@
+- generate_uml_diagrams:
+    help: If set, some class, package and include diagrams will be generated with clang-uml
+    type: bool
+    default: false
+- uml_compilation_db_dir:
+    help: Path to the directory that contains the compilation database
+    type: str
+- uml_include_path:
+    help: Limits the files to the specified path included in the generated UML diagrams
+    type: str
+- uml_plantuml_jar_path:
+    help: The path to the plantuml jar file
+    type: str
+- uml_query_driver_dot:
+    help: Adds "--query-driver ." to clang-uml commands. Try it if clang-uml fails on macOS or Linux.
+    type: bool
+    default: false
+- uml_sequence_diagrams:
+    help: If set, sequence diagrams will also be generated
+    type: bool
+    default: false
+- uml_find_option:
+    help: |
+      Filters the functions and methods to generate sequence diagrams from.
+      all: Find all functions and methods;
+      exclude_private_and_protected: Find all except private and protected methods;
+      only_main_function: Find only functions that starts with \"main(\""
+    type: str
+    choices:
+      - all
+      - exclude_private_and_protected
+      - only_main_function
+    default: only_main_function

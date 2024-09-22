@@ -192,8 +192,8 @@ class ClangUML:
 
         Warning: `FindOption.NOT_PRIVATE_OR_PROTECTED` does not work correctly. Public methods can be excluded if that value is passed.
         """
-        include_private_or_protected: bool = False if FindOption.EXCLUDE_PRIVATE_OR_PROTECTED else True
-        conf: str = _dummy_sequence_diagram_conf(compilation_db_dir, self.clanguml_include_path, include_private_or_protected)
+        include_private_and_protected: bool = False if FindOption.EXCLUDE_PRIVATE_AND_PROTECTED else True
+        conf: str = _dummy_sequence_diagram_conf(compilation_db_dir, self.clanguml_include_path, include_private_and_protected)
         command: list[str] = ["clang-uml", "-c", "-", "--print-from", "-n", _SEQUENCE_DUMMY] + self.clanguml_args
         process = subprocess.Popen(
             command,
@@ -232,7 +232,7 @@ def _diagram_name(function_identifier: FunctionIdentifier) -> str:
     return result
 
 
-def _dummy_sequence_diagram_conf(compilation_db_dir: Path, src_include: Path, include_private_or_protected: bool) -> str:
+def _dummy_sequence_diagram_conf(compilation_db_dir: Path, src_include: Path, include_private_and_protected: bool) -> str:
     conf: str = f"""\
 compilation_database_dir: "{compilation_db_dir}"
 diagrams:
@@ -245,7 +245,7 @@ diagrams:
       namespaces:
         - std
 """
-    if include_private_or_protected:
+    if include_private_and_protected:
         return conf
     else:
         return conf + f"""\

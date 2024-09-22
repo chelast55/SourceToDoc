@@ -79,7 +79,7 @@ class DiagramsInfo:
 def create_diagrams_site(
         dst_dir: Path,
         default_diagrams_info: DiagramsInfo,
-        sequence_diagrams_info: DiagramsInfo | None,
+        sequence_diagrams_info: DiagramsInfo | None = None,
     ) -> None:
     # Create destination dir if it does not exist
     dst_dir.mkdir(parents=True, exist_ok=True)
