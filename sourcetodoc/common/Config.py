@@ -55,9 +55,9 @@ class Config:
             )
     
         # region paths
+        self.root_path = Path(__file__).parent.parent.parent
         self.out_path_relative = Path("out")
-        self.out_path = self.out_path_relative.absolute()  # Path conf.py will be placed, everything Doxygen/Sphinx related is rel. to it
-        self.root_path = self.out_path.parent.absolute()
+        self.out_path = self.root_path / self.out_path_relative  # Path conf.py will be placed, everything Doxygen/Sphinx related is rel. to it
         self.project_path = self.root_path / Path(self.args.project_name) if (self.args.project_path is None) else Path(self.args.project_path)
         self.doxygen_awesome_submodule_path = self.root_path / Path("submodules") / Path("doxygen-awesome-css")
     
