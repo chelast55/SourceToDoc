@@ -1,12 +1,10 @@
+import shutil
 from argparse import ArgumentParser
 from dataclasses import dataclass
 from pathlib import Path
-import shutil
 
 from ..common.Config import Config
-
 from ..common.helpers import delete_directory_contents
-
 from .clanguml import ClangUML, GeneratorType
 from .find_functions import FindOption
 from .site import DiagramsInfo, create_diagrams_site
@@ -43,8 +41,8 @@ def run_uml_diagrams_generation(parser: ArgumentParser, config: Config) -> None:
             plantuml_jar_path = Path(args.uml_plantuml_jar_path)
 
     clanguml_args: list[str]
-    if args.uml_query_driver_dot:
-        clanguml_args = ["--query-driver", "."]
+    if args.uml_query_driver is not None:
+        clanguml_args = ["--query-driver", args.uml_query_driver]
     else:
         clanguml_args = []
 
