@@ -1,8 +1,8 @@
 from pathlib import Path
-from re import Pattern
+from re import Pattern, compile
 from typing import Any
 
-from .conversion import Conversion, ConvPresent, ConvResult
+from .conversion import ConvEmpty, ConvError, ConvUnsupported, Conversion, ConvPresent, ConvResult
 from .extractor import Comment, Extractor
 from .extractors.c_libclang_extractor import CLibclangExtractor
 from .extractors.c_type import CType
@@ -11,23 +11,43 @@ from .extractors.cxx_type import CXXType
 from .replace import Replace
 from .replacer import CommentReplacement, Replacer
 
+_C_PATTERN = compile(r".*\.[ch]")
+_CXX_PATTERN = compile(r".*\.(c(pp|xx|c)|h(pp|xx|h)?)")
+
 
 class Converter:
+    """
+    The Converter converts comments in source code.
+    """
 
     c_extractor = CLibclangExtractor()
     cxx_extractor = CXXLibclangExtractor()
 
     def __init__(
             self,
-            c_pattern: Pattern[str],
-            cxx_pattern: Pattern[str],
             conversion: Conversion[CType | CXXType],
-            replace: Replace
+            replace: Replace,
+            c_pattern: Pattern[str] | None = None,
+            cxx_pattern: Pattern[str] | None = None
         ) -> None:
-        self.c_pattern = c_pattern
-        self.cxx_pattern = cxx_pattern
+        """
+        Creates a new `Converter` object.
+
+        Parameters
+        ----------
+        conversion: Conversion[CType | CXXType]
+            The `Conversion` object to use to convert comments.
+        replace: Replace
+            Specifies how new comments are added.
+        c_pattern: Pattern[str] | None, optional
+            Used to determine C source files, by default `r".*\\.[ch]"`
+        cxx_pattern: Pattern[str] | None, optional
+            Used to determine C++ source files, by default `r".*\\.(c(pp|xx|c)|h(pp|xx|h)?)"`
+        """
         self.conversion = conversion
         self.replace = replace
+        self.c_pattern = c_pattern if c_pattern is not None else _C_PATTERN
+        self.cxx_pattern = cxx_pattern if cxx_pattern is not None else _CXX_PATTERN
 
     def convert_file(self, file: Path) -> None:
         """
@@ -40,19 +60,17 @@ class Converter:
         file : Path
             The source file with zero or more comments.
         """
-        c_matched = self.c_pattern.fullmatch(file.stem) is not None
-        cxx_matched = self.cxx_pattern.fullmatch(file.stem) is not None
-        if c_matched and cxx_matched:
-            raise ValueError
-        elif c_matched:
-            print(f"\"{file}\" was identified as a C source file")
-            self._convert_file(file, self.__class__.c_extractor)
-        elif cxx_matched:
-            print(f"\"{file}\" was identified as a C++ source file")
-            self._convert_file(file, self.__class__.cxx_extractor)
-        else:
-            print(f"\"{file}\": Filename does not match C (specified by --c_regex) or C++ (specified by --cxx_regex) Python RegEx")
-
+        match (self.c_pattern.fullmatch(file.stem) is not None,
+               self.cxx_pattern.fullmatch(file.stem) is not None):
+            case True, False:
+                print(f"\"{file}\" was identified as a C source file")
+                self._convert_file(file, self.__class__.c_extractor)
+            case _, True:
+                print(f"\"{file}\" was identified as a C++ source file")
+                self._convert_file(file, self.__class__.cxx_extractor)
+            case False, False:
+                print(f"Skip \"{file}\": Filename does not match C ({self.c_pattern} specified by --c_regex) \n"
+                      f"or C++ ({self.cxx_pattern} specified by --cxx_regex) Python RegEx")
 
     def convert_files(self, dir: Path) -> None:
         """
@@ -79,13 +97,13 @@ class Converter:
 
         # Convert source files
         print(f"{c_files_count} C source files found")
-        for i, file in enumerate(c_files):
-            print(f"{i+1}/{c_files_count} Converting file \"{file}\"")
+        for i, file in enumerate(c_files, start=1):
+            print(f"{i}/{c_files_count} Converting file \"{file}\"")
             self._convert_file(file, self.c_extractor)
 
         print(f"{cxx_files_count} C++ source files found")
-        for i, file in enumerate(cxx_files):
-            print(f"{i+1}/{cxx_files_count} Converting file \"{file}\"")
+        for i, file in enumerate(cxx_files, start=1):
+            print(f"{i}/{cxx_files_count} Converting file \"{file}\"")
             self._convert_file(file, self.cxx_extractor)
 
     def _convert_file(self, file: Path, extractor: Extractor[CType] | Extractor[CXXType]) -> None:
@@ -135,9 +153,10 @@ class Converter:
         print(f"{comments_count} comments were found")
         # Calculate new comments
         comment_conv_pair: list[tuple[Comment[Any], ConvResult]] = []
-        for i, comment in enumerate(comments):
-            print(f"{i+1}/{comments_count} Processing comment", end="\r", flush=True)
+        for i, comment in enumerate(comments, start=1):
+            print(f"{i}/{comments_count} Processing comment", end="\r", flush=True)
             conv_result = self.conversion.calc_conversion(comment)
+            self.__class__._print_if_not_present(conv_result)
             comment_conv_pair.append((comment, conv_result))
         # Apply new comments
         conv_present_list = [
@@ -160,3 +179,21 @@ class Converter:
             result = Replacer.replace_comments(code, sorted_replacements, self.replace)
         print(f"{len(conv_present_list)} comments were converted")
         return result
+
+    @staticmethod
+    def _print_if_not_present(conv_result: ConvResult) -> None:
+        match conv_result:
+            case ConvEmpty(None) :
+                print("Skip: No conversion was found")
+            case ConvUnsupported(None):
+                print(f"Skip: The comment is not supported")
+            case ConvError(None):
+                print("Skip: An error occured")
+            case ConvEmpty(message):
+                print(f"Skip: No conversion was found: {message}")
+            case ConvUnsupported(message):
+                print(f"Skip: The comment is not supported: {message}")
+            case ConvError(message):
+                print(f"Skip: An error occured: {message}")
+            case ConvPresent():
+                pass

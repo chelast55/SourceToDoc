@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Iterator
 
 from .comment_style import CommentStyler
 from .range import Range
@@ -24,7 +24,12 @@ class Replacer:
     """Replaces old comments with new comments."""
 
     @classmethod
-    def replace_comments(cls, code: str, comment_replacements: Iterable[CommentReplacement], replace: Replace) -> str:
+    def replace_comments(
+        cls,
+        code: str,
+        comment_replacements: Iterable[CommentReplacement],
+        replace: Replace
+        ) -> str:
         """
         Replaces old comments in `code` with new comments given by `comment_replacements` and `replace`.
 
@@ -49,8 +54,7 @@ class Replacer:
             case Replace.APPEND_TO_OLD_COMMENTS_INLINE:
                 new_comment_func = cls._old_new_concatenated_same_block
 
-        text_replacements = (TextReplacement(e.range, new_comment_func(e))
-                             for e in comment_replacements)
+        text_replacements = (TextReplacement(e.range, new_comment_func(e)) for e in comment_replacements)
         return cls.replace_text(code, text_replacements)
 
     @classmethod
@@ -68,22 +72,37 @@ class Replacer:
         Raises
         ------
         ValueError
-            If `comment_replacements` is not in ascending order without overlap by `range`.
+            If `text_replacements` is not in ascending order without overlap by `range`.
         """
-        result: list[str] = []
-        start = 0
-        end = len(text)
+        return "".join(cls.replace_text_iter(text, text_replacements))
 
+    @classmethod
+    def replace_text_iter(cls, text: str, text_replacements: Iterable[TextReplacement]) -> Iterator[str]:
+        """
+        Replaces parts in `text` given by `text_replacements`.
+
+        `text_replacements` must be in ascending order without overlap by `range`.
+        Concatenate the yielded results to get the entire result like in the `replace_text` method.
+
+        Yields
+        ------
+        str
+            Text with replaced parts.
+        
+        Raises
+        ------
+        ValueError
+            If `text_replacements` is not in ascending order without overlap by `range`.
+        """
+        start = 0
         for e in text_replacements:
             end = e.range.start
-            if end < start: # Ranges must be in ascending order without overlap
-                raise ValueError
-            result.append(text[start:end])
-            result.append(e.new_text)
+            if end < start:
+                raise ValueError("text_replacements must be in ascending order without overlap")
+            yield text[start:end]
+            yield e.new_text
             start = e.range.end
-
-        result.append(text[start:])
-        return "".join(result)
+        yield text[start:]
 
     @classmethod
     def _new_comment_text(cls, replacement: CommentReplacement) -> str:
