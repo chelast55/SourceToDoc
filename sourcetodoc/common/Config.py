@@ -354,7 +354,7 @@ class Config:
                 DOTFILE_DIRS            = 
                 DIA_PATH                = 
                 DIAFILE_DIRS            = 
-                PLANTUML_JAR_PATH       =
+                PLANTUML_JAR_PATH       = {self.args.uml_plantuml_jar_path if self.args.uml_plantuml_jar_path is not None else ""}
                 PLANTUML_CFG_FILE       = 
                 PLANTUML_INCLUDE_PATH   = 
                 DOT_GRAPH_MAX_NODES     = 1000

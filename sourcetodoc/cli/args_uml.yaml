@@ -9,7 +9,7 @@
     help: Limits the files to the specified path included in the generated UML diagrams
     type: str
 - uml_plantuml_jar_path:
-    help: The path to the plantuml jar file
+    help: The path to the plantuml jar file (also relevant for doxygen, if the project already contains platuml directives)
     type: str
 - uml_query_driver:
     help: Adds "--query-driver VALUE" to commands running clang-uml. Try "--uml_query_driver ." clang-uml fails on macOS or Linux.
