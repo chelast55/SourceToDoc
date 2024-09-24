@@ -67,7 +67,7 @@ def run_uml_diagrams_generation(parser: ArgumentParser, config: Config) -> None:
         seq_diagrams_config
     )
 
-    dst_dir = config.out_path / "uml"
+    dst_dir = config.out_path_project / "uml"
     generate_uml_diagrams(dst_dir, config, uml_config)
 
 

@@ -12,6 +12,7 @@ class Config:
 
         self.out_path_relative: Path = Path()
         self.out_path: Path = Path()
+        self.out_path_project: Path = Path()
         self.root_path: Path = Path()
         self.project_path: Path = Path()
         self.doxygen_awesome_submodule_path: Path = Path()
@@ -58,6 +59,7 @@ class Config:
         self.root_path = Path(__file__).parent.parent.parent
         self.out_path_relative = Path("out")
         self.out_path = self.root_path / self.out_path_relative  # Path conf.py will be placed, everything Doxygen/Sphinx related is rel. to it
+        self.out_path_project = self.out_path / Path(self.args.project_name)
         self.project_path = self.root_path / Path(self.args.project_name) if (self.args.project_path is None) else Path(self.args.project_path)
         self.doxygen_awesome_submodule_path = self.root_path / Path("submodules") / Path("doxygen-awesome-css")
     
