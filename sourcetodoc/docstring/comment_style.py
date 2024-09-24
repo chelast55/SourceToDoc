@@ -7,12 +7,14 @@ from typing import ClassVar, Iterable, Iterator, Optional, Self
 
 
 @dataclass(frozen=True)
-class _LineComment:
+class LineComment:
+    name: str
     start_delimiter: str
 
 
 @dataclass(frozen=True)
-class _BlockComment:
+class BlockComment:
+    name: str
     start_delimiter: str
     end_delimiter: str
     is_inline: bool = False
@@ -37,7 +39,7 @@ class CommentStyle(Enum):
         Typically for comments after member variables.
     """
 
-    C_LINE = _LineComment("//")
+    C_LINE = LineComment("c_line", "//")
     """
     ```
     // text
@@ -45,7 +47,7 @@ class CommentStyle(Enum):
     ```
     """
 
-    C_BLOCK_INLINE = _BlockComment("/*", "*/", True)
+    C_BLOCK_INLINE = BlockComment("c_block_inline", "/*", "*/", True)
     """
     ```
     /* text */
@@ -53,7 +55,7 @@ class CommentStyle(Enum):
     ```
     """
 
-    C_BLOCK = _BlockComment("/*", "*/")
+    C_BLOCK = BlockComment("c_block", "/*", "*/")
     """
     ```
     /*
@@ -63,7 +65,7 @@ class CommentStyle(Enum):
     ```
     """
 
-    JAVADOC_BLOCK = _BlockComment("/**", "*/")
+    JAVADOC_BLOCK = BlockComment("javadoc_block", "/**", "*/")
     """
     ```
     /**
@@ -73,7 +75,7 @@ class CommentStyle(Enum):
     ```
     """
 
-    JAVADOC_BLOCK_INLINE = _BlockComment("/**", "*/", True)
+    JAVADOC_BLOCK_INLINE = BlockComment("javadoc_block_inline", "/**", "*/", True)
     """
     ```
     /** text */
@@ -81,7 +83,7 @@ class CommentStyle(Enum):
     ```
     """
 
-    JAVADOC_BLOCK_MEMBER_INLINE = _BlockComment("/**<", "*/", True)
+    JAVADOC_BLOCK_MEMBER_INLINE = BlockComment("javadoc_block_member_inline", "/**<", "*/", True)
     """
     ```
     /**< text */
@@ -89,7 +91,7 @@ class CommentStyle(Enum):
     ```
     """
 
-    QT_BLOCK = _BlockComment("/*!", "*/")
+    QT_BLOCK = BlockComment("qt_block", "/*!", "*/")
     """
     ```
     /*!
@@ -99,7 +101,7 @@ class CommentStyle(Enum):
     ```
     """
 
-    QT_BLOCK_INLINE = _BlockComment("/*!", "*/", True)
+    QT_BLOCK_INLINE = BlockComment("qt_block_inline", "/*!", "*/", True)
     """
     ```
     /*! text */
@@ -107,7 +109,7 @@ class CommentStyle(Enum):
     ```
     """
 
-    QT_BLOCK_MEMBER_INLINE = _BlockComment("/*!<", "*/", True)
+    QT_BLOCK_MEMBER_INLINE = BlockComment("qt_block_member_inline", "/*!<", "*/", True)
     """
     ```
     /*!< text */
@@ -115,7 +117,7 @@ class CommentStyle(Enum):
     ```
     """
 
-    TRIPLE_SLASH_LINE = _LineComment("///")
+    TRIPLE_SLASH_LINE = LineComment("triple_slash_line", "///")
     """
     ```
     /// text
@@ -123,7 +125,7 @@ class CommentStyle(Enum):
     ```
     """
 
-    TRIPLE_SLASH_LINE_MEMBER = _LineComment("///<")
+    TRIPLE_SLASH_LINE_MEMBER = LineComment("triple_slash_line_member", "///<")
     """
     ```
     ///< text
@@ -131,14 +133,14 @@ class CommentStyle(Enum):
     ```
     """
 
-    QT_LINE = _LineComment("//!")
+    QT_LINE = LineComment("qt_line", "//!")
     """
     ```
     //! text
     //! ...
     ```
     """
-    QT_LINE_MEMBER = _LineComment("//!<")
+    QT_LINE_MEMBER = LineComment("qt_line_member", "//!<")
     """
     ```
     //!< text
@@ -160,6 +162,39 @@ class CommentStyle(Enum):
             CommentStyle.QT_LINE_MEMBER,
         }
 
+
+_LINE_COMMENTS: tuple[CommentStyle,...] = (
+    CommentStyle.TRIPLE_SLASH_LINE_MEMBER,
+    CommentStyle.TRIPLE_SLASH_LINE,
+    CommentStyle.QT_LINE_MEMBER,
+    CommentStyle.QT_LINE,
+    CommentStyle.C_LINE
+)
+
+
+def _create_line_comment_regex() -> str:
+    """
+    Creates a RegEx in the form "//((?P<n1>i1)|(P?<n2>i2)|...)?.*(?:\n(?: |\t)*//\1.*)*"
+    """
+    start: str = CommentStyle.C_LINE.value.start_delimiter
+    options: str = _create_options(start, _LINE_COMMENTS)
+    return rf"{start}({options})?.*(?:\n(?: |\t)*//\1.*)*"
+
+
+def _create_options(start: str, styles: Iterable[CommentStyle]) -> str:
+    """
+    Creates the (?P<n1>i1)|(P?<n2>i2)|...) part for _create_line_comment_regex()
+    """
+    options: list[str] = []
+    for style in styles:
+        identifier: str = style.value.start_delimiter.removeprefix(start)
+        name_escaped = re.escape(style.value.name)
+        identifier_escaped = re.escape(identifier)
+        option: str = rf"(?P<{name_escaped}>{identifier_escaped})"
+        options.append(option)
+    return "|".join(options)
+
+
 @dataclass(frozen=True)
 class CommentStyler:
     """
@@ -175,9 +210,8 @@ class CommentStyler:
     content: str
     style: CommentStyle
 
-    _C_LINE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
-        r"//.*(?:\n(?: |\t)*//.*)*"
-    )
+    _C_LINE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(_create_line_comment_regex())
+
     _C_BLOCK_INLINE_PATTERN: ClassVar[re.Pattern[str]] = re.compile(
         r"/\*.*?\*/(?:(?: |\t)*\n(?: |\t)*/\*.*?\*/)*"
     )
@@ -201,14 +235,8 @@ class CommentStyler:
             A CommandStyler object if the parsing was successful, else None.
         """
         text_stripped = comment_text.strip()
-        if cls._C_LINE_PATTERN.fullmatch(text_stripped) is not None:
-            style = cls._get_style_by_delimiter(text_stripped, (
-                CommentStyle.TRIPLE_SLASH_LINE_MEMBER,
-                CommentStyle.TRIPLE_SLASH_LINE,
-                CommentStyle.QT_LINE_MEMBER,
-                CommentStyle.QT_LINE,
-                CommentStyle.C_LINE,
-            ))
+        if (match := cls._C_LINE_PATTERN.fullmatch(text_stripped)) is not None:
+            style = cls._get_line_comment_style_by_capture_group(match)
             start_delimiter = style.value.start_delimiter
             content = cls._extract_content_from_line_comment(
                 text_stripped, start_delimiter
@@ -255,13 +283,20 @@ class CommentStyler:
             The constructed comment.
         """
         match self.style.value:
-            case _LineComment(start_delimiter):
+            case LineComment(_, start_delimiter):
                 return self._construct_line(f"{start_delimiter} ", subsequent_indentation)
-            case _BlockComment(start_delimiter, end_delimiter, False):
+            case BlockComment(_, start_delimiter, end_delimiter, False):
                 return self._construct_block(start_delimiter, end_delimiter, " * ", subsequent_indentation)
-            case _BlockComment(start_delimiter, end_delimiter):
+            case BlockComment(_, start_delimiter, end_delimiter):
                 return self._construct_block_inline(start_delimiter, end_delimiter, subsequent_indentation)
-    
+
+    @classmethod
+    def _get_line_comment_style_by_capture_group(cls, match: re.Match[str]) -> CommentStyle:
+        for style in _LINE_COMMENTS:
+            if match.group(style.value.name) is not None:
+                return style
+        raise RuntimeError
+
     @classmethod
     def _get_style_by_delimiter(
         cls,
@@ -274,7 +309,7 @@ class CommentStyler:
         for candidate in candidates:
             c = candidate.value
             if text_stripped.startswith(c.start_delimiter):
-                if isinstance(c, _BlockComment) and not text_stripped.endswith(c.end_delimiter):
+                if isinstance(c, BlockComment) and not text_stripped.endswith(c.end_delimiter):
                     continue
                 return candidate
         raise RuntimeError

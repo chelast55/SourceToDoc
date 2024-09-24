@@ -12,6 +12,7 @@ class Config:
 
         self.out_path_relative: Path = Path()
         self.out_path: Path = Path()
+        self.out_path_project: Path = Path()
         self.root_path: Path = Path()
         self.project_path: Path = Path()
         self.doxygen_awesome_submodule_path: Path = Path()
@@ -55,9 +56,10 @@ class Config:
             )
     
         # region paths
+        self.root_path = Path(__file__).parent.parent.parent
         self.out_path_relative = Path("out")
-        self.out_path = self.out_path_relative.absolute()  # Path conf.py will be placed, everything Doxygen/Sphinx related is rel. to it
-        self.root_path = self.out_path.parent.absolute()
+        self.out_path = self.root_path / self.out_path_relative  # Path conf.py will be placed, everything Doxygen/Sphinx related is rel. to it
+        self.out_path_project = self.out_path / Path(self.args.project_name)
         self.project_path = self.root_path / Path(self.args.project_name) if (self.args.project_path is None) else Path(self.args.project_path)
         self.doxygen_awesome_submodule_path = self.root_path / Path("submodules") / Path("doxygen-awesome-css")
     
@@ -354,7 +356,7 @@ class Config:
                 DOTFILE_DIRS            = 
                 DIA_PATH                = 
                 DIAFILE_DIRS            = 
-                PLANTUML_JAR_PATH       =
+                PLANTUML_JAR_PATH       = {self.args.uml_plantuml_jar_path if self.args.uml_plantuml_jar_path is not None else ""}
                 PLANTUML_CFG_FILE       = 
                 PLANTUML_INCLUDE_PATH   = 
                 DOT_GRAPH_MAX_NODES     = 1000

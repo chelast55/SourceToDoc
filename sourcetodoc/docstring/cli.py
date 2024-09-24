@@ -41,17 +41,17 @@ class _ConverterNames(StrEnum):
     FIND_AND_REPLACE = "find_and_replace"
 
 
-def run_comment_converter(parser: ArgumentParser, src_path: Path, **kwargs: str) -> None:
+def run_comment_converter(parser: ArgumentParser, src_path: Path, **kwargs: str | None) -> None:
     """Runs the converter depending on the given arguments in `kwargs`."""
-
-    c_regex = kwargs["cc_c_regex"] if ("cc_c_regex" in kwargs and kwargs["cc_c_regex"] is not None) else r".*\.[ch]"
-    cxx_regex = kwargs["cc_cxx_regex"] if ("cc_cxx_regex" in kwargs and kwargs["cc_cxx_regex"] is not None) else r".*\.(c(pp|xx|c)|h(pp|xx|h)?)"
+    c_regex: str | None = kwargs["cc_c_regex"]
     try:
-        c_pattern = re.compile(c_regex)
+        c_pattern = re.compile(c_regex) if c_regex is not None else None
     except re.error:
         parser.error(f"Error: Python RegEx {c_regex} cannot be compiled")
+
+    cxx_regex: str | None = kwargs["cc_cxx_regex"]
     try:
-        cxx_pattern = re.compile(cxx_regex)
+        cxx_pattern = re.compile(cxx_regex) if cxx_regex is not None else None
     except re.error:
         parser.error(f"Error: Python RegEx {cxx_regex} cannot be compiled")
 
@@ -70,10 +70,10 @@ def run_comment_converter(parser: ArgumentParser, src_path: Path, **kwargs: str)
             raise RuntimeError
 
     converter = Converter(
-        c_pattern,
-        cxx_pattern,
         selected_conversion,
-        replace
+        replace,
+        c_pattern,
+        cxx_pattern
     )
     if src_path.is_file():
         converter.convert_file(src_path)
@@ -83,7 +83,7 @@ def run_comment_converter(parser: ArgumentParser, src_path: Path, **kwargs: str)
         parser.error(f"{src_path} is not a file or a directory")
 
 
-def _get_conversion(parser: ArgumentParser, **kwargs: str) -> Conversion[Any] | None:
+def _get_conversion(parser: ArgumentParser, **kwargs: str | None) -> Conversion[Any] | None:
     conversion: Optional[Conversion[Any]] = None
     arg_helper = _ArgumentHelper(**kwargs)
     match kwargs["converter"]:
