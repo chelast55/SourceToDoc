@@ -53,6 +53,7 @@ def run_cmake(out_folder: Path,
     subprocess.run(LCOV, cwd=build_folder)
     subprocess.run(GENHTML, cwd=build_folder)
 
-    copytree(report_folder, out_folder, dirs_exist_ok=True)
+    if report_folder.exists() and report_folder.is_dir():  # if build failed or is impossible, there is nothing to copy
+        copytree(report_folder, out_folder, dirs_exist_ok=True)
     if not keep_build_folder:
         rmtree(build_folder)
