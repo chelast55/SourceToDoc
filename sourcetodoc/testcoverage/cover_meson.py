@@ -11,7 +11,11 @@ NINJA_TEST: list[str] = ["ninja", "test"]
 NINJA_COVERAGE: list[str] = ["ninja", "coverage-html"]
 #endregion
 
-def run_meson(out_folder: Path, meson_build_location: Path, build_folder_name: Path = Path("build"), keep_build_folder: bool = False, meson_setup_args: list[str] = []):
+def run_meson(out_folder: Path, 
+              meson_build_location: Path, 
+              build_folder_name: Path = Path("build"), 
+              keep_build_folder: bool = False, 
+              meson_setup_args: list[str] = []) -> None:
     """
     Produce a test coverage report using the Meson + Ninja build system.
 
@@ -31,7 +35,7 @@ def run_meson(out_folder: Path, meson_build_location: Path, build_folder_name: P
         print(f"Deleting {build_folder}")
         rmtree(build_folder)
 
-    subprocess.run(MESON_SETUP + [str(build_folder_name)] + meson_setup_args, cwd=meson_build_location)
+    subprocess.run(MESON_SETUP + meson_setup_args + [str(build_folder_name)], cwd=meson_build_location)
     subprocess.run(NINJA_TEST, cwd=build_folder)
     subprocess.run(NINJA_COVERAGE, cwd=build_folder)
 

@@ -26,7 +26,6 @@ def link_tc_report_and_documentation_main(out_path: Path):
     link_to_tc_main_file: str = f"""<div class="contents"><div class="textblock"><h2 class="anchor"><a href="../../../{tc_report_main_file_path}">Go to the code coverage report.</a></h2></div></div>\n"""
     _insert_link(dg_main_file_path, marker_line_in_dg_file, link_to_tc_main_file, 0)
 
-# TODO? Link subfolder index files to somewhere???
 
 def link_all_tc_report_and_documentation_files(out_path: Path):
     """Find and link all test coverage class files with their respective documentation files.
