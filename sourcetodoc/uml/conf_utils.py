@@ -23,39 +23,38 @@ def create_default_conf(
     Returns
     -------
     tuple[str,list[tuple[str,str]]]
-        _description_
-    """    
-    types: list[tuple[str,list[str],str]] = [
-        ("class", [], ""),
-        ("class", ["generate_packages: true"], "with generated packages"),
-        ("package", [], "")
+        2-tuples `(diagram_name,diagram_title)`.
+    """
+    diagram_name_title_pairs: list[tuple[str,str]] = []
+    conf: list[str] = []
+    # Start of config file
+    conf.append(_start_part(compilation_database_dir, diagrams_dir))
+
+    # Add class diagram
+    diagram_name_class = "class_diagram"
+    diagram_name_title_pairs.append((diagram_name_class, "Class Diagram"))
+    conf.append(_part_with_include_path_and_exclude_std_namepace(diagram_name_class, "class", "namespace", clanguml_include_path))
+
+    # Add variations of class and package diagrams
+    types: list[tuple[str,list[str]]] = [
+        ("class", ["generate_packages: true"]),
+        ("package", [])
     ]
     package_types: tuple[str,...] = ("namespace", "directory", "module")
-
-    diagram_name_title_pairs: list[tuple[str,str]] = []
-    middle_parts: list[str] = []
-
-    for i, ((type, options, description), package_type) in enumerate(itertools.product(types, package_types), 1):
-        diagram_title: str = f"{type.capitalize()} Diagram - {package_type.capitalize()} {description}"
-        diagram_name: str = f"{type}_diagram_{package_type}_{i}"
+    for (type, options), package_type in itertools.product(types, package_types):
+        diagram_title: str = f"{type.capitalize()} Diagram - {package_type.capitalize()}"
+        diagram_name: str = f"{type}_diagram_{package_type}"
         diagram_name_title_pairs.append((diagram_name, diagram_title))
-
-        middle_part: str = _part(diagram_name, type, package_type, clanguml_include_path)
-        middle_parts.append(middle_part)
+        conf.append(_part_with_include_path_and_exclude_std_namepace(diagram_name, type, package_type, clanguml_include_path))
         for suffix in options:
-            middle_parts.append("    " + suffix + "\n")
+            conf.append("    " + suffix + "\n")
 
-    conf: str = f"""\
-{_start_part(compilation_database_dir, diagrams_dir)}
-{"".join(middle_parts)}\
-  include_diagram:
-    type: include
-    include:
-      paths:
-        - "{clanguml_include_path}"
-"""
-    diagram_name_title_pairs.append(("include_diagram", "Include Diagram"))
-    return conf, diagram_name_title_pairs
+    # Add include diagram
+    diagram_name_include = "include_diagram"
+    diagram_name_title_pairs.append((diagram_name_include, "Include Diagram"))
+    conf.append(_part_with_include_path(diagram_name_include, "include", clanguml_include_path))
+
+    return "".join(conf), diagram_name_title_pairs
 
 
 def create_sequence_diagrams_conf(
@@ -129,8 +128,7 @@ def _function_part(diagram_name: str, function_identifier: str) -> str:
     generate_condition_statements: true
 """
 
-
-def _part(
+def _part_with_include_path_and_exclude_std_namepace(
         diagram_name: str,
         type: str,
         package_type: str,
@@ -146,4 +144,17 @@ def _part(
     exclude:
       namespaces:
         - std
+"""
+
+def _part_with_include_path(
+        diagram_name: str,
+        type: str,
+        clanguml_include_path: Path
+    ) -> str:
+    return f"""\
+  {diagram_name}:
+    type: {type}
+    include:
+      paths:
+        - "{clanguml_include_path}"
 """
