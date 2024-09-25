@@ -60,8 +60,8 @@ class Converter:
         file : Path
             The source file with zero or more comments.
         """
-        match (self.c_pattern.fullmatch(file.stem) is not None,
-               self.cxx_pattern.fullmatch(file.stem) is not None):
+        match (self.c_pattern.fullmatch(file.name) is not None,
+               self.cxx_pattern.fullmatch(file.name) is not None):
             case True, False:
                 print(f"\"{file}\" was identified as a C source file")
                 self._convert_file(file, self.__class__.c_extractor)
