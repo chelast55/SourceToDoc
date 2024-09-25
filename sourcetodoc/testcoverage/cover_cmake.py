@@ -13,8 +13,8 @@ CTEST: list[str] = ["ctest", "-VV"]
 
 # lcov --capture --directory . --output-file coverage.info
 LCOV: list[str] = ["lcov", "-c", "-d", ".", "-o", "coverage.info"]
-# genhtml coverage.info --output-directory out
-GENHTML: list[str] = ["genhtml", "coverage.info", "--output-directory", "coveragereport"]
+# genhtml coverage.info --output-directory coveragereport
+GENHTML: list[str] = ["genhtml", "coverage.info", "-o", "coveragereport"]
 #endregion
 
 def run_cmake(out_folder: Path, 
@@ -44,7 +44,7 @@ def run_cmake(out_folder: Path,
     subprocess.run(CMAKE_BUILD + cmake_build_args, cwd=build_folder)
 
     # Run tests
-    if ctest_substitute is not None:
+    if ctest_substitute:
         subprocess.run(ctest_substitute, cwd=build_folder)
     else:
         subprocess.run(CTEST + ctest_args, cwd=build_folder)

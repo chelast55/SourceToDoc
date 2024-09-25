@@ -81,7 +81,7 @@ if __name__ == "__main__":
             if config.args.tc_ctest_substitute is not None:
                 ctest_substitute = config.args.tc_ctest_substitute.split(" ")
 
-            run_cmake(config.testcoveragereport_path, cmakelist_location,cmake_configure_args, cmake_build_args, ctest_args, ctest_substitute, build_folder_name, keep_build_folder)
+            run_cmake(config.testcoveragereport_path, cmakelist_location, cmake_configure_args, cmake_build_args, ctest_args, ctest_substitute, build_folder_name, keep_build_folder)
 
         # Link coverage report and documentation
         if config.args.disable_doc_gen:  # can not link TC report to generated documentation, if no documentation was generated

@@ -56,7 +56,10 @@ def link_all_tc_report_and_documentation_files(out_path: Path):
         # Link .gcov file in the doxygen
         marker_line_in_dg_file: str = f"""</div><!--header-->"""
         link_to_tc_class_file: str = f"""<div class="contents"><div class="textblock"><h2 class="anchor"><a href="../../../{tc_class_file}">Go to the code coverage report of this file.</a></h2></div></div>\n"""
-        _insert_link(dg_class_file, marker_line_in_dg_file, link_to_tc_class_file, 0)
+        if dg_class_file is not None:
+            _insert_link(dg_class_file, marker_line_in_dg_file, link_to_tc_class_file, 0)
+        else:
+            print(f"Couldnt find documentation file to testcoverage report file {tc_class_file}. Skipping linking.")
         
         # Link doxygen in all three tc files
         marker_line_in_tc_files: str = f"""<tr><td class="title">LCOV - code coverage report</td></tr>"""
