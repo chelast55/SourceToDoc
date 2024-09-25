@@ -1,7 +1,7 @@
 - tc_coverage_type:
     help: Choose your backend. Currently implemented, meson.
     type: str
-    choices: [meson, cmake]
+    choices: [meson, cmake, generic]
     default: meson
 - tc_build_folder_name:
     help: Name the build folder will have. Can be nested (sub / build). Existing folder will be deleted.
@@ -27,4 +27,7 @@
     type: str
 - tc_ctest_substitute:
     help: Command with arguments to be used instead of ctest to run the test to generate coverage data. If this is used tc_ctest_args does nothing. Exec from build folder.
+    type: str
+- tc_generic_report_location:
+    help: Location of the report folder if coverage type is set to generic. I.e. our toolchain doesn't execute testcoverage generation, instead it only copies the already generated report.
     type: str
