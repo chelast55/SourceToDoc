@@ -21,10 +21,14 @@ def run_meson(out_folder: Path,
 
     Parameters
     ----------
+    out_folder: Path
+        The location to copy the testcoverage report into. To then link it to the Documentation.
     meson_build_location: Path
         Path to the root directory of the project. Where a "meson.build" file should be located.
     build_folder_name: Path
         Name the build folder will have. Can be nested (sub / build).
+    keep_build_folder: bool
+        Wether to keep the freshly built build folder, or not.
     meson_setup_args: list[str]
         Arguments passed to the Meson Setup step. --backend is not allowed!
     """
