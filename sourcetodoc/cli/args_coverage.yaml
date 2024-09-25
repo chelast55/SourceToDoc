@@ -1,5 +1,5 @@
 - tc_coverage_type:
-    help: Choose your backend. Currently implemented, meson.
+    help: Choose your backend. Currently implemented is meson, cmake and a generic version which takes a testcoveragereport and links it.
     type: str
     choices: [meson, cmake, generic]
     default: meson

@@ -18,7 +18,7 @@ GENHTML: list[str] = ["genhtml", "coverage.info", "-o", "coveragereport"]
 #endregion
 
 def run_cmake(out_folder: Path, 
-              cmakelist_location: Path, 
+              project_root: Path, 
               cmake_configure_args: list[str] = [".."], 
               cmake_build_args: list[str] = ["."], 
               ctest_args: list[str] = [],
@@ -28,7 +28,7 @@ def run_cmake(out_folder: Path,
     """
     
     """
-    build_folder: Path = cmakelist_location / build_folder_name
+    build_folder: Path = project_root / build_folder_name
     report_folder: Path = build_folder / "coveragereport"
 
     # Deleting existing build folder

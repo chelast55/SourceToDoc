@@ -61,7 +61,7 @@ if __name__ == "__main__":
         elif config.args.tc_coverage_type == "cmake":
             build_folder_name: Path = Path("build")
             keep_build_folder: bool = False
-            cmakelist_location: Path = config.project_path
+            project_root: Path = config.project_path
             cmake_configure_args: list[str] = [".."]
             cmake_build_args: list[str] = ["."]
             ctest_args: list[str] = []
@@ -80,7 +80,7 @@ if __name__ == "__main__":
             if config.args.tc_ctest_substitute is not None:
                 ctest_substitute = config.args.tc_ctest_substitute.split(" ")
 
-            run_cmake(config.testcoveragereport_path, cmakelist_location, cmake_configure_args, cmake_build_args, ctest_args, ctest_substitute, build_folder_name, keep_build_folder)
+            run_cmake(config.testcoveragereport_path, project_root, cmake_configure_args, cmake_build_args, ctest_args, ctest_substitute, build_folder_name, keep_build_folder)
 
         elif config.args.tc_coverage_type == "generic":
             if config.args.tc_generic_report_location is not None:

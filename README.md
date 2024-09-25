@@ -181,7 +181,14 @@ python main.py --config example_config.yaml
 
 ### Testcoverage
 
+Note: tc_coverage_type is meson by default. Remember setting this to cmake or generic if you use these.
 
+When the testcoverage part of our toolchain set to cmake throws an error you might need to pass additional arguments to the individual build steps.
+Cmake default handling is creating a "build" folder in the root dir of the give project and executing ```cmake ..```, ```cmake --build .```, ```ctest``` and locv/genhtml from there.  
+If any additional arguments are passed to the individual steps the relative path (```..``` for the configure step; ```.``` for the build step) will be overridden.  
+Therefore you need to pass the relative path aswell e.g. ```--tc_cmake_configure_args "-DCMAKE_BUILD_TYPE=Debug .."``` (take note of the "..")
+
+Using tc_coverage_type = generic expects usage of ```--tc_generic_report_location```, where an already built coverage report is located. This means building and executing lcov/genhtml has to be done by the user beforehand.
 
 # Miscellaneous
 
