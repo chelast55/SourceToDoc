@@ -69,8 +69,9 @@ def link_all_tc_report_and_documentation_files(out_path: Path):
         for _ in range(len(tc_class_file.parents) - 1): relative_depth_correction += "../"
         link_to_dg_class_file: str = f"""    <tr><td class="headerItem" style="text-align: center"><a href="{relative_depth_correction}{dg_class_file}">Go to the documentation of this file.</a></td></tr>\n"""
 
-        for tc_file in tc_report_path.glob("**/" + tc_class_name + "*"):
-            _insert_link(tc_file, marker_line_in_tc_files, link_to_dg_class_file)
+        for tc_file in tc_class_file.parent.glob(tc_class_name + "*"):
+            if len(tc_file.suffixes) > 1:
+                _insert_link(tc_file, marker_line_in_tc_files, link_to_dg_class_file)
 
 
 def _find_all_classes(search_dir: Path) -> list[Path]:
