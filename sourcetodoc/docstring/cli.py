@@ -10,6 +10,7 @@ from .comment_style import CommentStyle
 from .conversion import Conversion
 from .conversions.command_style_conversion import CommandStyleConversion
 from .conversions.comment_style_conversion import CommentStyleConversion
+from .conversions.default_comment_conversion import DefaultCommentStyleConversion
 from .conversions.find_and_replace_conversion import FindAndReplaceConversion
 from .conversions.llm import LLM
 from .conversions.llm_conversion import LLMConversion
@@ -88,8 +89,7 @@ def _get_conversion(parser: ArgumentParser, **kwargs: str | None) -> Conversion[
     arg_helper = _ArgumentHelper(**kwargs)
     match kwargs["converter"]:
         case _ConverterNames.DEFAULT:
-            style = CommentStyle.JAVADOC_BLOCK
-            conversion = CommentStyleConversion(style)
+            conversion = DefaultCommentStyleConversion()
         case _ConverterNames.COMMENT_STYLE:
             result = arg_helper.get_style_and_only_after_member()
             if result is not None:
