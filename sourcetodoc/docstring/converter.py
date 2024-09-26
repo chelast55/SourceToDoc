@@ -1,6 +1,6 @@
 from pathlib import Path
 from re import Pattern, compile
-from typing import Any
+from typing import Any, ClassVar
 
 from .conversion import ConvEmpty, ConvError, ConvUnsupported, Conversion, ConvPresent, ConvResult
 from .extractor import Comment, Extractor
@@ -11,24 +11,26 @@ from .extractors.cxx_type import CXXType
 from .replace import Replace
 from .replacer import CommentReplacement, Replacer
 
-_C_PATTERN = compile(r".*\.[ch]")
-_CXX_PATTERN = compile(r".*\.(c(pp|xx|c)|h(pp|xx|h)?)")
-
 
 class Converter:
     """
     The Converter converts comments in source code.
     """
 
-    c_extractor = CLibclangExtractor()
-    cxx_extractor = CXXLibclangExtractor()
+    _DEFAULT_C_PATTERN: ClassVar[Pattern[str]] = compile(r".*\.[ch]")
+    _DEFAULT_CXX_PATTERN: ClassVar[Pattern[str]] = compile(r".*\.(c(pp|xx|c)|h(pp|xx|h)?)")
+
+    _DEFAULT_C_EXTRACTOR: ClassVar[Extractor[CType]] = CLibclangExtractor()
+    _DEFAULT_CXX_EXTRACTOR: ClassVar[Extractor[CXXType]] = CXXLibclangExtractor()
 
     def __init__(
             self,
             conversion: Conversion[CType | CXXType],
             replace: Replace,
             c_pattern: Pattern[str] | None = None,
-            cxx_pattern: Pattern[str] | None = None
+            cxx_pattern: Pattern[str] | None = None,
+            c_extractor: Extractor[CType] | None = None,
+            cxx_extractor: Extractor[CXXType] | None = None
         ) -> None:
         """
         Creates a new `Converter` object.
@@ -46,8 +48,10 @@ class Converter:
         """
         self.conversion = conversion
         self.replace = replace
-        self.c_pattern = c_pattern if c_pattern is not None else _C_PATTERN
-        self.cxx_pattern = cxx_pattern if cxx_pattern is not None else _CXX_PATTERN
+        self.c_pattern = c_pattern if c_pattern is not None else self.__class__._DEFAULT_C_PATTERN
+        self.cxx_pattern = cxx_pattern if cxx_pattern is not None else self.__class__._DEFAULT_CXX_PATTERN
+        self.c_extractor = c_extractor if c_extractor is not None else self.__class__._DEFAULT_C_EXTRACTOR
+        self.cxx_extractor = cxx_extractor if cxx_extractor is not None else self.__class__._DEFAULT_CXX_EXTRACTOR
 
     def convert_file(self, file: Path) -> None:
         """
@@ -60,14 +64,14 @@ class Converter:
         file : Path
             The source file with zero or more comments.
         """
-        match (self.c_pattern.fullmatch(file.stem) is not None,
-               self.cxx_pattern.fullmatch(file.stem) is not None):
-            case True, False:
+        match (self.c_pattern.fullmatch(file.name) is not None,
+               self.cxx_pattern.fullmatch(file.name) is not None):
+            case True, _:
                 print(f"\"{file}\" was identified as a C source file")
-                self._convert_file(file, self.__class__.c_extractor)
-            case _, True:
+                self._convert_file(file, self.c_extractor)
+            case False, True:
                 print(f"\"{file}\" was identified as a C++ source file")
-                self._convert_file(file, self.__class__.cxx_extractor)
+                self._convert_file(file, self.cxx_extractor)
             case False, False:
                 print(f"Skip \"{file}\": Filename does not match C ({self.c_pattern} specified by --c_regex) \n"
                       f"or C++ ({self.cxx_pattern} specified by --cxx_regex) Python RegEx")
@@ -118,7 +122,15 @@ class Converter:
             except UnicodeDecodeError as le:
                 print(le)
 
-        result: str = self._convert_string(code, extractor)
+        try:
+            result: str = self._convert_string(code, extractor)
+        except Exception as e:
+            if extractor == self.c_extractor:
+                print(f"An error occured when parsing \"{file}\" as a C file. Trying to parse it as a C++ file...")
+                result: str = self._convert_string(code, self.cxx_extractor)
+            else:
+                raise e
+
         if result != code:
             print(f"\"{file}\" was updated")
             file.write_text(result)

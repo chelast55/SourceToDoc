@@ -2,9 +2,11 @@ from typing import Callable
 
 from clang.cindex import Cursor, TranslationUnit
 
+from ...common.helpers import index_from_coordinates
+from ...libclang_util import (clang_get_comment_range,
+                              walk_preorder_only_main_file)
 from ..extractor import Comment, Extractor
 from ..range import Range
-from ...libclang_util import (clang_get_comment_range, walk_preorder_only_main_file)
 
 
 class LibclangExtractor[T](Extractor[T]):
@@ -46,6 +48,11 @@ class LibclangExtractor[T](Extractor[T]):
         list[Comment[T]]
             The extracted comments with pairwise disjoint
             `comment_range` in ascending order.
+        
+        Raises
+        ------
+        RuntimeError
+            If the extracted indices do not match the actual indices of a comment.
         """
         tu: TranslationUnit = self._translation_unit_from_code(code)
 
@@ -55,13 +62,19 @@ class LibclangExtractor[T](Extractor[T]):
             comment_text: str | None = node.raw_comment
             if comment_text is None:
                 continue
-            symbol_start: int = node.extent.start.offset
-            symbol_end: int = node.extent.end.offset
-            symbol_text: str = code[symbol_start:symbol_end]
-            symbol_range = Range(symbol_start, symbol_end)
+            symbol_range = self.__class__._get_symbol_range_by_line_and_column(code, node)
+            symbol_text: str = code[symbol_range.start:symbol_range.end]
+
             symbol_type = self._get_type(node)
-            symbol_indentation = self.__class__._get_symbol_indentation(code, symbol_start)
-            comment_range = self.__class__._get_comment_range(node)
+            symbol_indentation = self.__class__._get_symbol_indentation(code, symbol_range.start)
+            comment_range = self.__class__._get_comment_range_by_line_and_column(code, node)
+
+            # To be safe
+            comment_text_by_range = code[comment_range.start:comment_range.end]
+            if comment_text_by_range != comment_text:
+                raise RuntimeError(f"The extracted indices do not match the actual indices of a comment:"
+                      f"\n\"{comment_text}\" (getting the comment with libclang directly)"
+                      f"\n!=\n\"{comment_text_by_range}\" (getting the comment with indices), skip this comment!")
 
             if comment_range not in comment_ranges: # Prevent duplicate comments
                 comment = Comment(
@@ -76,11 +89,31 @@ class LibclangExtractor[T](Extractor[T]):
                 comment_ranges.add(comment_range)
         comments.sort(key=lambda x: x.comment_range.start)
         return comments
-    
+
     @classmethod
-    def _get_comment_range(cls, cursor: Cursor) -> Range:
+    def _get_comment_range_by_offset(cls, cursor: Cursor) -> Range:
+        # Warning: offset does/did not always correspond to index of string in Python.
+        # Because of this `_get_comment_range_by_line_and_column` is used instead.
         source_range = clang_get_comment_range(cursor)
         return Range(source_range.start.offset, source_range.end.offset) # type: ignore
+
+    @classmethod
+    def _get_comment_range_by_line_and_column(cls, code: str, cursor: Cursor) -> Range:
+        source_range = clang_get_comment_range(cursor)
+        start, end = index_from_coordinates(code, [
+            (source_range.start.line, source_range.start.column),
+            ((source_range.end.line, source_range.end.column))
+        ])
+        return Range(start, end) # type: ignore
+    
+    @classmethod
+    def _get_symbol_range_by_line_and_column(cls, code: str, cursor: Cursor) -> Range:
+        source_range = cursor.extent
+        start, end = index_from_coordinates(code, [
+            (source_range.start.line, source_range.start.column),
+            ((source_range.end.line, source_range.end.column))
+        ])
+        return Range(start, end) # type: ignore
 
     @classmethod
     def _get_symbol_indentation(cls, code: str, symbol_start: int) -> str:

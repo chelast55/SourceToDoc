@@ -1,11 +1,8 @@
 - tc_coverage_type:
-    help: Choose your backend. Currently implemented, meson.
+    help: Choose your backend. Currently implemented is meson, cmake and a generic version which takes a testcoveragereport and links it.
     type: str
-    choices: [meson, tbd]
+    choices: [meson, cmake, generic]
     default: meson
-- tc_meson_build_location:
-    help: Path to the root directory of the project. Where a "meson.build" file should be located.
-    type: str
 - tc_build_folder_name:
     help: Name the build folder will have. Can be nested (sub / build). Existing folder will be deleted.
     type: str
@@ -13,6 +10,24 @@
     help: Use to not delete the newly created build folder in the target project.
     type: bool
     default: False
+- tc_meson_build_location:
+    help: Path to the root directory of the project. Where a "meson.build" file should be located.
+    type: str
 - tc_meson_setup_args:
     help: Arguments passed to the Meson Setup step. --backend is not allowed!
-    type: list
+    type: str
+- tc_cmake_configure_args:
+    help: Arguments passed to the cmake command (default = "cmake ..") when first configuring the project. E.g. "-DCMAKE_BUILD_TYPE=Debug" or "-D CMAKE_BUILD_TYPE=Debug". Note that this will be called from the folder (tc_build_folder_name) created in the root dir of the project, so adjust relative paths accordingly.
+    type: str
+- tc_cmake_build_args:
+    help: Arguments passed to the build command ("cmake --build") after configuring the project with tc_cmake_configure_args. 
+    type: str
+- tc_ctest_args:
+    help: Arguments passed to the ctest command. -VV is used by default. Exec from build folder.
+    type: str
+- tc_ctest_substitute:
+    help: Command with arguments to be used instead of ctest to run the test to generate coverage data. If this is used tc_ctest_args does nothing. Exec from build folder.
+    type: str
+- tc_generic_report_location:
+    help: Location of the report folder if coverage type is set to generic. I.e. our toolchain doesn't execute testcoverage generation, instead it only copies the already generated report.
+    type: str

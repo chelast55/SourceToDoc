@@ -113,6 +113,18 @@ pip install pytest  # only required if you want to run the unit tests for this t
 ```
 Now, you should be able to run the whole toolchain!
 
+### Testcoverage with cmake
+If your project doesn't yet support testcoverage generation with gcov, the simplest way of adding it is to use the [CodeCoverage.cmake file](https://github.com/bilke/cmake-modules/blob/master/CodeCoverage.cmake).
+Basic usage is comprised of 3 steps:
+- Add the file to your project (e.g. in a subfolder named /modules).
+- Include it in your main CmakeLists.txt: 
+```
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/modules)
+include(CodeCoverage)
+append_coverage_compiler_flags()
+```
+- Execute our toolchain ```python main.py --project_name name --tc_coverage_type cmake``` 
+The CodeCoverage.cmake file warns you if you don't build in DEBUG mode, as the results can be misleading. To enable DEBUG mode pass our flag ```--tc_cmake_configure_args``` the argument ```-DCMAKE_BUILD_TYPE=Debug``` in addition to the relative path from the build location to the CmakeList.txt file (```..``` typically). Final usage would look something like ```python main.py --project_name name --tc_coverage_type cmake --tc_cmake_configure_args "-DCMAKE_BUILD_TYPE=Debug .."```
 
 ## Usage
 The easiest way to run the toolchain is to use the "wizard", which gives a "guided tour" through the most important parameters and lets you set one after another.
@@ -166,6 +178,17 @@ More practical examples can be found in [doc/examples] and include the following
 ````commandline
 python main.py --config example_config.yaml
 ````
+
+### Testcoverage
+
+Note: tc_coverage_type is meson by default. Remember setting this to cmake or generic if you use these.
+
+When the testcoverage part of our toolchain set to cmake throws an error you might need to pass additional arguments to the individual build steps.
+Cmake default handling is creating a "build" folder in the root dir of the give project and executing ```cmake ..```, ```cmake --build .```, ```ctest``` and locv/genhtml from there.  
+If any additional arguments are passed to the individual steps the relative path (```..``` for the configure step; ```.``` for the build step) will be overridden.  
+Therefore you need to pass the relative path aswell e.g. ```--tc_cmake_configure_args "-DCMAKE_BUILD_TYPE=Debug .."``` (take note of the "..")
+
+Using tc_coverage_type = generic expects usage of ```--tc_generic_report_location```, where an already built coverage report is located. This means building and executing lcov/genhtml has to be done by the user beforehand.
 
 # Miscellaneous
 
