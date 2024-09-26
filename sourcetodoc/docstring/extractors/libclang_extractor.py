@@ -74,7 +74,7 @@ class LibclangExtractor[T](Extractor[T]):
             if comment_text_by_range != comment_text:
                 raise RuntimeError(f"The extracted indices do not match the actual indices of a comment:"
                       f"\n\"{comment_text}\" (getting the comment with libclang directly)"
-                      f"\n!=\n\"{comment_text_by_range}\" (getting the comment with indices), skip this comment!")
+                      f"\n!=\n\"{comment_text_by_range}\" (getting the comment with indices: {comment_range}")
 
             if comment_range not in comment_ranges: # Prevent duplicate comments
                 comment = Comment(

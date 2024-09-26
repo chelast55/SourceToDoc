@@ -122,16 +122,18 @@ class Converter:
             except UnicodeDecodeError as le:
                 print(le)
 
+        result: str | None = None
         try:
-            result: str = self._convert_string(code, extractor)
-        except Exception as e:
+            result = self._convert_string(code, extractor)
+        except Exception:
             if extractor == self.c_extractor:
                 print(f"An error occured when parsing \"{file}\" as a C file. Trying to parse it as a C++ file...")
-                result: str = self._convert_string(code, self.cxx_extractor)
-            else:
-                raise e
+                try:
+                    result = self._convert_string(code, self.cxx_extractor)
+                except Exception as e:
+                    print(f"An error occured when parsing \"{file}\" as a C++ file: {e}. Skipping the file...")
 
-        if result != code:
+        if result is not None and result != code:
             print(f"\"{file}\" was updated")
             file.write_text(result)
             return
