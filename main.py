@@ -1,5 +1,6 @@
 from os import chdir
 from time import time
+from shutil import copytree
 
 from sourcetodoc.cli.ConfiguredParser import ConfiguredParser
 from sourcetodoc.common.Config import Config
@@ -143,6 +144,19 @@ if __name__ == "__main__":
     print(error_in_tc)
     print(error_in_lnk)
     print(error_in_uml)
+
+    # copy output
+    print(f"Output was generated at \"{config.out_path}\"")
+    if config.args.output_path is not None:
+        output_copy_path: Path = Path(config.args.output_path)
+        try:
+            chdir(config.root_path)
+            output_copy_path.mkdir(parents=True, exist_ok=True)
+            copytree(config.out_path / config.args.project_name, output_copy_path, dirs_exist_ok=True)
+            print(f"Copied output to \"{output_copy_path.resolve()}\"")
+        except Exception as e:
+            print(f"Exception while trying to copy toolchain output to \"{config.args.output_path}\":\n{e}")
+            print("Copied output may be incomplete or non-existing.")
 
     if config.args.measure_runtime:
         print("\n")

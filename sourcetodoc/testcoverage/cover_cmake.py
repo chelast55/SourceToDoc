@@ -17,6 +17,7 @@ LCOV: list[str] = ["lcov", "-c", "-d", ".", "-o", "coverage.info"]
 GENHTML: list[str] = ["genhtml", "coverage.info", "-o", "coveragereport"]
 #endregion
 
+
 def run_cmake(out_folder: Path, 
               project_root: Path, 
               cmake_configure_args: list[str] = [".."], 

@@ -36,3 +36,7 @@
     help: Enable to measure toolchain runtime(s) and print when done.
     type: bool
     default: False
+- output_path:
+    help: Path, where the output of the toolchain is copied to.
+    type: Path
+    default:

@@ -11,6 +11,7 @@ NINJA_TEST: list[str] = ["ninja", "test"]
 NINJA_COVERAGE: list[str] = ["ninja", "coverage-html"]
 #endregion
 
+
 def run_meson(out_folder: Path, 
               meson_build_location: Path, 
               build_folder_name: Path = Path("build"), 
