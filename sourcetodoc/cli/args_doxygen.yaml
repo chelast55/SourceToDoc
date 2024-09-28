@@ -2,10 +2,12 @@
 - project_number:
     help: Project version/revision number
     type: str
+    short: PN
     default: ""
 - project_brief:
     help: One-line/short description of the project
     type: str
+    short: PB
     default: ""
 - project_logo:
     help: Path to project logo or icon (max 200x55px) for use within documentation
@@ -99,32 +101,39 @@
     help: Specify whether and how to add timestamp to each page (YES, NO, DATETIME or DATE) (relevant when trying to compare output of multiple runs)
     type: str
     choices: [DATETIME, DATE, NO]
+    short: TS
     default: DATETIME
 
 # Build related configuration options
 - dg_disable_extract_private:
     help: Disable to include private members in documentation
     type: bool
+    short: EP
     default: True
 - dg_disable_extract_private_virtual:
     help: Disable to include private virtual methods in documentation
     type: bool
+    short: EV
     default: True
 - dg_disable_extract_package:
     help: Disable to include members with package or internal scope in documentation
     type: bool
+    short: EA
     default: True
 - dg_disable_extract_static:
     help: Disable to include static members of files in documentation
     type: bool
+    short: ES
     default: True
 - dg_disable_extract_local_classes:
     help: Disable to include locally defined structs/classes in documentation (not for Java)
     type: bool
+    short: EL
     default: True
 - dg_disable_extract_anon_namespaces:
     help: Disable to include members of anonymous namespaces in documentation
     type: bool
+    short: EN
     default: True
 - dg_hide_scope_names:
     help: Enable to hide full class and namespace scopes in documentation
@@ -151,6 +160,7 @@
 - dg_disable_warnings:
     help: Disable generating warning messages to stderr
     type: bool
+    short: NW
     default: true
 
 
@@ -177,6 +187,7 @@
 - dg_inline_sources:
     help: Enable to inline function bodies, macros, enums or list initialized variables directly into documentation
     type: bool
+    short: IS
     default: False
 - dg_disable_strip_code_comments:
     help: Disable to remove "special command blocks" from source code fragments in documentation
@@ -207,6 +218,7 @@
 - dg_html_theme:
     help: Whether to use a custom CSS theme for doxygen html output (by default "Doxygen Awesome" for a more modern look) or the standard (arguably more dated-looking) theme.
     type: str
+    short: HT
     choices: [standard, doxygen-awesome]
     default: doxygen-awesome
 
@@ -230,6 +242,7 @@
 - dg_disable_dot_graphs:
     help: Disable generating various graphs (class collaboration, header include, function call, ...) automatically generated from source code
     type: bool
+    short: DD
     default: True
 - dg_disable_uml_look:
     help: Disable making inheritance/collaboration diagrams look more like UML class diagrams
@@ -242,6 +255,7 @@
 - dg_dot_uml_details:
     help: Select, how detailed UML-style graphs should be ("SIMPLIFIED" disables types/arguments for class members, "NONE" removes class members completely)
     type: str
+    short: UD
     choices: [ALL, SIMPLIFIED, NONE]
     default: SIMPLIFIED
 - dg_disable_template_relations:

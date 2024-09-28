@@ -3,6 +3,7 @@
     nargs: "?"
     const: "default"
     type: str
+    short: CC
 - cc_replace:
     help: |
       The method to replace comments.

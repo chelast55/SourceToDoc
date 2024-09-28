@@ -1,10 +1,12 @@
 - generate_uml_diagrams:
     help: If set, some class, package and include diagrams will be generated with clang-uml
     type: bool
+    short: UM
     default: false
 - uml_compilation_db_dir:
     help: Path to the directory that contains the compilation database
     type: str
+    short: DB
 - uml_include_path:
     help: Limits the files to the specified path included in the generated UML diagrams
     type: str
@@ -17,6 +19,7 @@
 - uml_sequence_diagrams:
     help: If set, sequence diagrams will also be generated
     type: bool
+    short: SD
     default: false
 - uml_find_option:
     help: |
@@ -29,4 +32,5 @@
       - all
       - exclude_private_and_protected
       - only_main_function
+    short: UO
     default: only_main_function
