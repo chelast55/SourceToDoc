@@ -188,7 +188,9 @@ Cmake default handling is creating a "build" folder in the root dir of the give 
 If any additional arguments are passed to the individual steps the relative path (```..``` for the configure step; ```.``` for the build step) will be overridden.  
 Therefore you need to pass the relative path aswell e.g. ```--tc_cmake_configure_args "-DCMAKE_BUILD_TYPE=Debug .."``` (take note of the "..")
 
-Using tc_coverage_type = generic expects usage of ```--tc_generic_report_location```, where an already built coverage report is located. This means building and executing lcov/genhtml has to be done by the user beforehand.
+Using tc_coverage_type = generic expects usage of ```--tc_generic_report_location```, where an already built coverage report is located. This means building and executing lcov/genhtml has to be done by the user beforehand.  
+
+If you used doxygen-awesome and want a similar, more "modern" look for the test coverage report, you may want to take a look at [dark-lcov](https://github.com/civts/dark-lcov)
 
 # Miscellaneous
 
