@@ -1,5 +1,6 @@
 from pathlib import Path
 
+
 def link_tc_report_and_documentation_main(out_path: Path):
     # Link coverage and documentation.
     tc_report_path: Path = out_path / "testcoveragereport"
@@ -94,6 +95,7 @@ def _find_all_classes(search_dir: Path) -> list[Path]:
             found_html_classes.append(html_file)
     return found_html_classes
 
+
 def _insert_link(file_path: Path, marker: str, link: str, offset: int = 1) -> None:
     """Given a file path, open the file and insert a link string 
     after finding the marker string with the given offset.
@@ -111,10 +113,14 @@ def _insert_link(file_path: Path, marker: str, link: str, offset: int = 1) -> No
         Default is to insert after.
     """
     with open(file_path, "r+") as file:
-        lines: list[str] = file.readlines()
-        for index, line in enumerate(lines):
-            if marker in line:
-                lines.insert(index + offset, link)
-                break
-        file.seek(0)
-        file.writelines(lines)
+        try:
+            lines: list[str] = file.readlines()
+            for index, line in enumerate(lines):
+                if marker in line:
+                    lines.insert(index + offset, link)
+                    break
+            file.seek(0)
+            file.writelines(lines)
+        except UnicodeDecodeError as u:
+            print(f"UnicodeDecodeError while processing {file_path}:\n{u}")
+            print(f"Skipping {file_path}")
