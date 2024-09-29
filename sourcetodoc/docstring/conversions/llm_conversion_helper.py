@@ -1,13 +1,13 @@
 import re
 
-from ..extractors.cxx_type import CXXType
-
-from ..extractors.c_type import CType
-
 from ..command_style import CommandStyle
-from ..comment_style import CommentStyle, CommentStyler
-from ..conversion import ConvEmpty, ConvError, ConvPresent, ConvResult, ConvUnsupported
+from ..comment_style import CommentStyle
+from ..comment_styler import CommentStyler
+from ..conversion import (ConvEmpty, ConvError, ConvPresent, ConvResult,
+                          ConvUnsupported)
 from ..extractor import Comment
+from ..extractors.c_type import CType
+from ..extractors.cxx_type import CXXType
 from .llm import LLM
 
 

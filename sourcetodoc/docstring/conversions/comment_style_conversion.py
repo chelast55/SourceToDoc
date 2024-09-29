@@ -1,6 +1,8 @@
 from typing import Any, override
 
-from ..comment_style import CommentStyle, CommentStyler
+from ..comment_styler import CommentStyler
+
+from ..comment_style import CommentStyle
 from ..conversion import (ConvEmpty, Conversion, ConvPresent, ConvResult,
                           ConvUnsupported)
 from ..extractor import Comment

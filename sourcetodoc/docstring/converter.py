@@ -187,7 +187,7 @@ class Converter:
                 case _, ConvError():
                     conv_error_list.append(comment_conv_pair)
 
-        if len(conv_present_list) == 0:
+        if not conv_present_list:
             result = code
             print("No comment was converted")
         else:
