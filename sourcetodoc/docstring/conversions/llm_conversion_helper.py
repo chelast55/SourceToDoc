@@ -1,13 +1,17 @@
 import re
 
+from ..extractors.cxx_type import CXXType
+
+from ..extractors.c_type import CType
+
 from ..command_style import CommandStyle
 from ..comment_style import CommentStyle, CommentStyler
-from ..conversion import ConvEmpty, ConvError, ConvPresent, ConvResult
+from ..conversion import ConvEmpty, ConvError, ConvPresent, ConvResult, ConvUnsupported
 from ..extractor import Comment
 from .llm import LLM
 
 
-class LLMConversionHelper[T]:
+class LLMConversionHelper:
     """Helper to calculates new comments with a LLM."""
     # Matches "// ..." over multiple lines
     _LINE_COMMENT_REGEX = r"(?://.*\n\s*)*//.*"
@@ -30,7 +34,7 @@ class LLMConversionHelper[T]:
 
     def calc_conversion_with_llm(
             self,
-            comment: Comment[T],
+            comment: Comment[CType | CXXType],
             system_prompt: str,
             output_style: CommentStyle,
             user_prompt_template: str = "{}"
@@ -63,13 +67,13 @@ class LLMConversionHelper[T]:
         ConversionResult[T]
             A ConvPresent object if all steps above execute successfully.
             A ConvEmpty object if `comment` is already a Doxygen style comment.
-            A ConvError object if `comment` cannot be parsed in Step 1,
+            A ConvUnsupported object if `comment` cannot be parsed in Step 1,
             or if no `/*...*/` is found the output of the LLM.
         """
         # Format the comment text and append the symbol text
         match CommentStyler.parse_comment(comment.comment_text):
             case None:
-                return ConvError("Comment can not be parsed")
+                return ConvUnsupported("Comment cannot be parsed")
             case CommentStyler(_, style) if style.is_doxygen_style():
                 return ConvEmpty("Comment is already a doxygen style comment")
             # Format the comment text and append the symbol text

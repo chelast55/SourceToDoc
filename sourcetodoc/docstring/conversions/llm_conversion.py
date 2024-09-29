@@ -10,7 +10,7 @@ from .llm_conversion_helper import LLMConversionHelper
 
 
 class LLMConversion(Conversion[CType | CXXType]):
-    """Converts comments on C functions with a LLM."""
+    """Converts comments on C or C++ functions with a LLM."""
 
     _CXX_INCLUDE_TYPES: set[CXXType] = {
         CXXType.CONSTRUCTOR,
@@ -37,7 +37,7 @@ class LLMConversion(Conversion[CType | CXXType]):
         llm : LLM
             The LLM.
         """
-        self.llm_helper = LLMConversionHelper[CType | CXXType](llm)
+        self.llm_helper = LLMConversionHelper(llm)
         self.c_system_prompt = c_system_prompt
         self.c_user_prompt_template = c_user_prompt_template
         self.cxx_system_prompt = cxx_system_prompt
