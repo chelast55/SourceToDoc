@@ -17,7 +17,7 @@ class ConvPresent:
 
 @dataclass(frozen=True)
 class ConvEmpty:
-    """Represents "no conversion needed"."""
+    """Represents "conversion was skipped"."""
     message: Optional[str] = None
 
 @dataclass(frozen=True)

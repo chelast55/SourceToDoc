@@ -203,7 +203,7 @@ class Converter:
             sorted_replacements = sorted(replacements, key=lambda e: e.range.start)
             result = Replacer.replace_comments(code, sorted_replacements, self.replace)
             print(f"{len(conv_present_list)} comments were converted")
-        print(f"For {len(conv_empty_list)} comments a conversion was not needed")
+        print(f"For {len(conv_empty_list)} comments a conversion was skipped")
         print(f"{len(conv_unsupported_list)} comments were not supported")
         print(f"For {len(conv_error_list)} comments a conversion was not found")
         return result
