@@ -2,7 +2,7 @@ from typing import Any, override
 
 from ..comment_styler import CommentStyler
 
-from ..comment_style import CommentStyle
+from ..comment_style import BlockComment, CommentStyle
 from ..conversion import (ConvEmpty, Conversion, ConvPresent, ConvResult,
                           ConvUnsupported)
 from ..extractor import Comment
@@ -70,6 +70,8 @@ class CommentStyleConversion(Conversion[Any]):
         match CommentStyler.parse_comment(comment.comment_text):
             case CommentStyler(_, style=self.target_style):
                 return ConvEmpty("The comment has already that style")
+            case CommentStyler(content, _) if content.count("*/") >= 1 and isinstance(self.target_style.value, BlockComment):
+                return ConvEmpty("The comment has one or more */")
             case CommentStyler(content, _):
                 new_comment_text = CommentStyler(
                     content,
