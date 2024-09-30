@@ -28,7 +28,7 @@ The main page of the generated doxygen API documentation will contain a link to 
 * frames it more as a "proof of concept"
 
 ### proper doxygen integration
-* (*) better usability gains
+* (+) better usability gains
 * (-) likely complicated and time-intensive
 * could reuse parts of the implementation for the linking of 
 
