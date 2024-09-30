@@ -5,7 +5,7 @@
     choices: [meson, cmake, generic]
     default: meson
 - tc_build_folder_name:
-    help: Name the build folder will have. Can be nested (sub / build). Existing folder will be deleted.
+    help: Name the build folder will have. Can be nested (sub/build). Existing folder will be deleted.
     type: str
 - tc_keep_build_folder:
     help: Use to not delete the newly created build folder in the target project.

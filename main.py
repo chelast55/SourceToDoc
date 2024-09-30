@@ -65,7 +65,7 @@ if __name__ == "__main__":
                 meson_build_location: Path = config.project_path
                 meson_setup_args: list[str] = []
                 if config.args.tc_build_folder_name is not None:
-                    build_folder_name = config.args.tc_build_folder_name
+                    build_folder_name = Path(config.args.tc_build_folder_name)
                 if config.args.tc_keep_build_folder is not None:
                     keep_build_folder = config.args.tc_keep_build_folder
                 if config.args.tc_meson_build_location is not None:
@@ -86,7 +86,7 @@ if __name__ == "__main__":
                 ctest_substitute: list[str] = []
 
                 if config.args.tc_build_folder_name is not None:
-                    build_folder_name = config.args.tc_build_folder_name
+                    build_folder_name = Path(config.args.tc_build_folder_name)
                 if config.args.tc_keep_build_folder is not None:
                     keep_build_folder = config.args.tc_keep_build_folder
                 if config.args.tc_cmake_configure_args is not None:
