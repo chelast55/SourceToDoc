@@ -1,3 +1,4 @@
+import os
 import shutil
 from argparse import ArgumentParser
 from dataclasses import dataclass
@@ -5,6 +6,7 @@ from pathlib import Path
 
 from ..common.Config import Config
 from ..common.helpers import delete_directory_contents
+from ..testcoverage.linker import insert_link
 from .clanguml import ClangUML, GeneratorType
 from .find_functions import FindOption
 from .site import DiagramsInfo, create_diagrams_site
@@ -68,13 +70,13 @@ def run_uml_diagrams_generation(parser: ArgumentParser, config: Config) -> None:
     )
 
     dst_dir = config.out_path_project / "uml"
-    generate_uml_diagrams(dst_dir, config, uml_config)
+    _generate_uml_diagrams(dst_dir, config, uml_config)
 
 
 _GENERATOR_TYPE = GeneratorType.PLANTUML
 
 
-def generate_uml_diagrams(
+def _generate_uml_diagrams(
         dst_dir: Path,
         config: Config,
         uml_config: UmlConfig,
@@ -84,10 +86,10 @@ def generate_uml_diagrams(
         uml_config.clanguml_include_path,
         uml_config.plantuml_jar_path,
         uml_config.clanguml_args,
-        uml_config.compilation_db_dir, # To prevent "not found translation unit error" by clang-uml 0.5.4
+        uml_config.compilation_db_dir, # To prevent "not found translation unit error" (clang-uml 0.5.4)
     )
     if dst_dir.is_dir():
-        print(f"Clean contents of {dst_dir}")
+        print(f"Clear contents in {dst_dir}")
         delete_directory_contents(dst_dir)
 
     default_diagrams_conf = config.project_path / "default-clang-uml.yaml"
@@ -112,4 +114,19 @@ def generate_uml_diagrams(
         clanguml.run_plantuml(sequence_diagrams_dir)
         sequence_diagrams_info = DiagramsInfo(sequence_diagrams_dir, diagram_name_function_identifier_pairs)
 
-    create_diagrams_site(dst_dir, default_diagrams_info, sequence_diagrams_info)
+    dg_main_file_path: Path | None = config.doc_path / "index.html"
+    uml_index_file: Path = dst_dir / "index.html"
+
+    if not dg_main_file_path.is_file():
+        dg_main_file_path = None
+    else:
+        _link_documentation_main_and_uml(dg_main_file_path, uml_index_file)
+
+    create_diagrams_site(dst_dir, default_diagrams_info, sequence_diagrams_info, dg_main_file_path)
+
+
+def _link_documentation_main_and_uml(dg_main_file_path: Path, uml_index_file: Path) -> None:
+    marker_line_in_dg_file = f"""</div><!--header-->"""
+    relative_link = os.path.relpath(uml_index_file, dg_main_file_path.parent)
+    text_to_insert = f"<a href=\"{relative_link}\">UML Diagrams</a>"
+    insert_link(dg_main_file_path, marker_line_in_dg_file, text_to_insert)

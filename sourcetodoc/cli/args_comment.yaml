@@ -31,6 +31,26 @@
 - cc_llm_model:
     help: The LLM model to use with the OpenAI API
     type: str
+- cc_c_system_prompt:
+    help: System prompt for comments found in C source files.
+    type: str
+    default: "You are a coder that converts comments on C functions to doxygen style comments that start with \"/**\" without changing the text."
+- cc_c_user_prompt_template:
+    help: |
+        Template (Python format string) of user prompts for comments found in C source files.
+        The comments will be inserted in the rquired {} placeholder. Use {{ or }} to use { or } literally.
+    type: str
+    default: "{}"
+- cc_cxx_system_prompt:
+    help: System prompt for comments found in C++ source files.
+    type: str
+    default: You are a coder that converts comments on C++ functions to doxygen style comments that start with "/**" without changing the text.
+- cc_cxx_user_prompt_template:
+    help: |
+        Template (Python format string) of user prompts for comments found in C++ source files.
+        The comments will be inserted in the required {} placeholder. Use {{ or }} to use { or } literally.
+    type: str
+    default: "{}"
 - cc_command_style:
     help: The Doxygen command style to convert into
     type: str

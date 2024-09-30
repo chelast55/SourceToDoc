@@ -4,7 +4,6 @@ Collection of general utility/helper functions.
 
 from shutil import rmtree
 from pathlib import Path
-from typing import Iterable, Iterator
 
 SILENT_FLAG: bool = False
 
@@ -40,41 +39,63 @@ def delete_directory_contents(directory_path: Path) -> None:
                 item.unlink()
 
 
-def index_from_coordinates(text: str, line_column_pairs: Iterable[tuple[int,int]]) -> Iterator[int]:
-    """
-    Returns the indices of the corresponding lines and columns of the given text.
+class IndexFinder:
+    """Finds indices of lines and columns."""
 
-    Parameters
-    ----------
-    text: str
-        The text.
-    line_column_pairs: Iterable[tuple[int,int]]
-        2-tuples (line,column) in ascending order.
+    def __init__(self, text: str) -> None:
+        """
+        Indexes the text.
 
-    Yields
-    ------
-    Iterator[int]
-        The i-index of the i-line-column pair.
+        Parameters
+        ----------
+        text: str
+            The text.
+        """
+        # line_end_indices[i] means "last index of line i"
+        line_end_indices: list[int] = [-1] # dummy for case input line == 1
+        last_index = len(text) - 1
+        c: str = ""
+        for i in range(last_index): # exclude last character
+            c = text[i]
+            if c == "\n": 
+                line_end_indices.append(i)
+        line_end_indices.append(last_index)
 
-    Raises
-    ------
-    ValueError
-        If no index was found for a line-column pair.
-    """
-    current_line: int = 1
-    current_column: int = 1
-    i: int = 0
+        self._line_end_indices = line_end_indices
 
-    for line, column in line_column_pairs:
-        while True:
-            if line == current_line and column == current_column:
-                yield i
-                break
-            elif line < current_line or (line == current_line and column < current_column):
-                raise ValueError(f"No index was found for Line: {line} and Column: {column}")
-            if text[i] == "\n":
-                current_line = current_line + 1
-                current_column = 1
-            else:
-                current_column = current_column + 1
-            i = i + 1
+    def find_index(self, line: int, column: int) -> int | None:
+        """
+        Returns the index of a line and column pair.
+
+        Parameters
+        ----------
+        line: int
+            The line.
+        column: int
+            The column.
+
+        Returns
+        -------
+        int | None
+            The index, if found, else None.
+
+        Raises
+        ------
+        ValueError
+            if `line` or `column` are smaller than 1.
+        """
+        if line < 1:
+            raise ValueError(f"{line = } must be greater than zero")
+        if column < 1:
+            raise ValueError(f"{column = } must be greater than zero")
+
+        if line > len(self._line_end_indices) - 1:
+            return None
+
+        line_end_index = self._line_end_indices[line]
+        prev_line_end_index = self._line_end_indices[line-1]
+        line_length = line_end_index - prev_line_end_index
+        if column > line_length:
+            return None
+        else:
+            return prev_line_end_index + column

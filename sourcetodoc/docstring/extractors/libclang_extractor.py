@@ -2,9 +2,10 @@ from typing import Callable
 
 from clang.cindex import Cursor, TranslationUnit
 
-from ...common.helpers import index_from_coordinates
+from ...common.helpers import IndexFinder
 from ...libclang_util import (clang_get_comment_range,
                               walk_preorder_only_main_file)
+from ..comment_parsing import find_comments_connected
 from ..extractor import Comment, Extractor
 from ..range import Range
 
@@ -54,6 +55,8 @@ class LibclangExtractor[T](Extractor[T]):
         RuntimeError
             If the extracted indices do not match the actual indices of a comment.
         """
+        index_finder = IndexFinder(code)
+
         tu: TranslationUnit = self._translation_unit_from_code(code)
 
         comments: list[Comment[T]] = []
@@ -62,70 +65,69 @@ class LibclangExtractor[T](Extractor[T]):
             comment_text: str | None = node.raw_comment
             if comment_text is None:
                 continue
-            symbol_range = self.__class__._get_symbol_range_by_line_and_column(code, node)
+            try:
+                symbol_start = index_finder.find_index(node.extent.start.line, node.extent.start.column)
+                symbol_end = index_finder.find_index(node.extent.end.line, node.extent.end.column)
+                if symbol_start is None or symbol_end is None:
+                    raise ValueError("No index was found")
+            except ValueError:
+                # Try to get the symbol_range by location
+                symbol_start = index_finder.find_index(node.location.line, node.location.column)
+                symbol_end = symbol_start + len(node.displayname)
+
+            symbol_range = Range(symbol_start, symbol_end)
             symbol_text: str = code[symbol_range.start:symbol_range.end]
-
-            symbol_type = self._get_type(node)
             symbol_indentation = self.__class__._get_symbol_indentation(code, symbol_range.start)
-            comment_range = self.__class__._get_comment_range_by_line_and_column(code, node)
+            symbol_type = self._get_type(node)
 
-            # To be safe
+            comment_source_range = clang_get_comment_range(node)
+            comment_start = index_finder.find_index(comment_source_range.start.line, comment_source_range.start.column)
+            comment_end = index_finder.find_index(comment_source_range.end.line, comment_source_range.end.column)
+            comment_range = Range(comment_start, comment_end)
+
+            if comment_range in comment_ranges: # Prevent duplicate comments
+                continue
+
+            # To be safe, check if comment_range matches comment_text
             comment_text_by_range = code[comment_range.start:comment_range.end]
             if comment_text_by_range != comment_text:
                 raise RuntimeError(f"The extracted indices do not match the actual indices of a comment:"
                       f"\n\"{comment_text}\" (getting the comment with libclang directly)"
                       f"\n!=\n\"{comment_text_by_range}\" (getting the comment with indices: {comment_range}")
 
-            if comment_range not in comment_ranges: # Prevent duplicate comments
-                comment = Comment(
-                    comment_text,
-                    comment_range,
-                    symbol_text,
-                    symbol_range,
-                    symbol_type,
-                    symbol_indentation
-                )
-                comments.append(comment)
-                comment_ranges.add(comment_range)
+            # Get only the last connected comment
+            found_comments = tuple(find_comments_connected(code, comment_start, comment_end))
+            if not found_comments:
+                raise RuntimeError("The comment cannot be parsed")
+            last_comment_range, _ = found_comments[-1]
+            last_comment_text = code[last_comment_range.start:last_comment_range.end]
+
+            comment = Comment(
+                last_comment_text,
+                last_comment_range,
+                symbol_text,
+                symbol_range,
+                symbol_type,
+                symbol_indentation
+            )
+            comments.append(comment)
+            comment_ranges.add(comment_range)
         comments.sort(key=lambda x: x.comment_range.start)
         return comments
 
-    @classmethod
-    def _get_comment_range_by_offset(cls, cursor: Cursor) -> Range:
-        # Warning: offset does/did not always correspond to index of string in Python.
-        # Because of this `_get_comment_range_by_line_and_column` is used instead.
+    @staticmethod
+    def _get_comment_range_by_offset(cursor: Cursor) -> Range:
+        # Warning: cursor.extent.start/end.offset does/did not always correspond to a start/end index of a string in Python.
+        # So currently cursor.extent.start/end.line/column is used instead.
         source_range = clang_get_comment_range(cursor)
         return Range(source_range.start.offset, source_range.end.offset) # type: ignore
 
-    @classmethod
-    def _get_comment_range_by_line_and_column(cls, code: str, cursor: Cursor) -> Range:
-        source_range = clang_get_comment_range(cursor)
-        start, end = index_from_coordinates(code, [
-            (source_range.start.line, source_range.start.column),
-            ((source_range.end.line, source_range.end.column))
-        ])
-        return Range(start, end) # type: ignore
-    
-    @classmethod
-    def _get_symbol_range_by_line_and_column(cls, code: str, cursor: Cursor) -> Range:
-        source_range = cursor.extent
-        start, end = index_from_coordinates(code, [
-            (source_range.start.line, source_range.start.column),
-            ((source_range.end.line, source_range.end.column))
-        ])
-        return Range(start, end) # type: ignore
-
-    @classmethod
-    def _get_symbol_indentation(cls, code: str, symbol_start: int) -> str:
-        start = symbol_start - 1
-
-        line_start: int = start
-        for i in range(start, -1, -1):
-            c = code[i]
-            if c == "\n":
-                line_start = i + 1
-                break
-            elif not c.isspace():
-                return ""
-
-        return code[line_start:symbol_start]
+    @staticmethod
+    def _get_symbol_indentation(code: str, symbol_start: int) -> str:
+        line_start = code.rfind("\n", 0, symbol_start)
+        if line_start == -1:
+            return ""
+        indent = code[line_start+1:symbol_start]
+        if not indent.isspace():
+            return ""
+        return indent

@@ -11,7 +11,6 @@ from .extractors.cxx_type import CXXType
 from .replace import Replace
 from .replacer import CommentReplacement, Replacer
 
-
 class Converter:
     """
     The Converter converts comments in source code.
@@ -165,20 +164,32 @@ class Converter:
         comments = extractor.extract_comments(code)
         comments_count = len(comments)
         print(f"{comments_count} comments were found")
+
         # Calculate new comments
-        comment_conv_pair: list[tuple[Comment[Any], ConvResult]] = []
+        comment_conv_pairs: list[tuple[Comment[Any], ConvResult]] = []
         for i, comment in enumerate(comments, start=1):
             print(f"{i}/{comments_count} Processing comment", end="\r", flush=True)
             conv_result = self.conversion.calc_conversion(comment)
-            self.__class__._print_if_not_present(conv_result)
-            comment_conv_pair.append((comment, conv_result))
-        # Apply new comments
-        conv_present_list = [
-            (comment, conv_result)
-            for comment, conv_result in comment_conv_pair if isinstance(conv_result, ConvPresent)
-        ]
-        if len(conv_present_list) == 0:
+            comment_conv_pairs.append((comment, conv_result))
+
+        conv_present_list: list[tuple[Comment[Any],ConvPresent]] = []
+        conv_empty_list: list[tuple[Comment[Any],ConvEmpty]] = []
+        conv_unsupported_list: list[tuple[Comment[Any],ConvUnsupported]] = []
+        conv_error_list: list[tuple[Comment[Any],ConvError]] = []
+        for comment_conv_pair in comment_conv_pairs:
+            match comment_conv_pair:
+                case _, ConvPresent():
+                    conv_present_list.append(comment_conv_pair)
+                case _, ConvEmpty():
+                    conv_empty_list.append(comment_conv_pair)
+                case _, ConvUnsupported():
+                    conv_unsupported_list.append(comment_conv_pair)
+                case _, ConvError():
+                    conv_error_list.append(comment_conv_pair)
+
+        if not conv_present_list:
             result = code
+            print("No comment was converted")
         else:
             replacements = (
                 CommentReplacement(
@@ -191,23 +202,8 @@ class Converter:
             )
             sorted_replacements = sorted(replacements, key=lambda e: e.range.start)
             result = Replacer.replace_comments(code, sorted_replacements, self.replace)
-        print(f"{len(conv_present_list)} comments were converted")
+            print(f"{len(conv_present_list)} comments were converted")
+        print(f"For {len(conv_empty_list)} comments a conversion was not needed")
+        print(f"{len(conv_unsupported_list)} comments were not supported")
+        print(f"For {len(conv_error_list)} comments a conversion was not found")
         return result
-
-    @staticmethod
-    def _print_if_not_present(conv_result: ConvResult) -> None:
-        match conv_result:
-            case ConvEmpty(None) :
-                print("Skip: No conversion was found")
-            case ConvUnsupported(None):
-                print(f"Skip: The comment is not supported")
-            case ConvError(None):
-                print("Skip: An error occured")
-            case ConvEmpty(message):
-                print(f"Skip: No conversion was found: {message}")
-            case ConvUnsupported(message):
-                print(f"Skip: The comment is not supported: {message}")
-            case ConvError(message):
-                print(f"Skip: An error occured: {message}")
-            case ConvPresent():
-                pass

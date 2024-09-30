@@ -20,12 +20,12 @@ def link_tc_report_and_documentation_main(out_path: Path):
             # '- 1' cuz '.' is part of the parents if its a relative path and we dont want to be above the SourceToDoc folder.
             for _ in range(len(tc_index_file.parents) - 1): relative_depth_correction += "../"
             link_to_dg_main_file: str = f"""    <tr><td class="headerItem" style="text-align: center"><a href="{relative_depth_correction}{dg_main_file_path}">Go to the documentation.</a></td></tr>\n"""
-            _insert_link(tc_index_file, marker_line_in_tc_file, link_to_dg_main_file)
+            insert_link(tc_index_file, marker_line_in_tc_file, link_to_dg_main_file)
 
 
     # modify docs
     link_to_tc_main_file: str = f"""<div class="contents"><div class="textblock"><h2 class="anchor"><a href="../../../{tc_report_main_file_path}">Go to the code coverage report.</a></h2></div></div>\n"""
-    _insert_link(dg_main_file_path, marker_line_in_dg_file, link_to_tc_main_file, 0)
+    insert_link(dg_main_file_path, marker_line_in_dg_file, link_to_tc_main_file, 0)
 
 
 def link_all_tc_report_and_documentation_files(out_path: Path):
@@ -58,7 +58,7 @@ def link_all_tc_report_and_documentation_files(out_path: Path):
         marker_line_in_dg_file: str = f"""</div><!--header-->"""
         link_to_tc_class_file: str = f"""<div class="contents"><div class="textblock"><h2 class="anchor"><a href="../../../{tc_class_file}">Go to the code coverage report of this file.</a></h2></div></div>\n"""
         if dg_class_file is not None:
-            _insert_link(dg_class_file, marker_line_in_dg_file, link_to_tc_class_file, 0)
+            insert_link(dg_class_file, marker_line_in_dg_file, link_to_tc_class_file, 0)
         else:
             print(f"Couldnt find documentation file to testcoverage report file {tc_class_file}. Skipping linking.")
         
@@ -72,7 +72,7 @@ def link_all_tc_report_and_documentation_files(out_path: Path):
 
         for tc_file in tc_class_file.parent.glob(tc_class_name + "*"):
             if len(tc_file.suffixes) > 1:
-                _insert_link(tc_file, marker_line_in_tc_files, link_to_dg_class_file)
+                insert_link(tc_file, marker_line_in_tc_files, link_to_dg_class_file)
 
 
 def _find_all_classes(search_dir: Path) -> list[Path]:
@@ -96,7 +96,7 @@ def _find_all_classes(search_dir: Path) -> list[Path]:
     return found_html_classes
 
 
-def _insert_link(file_path: Path, marker: str, link: str, offset: int = 1) -> None:
+def insert_link(file_path: Path, marker: str, link: str, offset: int = 1) -> None:
     """Given a file path, open the file and insert a link string 
     after finding the marker string with the given offset.
     
