@@ -1,37 +1,39 @@
 <!-- based on this template: https://github.com/adr/madr/blob/develop/template/adr-template-minimal.md -->
 
-# {short title, representative of solved problem and found solution}
+# Testcoverage Report Generator
 
 ## Context and Problem Statement
 
-{Describe the context and problem statement, e.g., in free form using two to three sentences or in the form of an illustrative story. You may want to articulate the problem in form of a question and add links to collaboration boards or issue management systems.}
+We want to integrate testcoverage report generation into our toolchain. Therefore we had to choose a tool, that's accessible (i.e. free) and widely used, so our toolchain works on the majority of projects.
 
 ## Considered Options
 
-* {title of option 1}
-* {title of option 2}
-* {title of option 3}
-* … <!-- numbers of options can vary -->
+* Gcovr
+* LCOV
 
 ## Decision Outcome
 
-Chosen option: "{title of option 1}", because {justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force {force} | … | comes out best (see below)}.
+We decided to go with lcov, as this was the easiest to integrate. Its html structure is optimal for inserting the links to doxygens output. Since it was the recommended tool by our tutor we also have the most experience with it. 
 
-<!-- This is an optional element. Feel free to remove. -->
 ### Consequences
 
-* Good, because {positive consequence, e.g., improvement of one or more desired qualities, …}
-* Bad, because {negative consequence, e.g., compromising one or more desired qualities, …}
-* … <!-- numbers of consequences can vary -->
-
-
+* Integration was easy and error detection swift.
+* Windows support is less optimal (gcovr could potentially be better supported on windows).
 
 ## Pros and Cons of the Options
 
-### <!-- title of option -->
+### Gcovr
 
-* Good, because
-* Neutral, because
-* Bad, because
+* (+) Looks more modern and similar to doxygen awesome.
+* (-) Linkig to doxygen is harder because the produced html isn't as simple and predetermined. 
+* Availability not fully tested. We decided to go with LCOV before testing on windows.
 
+### LCOV
+
+* (+) Simple html makes linking to doxygen easy and robust.
+* (-) Availability slightly less optimal, as the package available with pip ships with a genhtml executable that ninja doesn't recognize.
+ 
 ## More Information
+
+We also considered usage of a css skin of lcov to make it look more modern, but its license was to constricting. 
+Another attempt at making lcov look similar to doxygen was to edit its css ourselves at runtime. But our limited front end developing experience prevented useable results.
