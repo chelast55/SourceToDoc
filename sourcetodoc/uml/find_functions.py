@@ -26,7 +26,7 @@ class FindOption(Enum):
 def _is_private_or_protected(node: Cursor) -> bool:
     return node.access_specifier in {AccessSpecifier.PRIVATE, AccessSpecifier.PROTECTED}
 
-def _always_false(node: Cursor) -> bool:
+def _always_false(_: Cursor) -> bool:
     return False
 
 def find_functions_with_libclang(compilation_db_dir: Path, find_option: FindOption) -> Iterator[FunctionIdentifier]:
@@ -35,7 +35,11 @@ def find_functions_with_libclang(compilation_db_dir: Path, find_option: FindOpti
         has_invalid_visibility = _is_private_or_protected
     else:
         has_invalid_visibility = _always_false
-    
+
+    # Temporary change of cwd
+    saved_cwd: Path = Path.cwd()
+    os.chdir(compilation_db_dir)
+
     found_functions: set[FunctionIdentifier] = set()
 
     cdb: CompilationDatabase = CompilationDatabase.fromDirectory(str(compilation_db_dir))
@@ -46,7 +50,6 @@ def find_functions_with_libclang(compilation_db_dir: Path, find_option: FindOpti
         for argument in command.arguments:
             file_args.append(argument)
         # Create translation unit
-        os.chdir(compilation_db_dir)
         filename: str = command.filename
         code = Path(filename).read_text()
         tu: TranslationUnit = TranslationUnit.from_source(None, args=file_args, unsaved_files=[(filename, code)])
@@ -67,6 +70,8 @@ def find_functions_with_libclang(compilation_db_dir: Path, find_option: FindOpti
                     found_functions.add(function_identifier)
                     yield function_identifier
 
+    # Restore old cwd
+    os.chdir(saved_cwd)
 
 def _is_non_empty_function(node: Cursor, code: str) -> bool:
     if node.kind in {
