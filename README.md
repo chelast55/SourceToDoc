@@ -194,6 +194,19 @@ If you used doxygen-awesome and want a similar, more "modern" look for the test 
 
 # Miscellaneous
 
+## Toolchain Component Overview
+The following schematic depicts the interaction between various components of the toolchain.
+![](doc/toolchain_overview.png)
+One thing, that is not shown, is that CLI/config args are also collected at a "single point" (whenn running `main.py`) and, following that, are preprocessed/filtered (for better usability) and, following that, redistributed to the tool they affect.
+
+## Architectural Decision Records
+Certain fundamental architectural decisions were captured as MADRs:
+- [Converter Default Case](doc/madr/ConverterDefaultCase.md)
+- [Documentation Generator](doc/madr/DocumentationGenerator.md)
+- [Test Coverage Automation](doc/madr/TestCoverageAutomation.md)
+- [Test Coverage Report Generator](doc/madr/TestCoverageReportGenerator.md)
+- [Additional UML Diagram Integration](doc/madr/AdditionalUMLIntegration.md)
+
 ## File Hierarchy
 The following structure assumes that `--apidoc_toolchain` is set to `doxygen-only` as it is the only currently maintained option.
 For legacy documentation regarding `sphinx-based`, see [here](doc/file_hierachy_REDUNDANT.md).

@@ -114,15 +114,15 @@ if __name__ == "__main__":
             print(error_in_tc)
             print("Continuing without generating test coverage report...")
 
-            # Link coverage report and documentation
-            if config.args.disable_doc_gen:  # can not link TC report to generated documentation, if no documentation was generated
-                try:
-                    link_tc_report_and_documentation_main(config.out_path_relative / Path(config.args.project_name))
-                    link_all_tc_report_and_documentation_files(config.out_path_relative / Path(config.args.project_name))
-                except Exception as e:
-                    error_in_lnk = f"Exception occured while linking API Documentation and Test Coverage Report:\n{e}"
-                    print(error_in_lnk)
-                    print("Continuing without linking...")
+        # Link coverage report and documentation
+        if config.args.disable_doc_gen:  # can not link TC report to generated documentation, if no documentation was generated
+            try:
+                link_tc_report_and_documentation_main(config.out_path_relative / Path(config.args.project_name))
+                link_all_tc_report_and_documentation_files(config.out_path_relative / Path(config.args.project_name))
+            except Exception as e:
+                error_in_lnk = f"Exception occured while linking API Documentation and Test Coverage Report:\n{e}"
+                print(error_in_lnk)
+                print("Continuing without linking...")
 
     t_coverage: float = time()
 
