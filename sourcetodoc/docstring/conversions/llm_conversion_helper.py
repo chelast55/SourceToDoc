@@ -1,22 +1,18 @@
-import re
-from typing import Optional
 
 from ..command_style import CommandStyle
-from ..comment_style import CommentStyle, CommentStyler
-from ..conversion import ConvEmpty, ConvError, ConvPresent, ConvResult
+from ..comment_parsing import find_comments_connected
+from ..comment_style import CommentStyle
+from ..comment_styler import CommentStyler
+from ..conversion import (ConvEmpty, ConvError, ConvPresent, ConvResult,
+                          ConvUnsupported)
 from ..extractor import Comment
+from ..extractors.c_type import CType
+from ..extractors.cxx_type import CXXType
 from .llm import LLM
 
 
-class LLMConversionHelper[T]:
+class LLMConversionHelper:
     """Helper to calculates new comments with a LLM."""
-    # Matches "// ..." over multiple lines
-    _LINE_COMMENT_REGEX = r"(?://.*\n\s*)*//.*"
-    _LINE_COMMENT_PATTERN = re.compile(_LINE_COMMENT_REGEX, re.VERBOSE)
-
-    # Matches "/** ... */"
-    _BLOCK_COMMENT_REGEX = r"/\*(?:.|\n)*?\*/"
-    _BLOCK_COMMENT_PATTERN = re.compile(_BLOCK_COMMENT_REGEX, re.VERBOSE)
 
     def __init__(self, llm: LLM) -> None:
         """
@@ -31,53 +27,57 @@ class LLMConversionHelper[T]:
 
     def calc_conversion_with_llm(
             self,
-            comment: Comment[T],
+            comment: Comment[CType | CXXType],
             system_prompt: str,
-            output_style: CommentStyle
+            output_style: CommentStyle,
+            user_prompt_template: str = "{}"
         ) -> ConvResult:
         """
         Calculates new comment texts results with a LLM.
 
         Steps:
         1. `comment_text` in `comment` will be parsed and formatted by `CommandStyler`.
-        2. Pass the formatted comment to the LLM.
-        3. Extract the first found `/*...*/` part in the output of the LLM.
-        4. Replace `@command with` `\\command` in the new comment.
-        5. Prepend `AI_GENERATED` to the new comment.
-        6. Format the new comment.
+        2. Insert the formatted comment in {} of `prompt`.
+        3. Pass `system_prompt` with `prompt` to the LLM.
+        4. Extract the first found `/*...*/` part in the output of the LLM.
+        5. Replace `@command with` `\\command` in the new comment.
+        6. Prepend `AI_GENERATED` to the new comment.
+        7. Format the new comment.
 
         Parameters
         ----------
-        comment : Comment[T]
+        comment: Comment[T]
             The comment that is passed to the LLM as the prompt.
-        system_prompt : str
+        system_prompt: str
             The system prompt that is passed to the LLM.
-        output_style : CommentStyle
+        output_style: CommentStyle
             The comment style of the output.
-        
+        prompt: str
+            The prompt that is passed to the LLM.
+
         Returns
         -------
         ConversionResult[T]
             A ConvPresent object if all steps above execute successfully.
             A ConvEmpty object if `comment` is already a Doxygen style comment.
-            A ConvError object if `comment` cannot be parsed in Step 1,
+            A ConvUnsupported object if `comment` cannot be parsed in Step 1,
             or if no `/*...*/` is found the output of the LLM.
-
         """
         # Format the comment text and append the symbol text
         match CommentStyler.parse_comment(comment.comment_text):
             case None:
-                return ConvError("Comment can not be parsed")
+                return ConvUnsupported("Comment cannot be parsed")
             case CommentStyler(_, style) if style.is_doxygen_style():
                 return ConvEmpty("Comment is already a doxygen style comment")
             # Format the comment text and append the symbol text
             case CommentStyler() as input_styler:
                 comment_formatted = input_styler.construct_comment()
 
-        prompt = comment_formatted + "\n" + comment.symbol_text
+        prompt_part = comment_formatted + "\n" + comment.symbol_text
+        user_prompt = user_prompt_template.format(prompt_part)
 
         # Call LLM
-        llm_output = self.llm.call_llm(system_prompt, prompt)
+        llm_output = self.llm.call_llm(system_prompt, user_prompt)
 
         # Extract the comment part from the output
         new_comment = self._extract_comment(llm_output)
@@ -101,12 +101,10 @@ class LLMConversionHelper[T]:
 
 
     @classmethod
-    def _extract_comment(cls, result: str) -> Optional[str]:
-        match = cls._LINE_COMMENT_PATTERN.search(result)
-        if match is None:
-            match = cls._BLOCK_COMMENT_PATTERN.search(result)
-
-        if match is not None:
-            return match[0]
-        else:
+    def _extract_comment(cls, result: str) -> str | None:
+        found_comments = tuple(find_comments_connected(result))
+        if not found_comments:
             return None
+        range, _ = found_comments[0]
+        return result[range.start:range.end]
+    

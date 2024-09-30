@@ -33,11 +33,11 @@ if __name__ == "__main__":
     if config.args.converter is not None:
         print("\nComment Conversion:\n")
         try:
-            run_comment_converter(parser, config.project_path, **vars(config.args))
+            run_comment_converter(parser, config)
         except Exception as e:
             error_in_cc = f"Exception occured while running the Comment Converter:\n{e}"
             print(error_in_cc)
-            print("Continuing without further conversion...")
+            print("Continuing without further comment conversion...")
 
     t_converter: float = time()
 

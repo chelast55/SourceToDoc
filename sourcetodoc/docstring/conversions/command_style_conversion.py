@@ -1,7 +1,7 @@
 from typing import Any, override
 
 from ..command_style import CommandStyle
-from ..comment_style import CommentStyler
+from ..comment_styler import CommentStyler
 from ..conversion import (ConvEmpty, Conversion, ConvPresent, ConvResult,
                           ConvUnsupported)
 from ..extractor import Comment

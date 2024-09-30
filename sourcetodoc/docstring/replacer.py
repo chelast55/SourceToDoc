@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable, Iterable, Iterator
 
-from .comment_style import CommentStyler
+from .comment_styler import CommentStyler
 from .range import Range
 from .replace import Replace
 

@@ -25,6 +25,14 @@ _INDEX_START: str = """\
 
 <body>
     <main class="links">
+"""
+
+
+_INDEX_LINK_TO_DOXYGEN_MAIN = """\
+        <a href=\"{link}\">Return to Documentation Page</a>"""
+
+
+_INDEX_DEFAULT_DIAGRAMS_HEADER = """\
         <h2>Class, Package and Include Diagrams</h2>
 """
 
@@ -80,6 +88,7 @@ def create_diagrams_site(
         dst_dir: Path,
         default_diagrams_info: DiagramsInfo,
         sequence_diagrams_info: DiagramsInfo | None = None,
+        dg_main_file_path: Path | None = None
     ) -> None:
     # Create destination dir if it does not exist
     dst_dir.mkdir(parents=True, exist_ok=True)
@@ -93,6 +102,13 @@ def create_diagrams_site(
     index_site_file = dst_dir / index_site_filename
     with open(index_site_file, "w") as f:
         f.write(_INDEX_START)
+
+        # Add link to Doxygen documentation page if it exists
+        if dg_main_file_path is not None and dg_main_file_path.is_file():
+            relative_link_uml_to_doxygen = Path(os.path.relpath(dg_main_file_path, index_site_file.parent))
+            f.write(_INDEX_LINK_TO_DOXYGEN_MAIN.format(link = relative_link_uml_to_doxygen))
+
+        f.write(_INDEX_DEFAULT_DIAGRAMS_HEADER)
 
         # Create sites and add links to class, package and include diagrams
         _add_diagram_sites(f, dst_dir, default_diagrams_info, index_site_filename)
