@@ -40,7 +40,18 @@ MSG_ASK_DG_DISABLE_DOT_GRAPHS: str = ("Do you want to generate various interacti
 MSG_ASK_DG_HTML_THEME: str = ("Doxygen-generated documentation can look somewhat dated by todays standards. "
                               "Do you want to use \"doxygen-awesome\" "
                               "(a custom theme for a more modern look)? (yes/no)\n")
-
+MSG_ASK_TC_TYPE: str = "Please provide the build system to create the testcoverage report with. Allowed answeres are: 'meson', 'cmake', 'generic'.\n"
+MSG_ASK_BUILD_FOLDER_NAME: str = ("Please provide a name for the build folder (used to create the testcoverage report). This can be nested (e.g. 'sub/build'). " 
+                                  "Existing folders with the given name will be deleted beforehand. (Press enter to create 'build')\n")
+MSG_ASK_KEEP_BUILD_FOLDER: str = "Do you want to keep the build folder after the testcoverage was generated? (yes/no)\n"
+MSG_ASK_MESON_BUILD_LOCATION: str = "Is your meson.build not located in the root of your project? Then please provide a path to it here (otherwise just press enter).\n"
+MSG_ASK_MESON_SETUP_ARGS: str = "Please provide additional arguments to pass to the meson setup call, if any (otherwise just press enter).\n"
+MSG_ASK_CMAKE_CONFIG_ARGS: str = "Please provide additional arguments to pass to the cmake configure call 'cmake', default is '..', if any (otherwise just press enter).\n"
+MSG_ASK_CMAKE_BUILD_ARGS: str = "Please provide additional arguments to pass to the cmake build call 'cmake --build', default is '.', if any (otherwise just press enter).\n"
+MSG_ASK_USE_CTEST_OR_SUB: str = "Does your project support/use ctest? (yes/no)\n"
+MSG_ASK_CTEST_ARGS: str = "Please provide additional arguments to pass to the ctest call 'ctest', default is '-VV', if any (otherwise just press enter).\n"
+MSG_ASK_CTEST_SUBSTITUTE: str = "Please provide the arguments to call instead of ctest.\n"
+MSG_ASK_GENERIC_REPORT_LOCATION: str = "Please provide a path to the testcoverage containing folder.\n"
 
 def run_wizard(args: Namespace):
     print(MSG_WELCOME)
@@ -151,6 +162,55 @@ def run_wizard(args: Namespace):
         if type(temp_answer_testcov) is str:
             print_with_replace(MSG_UNACCEPTED_ANSWER, temp_answer_testcov)
     args.disable_test_cov = temp_answer_testcov
+
+    if temp_answer_testcov:
+        temp_answer_testcov_type: str = ""
+        while temp_answer_testcov_type not in ["meson", "cmake", "generic"]:
+            temp_answer_testcov_type = input(MSG_ASK_TC_TYPE)
+            if temp_answer_testcov_type not in ["meson", "cmake", "generic"]:
+                print_with_replace(MSG_UNACCEPTED_ANSWER, temp_answer_testcov_type)
+        args.tc_coverage_type = temp_answer_testcov_type
+
+        args.tc_build_folder_name = input(MSG_ASK_BUILD_FOLDER_NAME)
+        if args.tc_build_folder_name == "": args.tc_build_folder_name = "build"
+        
+        temp_answer_keep_build_folder: bool | str = ""
+        while type(temp_answer_keep_build_folder) is str:
+            temp_answer_keep_build_folder = input_expect_bool(MSG_ASK_KEEP_BUILD_FOLDER)
+            if type(temp_answer_keep_build_folder) is str:
+                print_with_replace(MSG_UNACCEPTED_ANSWER, temp_answer_keep_build_folder)
+        args.tc_keep_build_folder = temp_answer_keep_build_folder
+
+        if args.tc_coverage_type == "meson":
+            args.tc_meson_build_location = input(MSG_ASK_MESON_BUILD_LOCATION)
+            if args.tc_meson_build_location == "": args.tc_meson_build_location = None
+
+            args.tc_meson_setup_args = input(MSG_ASK_MESON_SETUP_ARGS)
+
+        elif args.tc_coverage_type == "cmake":
+            args.tc_cmake_configure_args = input(MSG_ASK_CMAKE_CONFIG_ARGS)
+            if args.tc_cmake_configure_args == "": args.tc_cmake_configure_args = ".."
+
+            args.tc_cmake_build_args = input(MSG_ASK_CMAKE_BUILD_ARGS)
+            if args.tc_cmake_build_args == "": args.tc_cmake_build_args = "."
+
+            temp_answer_use_ctest: bool | str = ""
+            while type(temp_answer_use_ctest) is str:
+                temp_answer_use_ctest = input_expect_bool(MSG_ASK_USE_CTEST_OR_SUB)
+                if type(temp_answer_use_ctest) is str:
+                    print_with_replace(MSG_UNACCEPTED_ANSWER, temp_answer_use_ctest)
+            if temp_answer_use_ctest:
+                args.tc_ctest_args = input(MSG_ASK_CTEST_ARGS)
+            else:
+                args.tc_ctest_substitute = input(MSG_ASK_CTEST_SUBSTITUTE)
+
+        elif args.tc_coverage_type == "generic":
+            temp_answer_generic_report_location: Path = Path(":?!%&")  # this should be invalid for most file systems
+            while not temp_answer_generic_report_location.exists() or not temp_answer_generic_report_location.is_dir():
+                temp_answer_generic_report_location = Path(input(MSG_ASK_GENERIC_REPORT_LOCATION))
+                if not temp_answer_generic_report_location.exists() or not temp_answer_generic_report_location.is_dir():
+                    print_with_replace(MSG_UNACCEPTED_ANSWER, temp_answer_generic_report_location)
+            args.tc_generic_report_location = str(temp_answer_generic_report_location)
 
     # TODO: implement the rest!
     # TODO: control flow diagram?
