@@ -20,8 +20,8 @@ The following compromise was chosen:
   - static comment style converter (can change between most known C/C++ comment styles)
   - LLM converter for function docstrings, "without quality metric"
 - on default, converter tool is not executed, so the user does not change a project's source files unwillingly/unknowingly
-- on default, when the converter is enabled via `--converter`, the comment style converter is run and changes comment format to `/**...**` style block/doctring comments
-- LLM converter can be enabled via `--comment function_comment_llm`
+- on default, when the converter is enabled via `--converter`, the comment style converter is run and changes comment format to `/**...*/` style block/doctring comments
+- LLM converter can be enabled via `--converter function_comment_llm`
 
 
 ### Consequences
