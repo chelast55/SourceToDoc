@@ -1,6 +1,6 @@
-import re
 
 from ..command_style import CommandStyle
+from ..comment_parsing import find_comments_connected
 from ..comment_style import CommentStyle
 from ..comment_styler import CommentStyler
 from ..conversion import (ConvEmpty, ConvError, ConvPresent, ConvResult,
@@ -13,13 +13,6 @@ from .llm import LLM
 
 class LLMConversionHelper:
     """Helper to calculates new comments with a LLM."""
-    # Matches "// ..." over multiple lines
-    _LINE_COMMENT_REGEX = r"(?://.*\n\s*)*//.*"
-    _LINE_COMMENT_PATTERN = re.compile(_LINE_COMMENT_REGEX, re.VERBOSE)
-
-    # Matches "/** ... */"
-    _BLOCK_COMMENT_REGEX = r"/\*(?:.|\n)*?\*/"
-    _BLOCK_COMMENT_PATTERN = re.compile(_BLOCK_COMMENT_REGEX, re.VERBOSE)
 
     def __init__(self, llm: LLM) -> None:
         """
@@ -109,11 +102,9 @@ class LLMConversionHelper:
 
     @classmethod
     def _extract_comment(cls, result: str) -> str | None:
-        match = cls._LINE_COMMENT_PATTERN.search(result)
-        if match is None:
-            match = cls._BLOCK_COMMENT_PATTERN.search(result)
-
-        if match is not None:
-            return match[0]
-        else:
+        found_comments = tuple(find_comments_connected(result))
+        if not found_comments:
             return None
+        range, _ = found_comments[0]
+        return result[range.start:range.end]
+    

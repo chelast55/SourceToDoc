@@ -3,7 +3,7 @@ from itertools import chain
 from typing import Self
 
 from .comment_content import extract_content
-from .comment_parsing import find_comments_combined
+from .comment_parsing import find_comments_connected
 from .comment_style import BlockComment, CommentStyle, LineComment
 
 
@@ -37,10 +37,10 @@ class CommentStyler:
         Optional[Self]
             A CommandStyler object if the parsing was successful, else None.
         """
-        ranges_style_pairs = list(find_comments_combined(comment_text))
+        ranges_style_pairs = list(find_comments_connected(comment_text))
         if len(ranges_style_pairs) == 1:
-            ranges, style = ranges_style_pairs[0]
-            text = comment_text[ranges[0].start:ranges[-1].end]
+            range, style = ranges_style_pairs[0]
+            text = comment_text[range.start:range.end]
             content = extract_content(text, style)
             return cls(content, style)
         else:

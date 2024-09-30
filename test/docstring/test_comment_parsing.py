@@ -3,7 +3,7 @@ from typing import Sequence
 import pytest
 
 from sourcetodoc.docstring.comment_parsing import (find_comments,
-                                                   find_comments_combined)
+                                                   find_comments_connected_with_ranges)
 from sourcetodoc.docstring.comment_style import CommentStyle
 from sourcetodoc.docstring.range import Range
 
@@ -129,17 +129,17 @@ _multi_line = """\
 /*
  * a
  */
-/* a */
-/* b */
+/**<a */
+/*! b */
 
 /* c */
 """
 
 
 def test_find_comments_composed() -> None:
-    line1, line2, block1, inline1, inline2 = find_comments_combined(_multi_line)
+    line1, line2, block1, inline1, inline2 = find_comments_connected_with_ranges(_multi_line)
     assert ([Range(0, 4), Range(5, 9)], CommentStyle.C_LINE) == line1
     assert ([Range(11, 15)], CommentStyle.C_LINE) == line2
     assert ([Range(16, 27)], CommentStyle.C_BLOCK) == block1
-    assert ([Range(28, 35), Range(36, 43)], CommentStyle.C_BLOCK_INLINE) == inline1
-    assert ([Range(45, 52)], CommentStyle.C_BLOCK_INLINE) == inline2
+    assert ([Range(28, 36), Range(37, 45)], CommentStyle.C_BLOCK_INLINE) == inline1
+    assert ([Range(47, 54)], CommentStyle.C_BLOCK_INLINE) == inline2

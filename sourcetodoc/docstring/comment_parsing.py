@@ -2,7 +2,7 @@ from enum import Enum, auto
 from typing import Iterable, Iterator, Sequence, SupportsIndex
 
 from .comment_style import (BLOCK_INLINE_STYLES, BLOCK_STYLES, LINE_STYLES,
-                            CommentStyle)
+                            BlockComment, CommentStyle, LineComment)
 from .range import Range
 
 
@@ -23,28 +23,48 @@ class _State(Enum):
     BLOCK_ASTERISK = auto()
 
 
-def find_comments(code: str) -> Iterator[tuple[Range, CommentStyle]]:
+def find_comments(
+        code: str,
+        start: SupportsIndex | None = None,
+        end: SupportsIndex | None = None
+    ) -> Iterator[tuple[Range, CommentStyle]]:
     """
-    Returns the range and style of C comments in `code` in ascending order.
+    Returns the range and style of single C comment pieces in `code` in ascending order.
+
+    Example:
+    ```
+    // a
+    // b
+    ````
+    are two comment pieces.
 
     Parameters
     ----------
     code: str
         The code.
+    start: SupportsIndex | None, optional
+        The start index to search, by default `0`.
+    end: SupportsIndex | None, optional
+        The end index to search, by default `len(code`)
 
     Yields
     ------
     Iterator[tuple[Range, CommentStyle]]
     """
+    if start is None:
+        start = 0
+    if end is None:
+        end = len(code)
+
     state: _State = _State.START
-    start: int = 0
-    for i in range(len(code)):
+    comment_start: int = 0
+    for i in range(start, end):
         x = code[i]
         match state:
             case _State.START:
                 match x:
                     case "/": # /
-                        start = i
+                        comment_start = i
                         state = _State.SLASH
                     case str(): # ...
                         pass
@@ -60,7 +80,7 @@ def find_comments(code: str) -> Iterator[tuple[Range, CommentStyle]]:
                 match x:
                     case "\n": # //...\n
                         state = _State.START
-                        yield Range(start, i), _get_style_by_start_delimiter(code, LINE_STYLES, start)
+                        yield Range(comment_start, i), _get_style_by_start_delimiter(code, LINE_STYLES, comment_start)
                     case str(): # //...
                         pass
             case _State.BLOCK_INLINE: # /*...
@@ -74,7 +94,7 @@ def find_comments(code: str) -> Iterator[tuple[Range, CommentStyle]]:
             case _State.BLOCK_INLINE_ASTERISK: # /*...*
                 match x:
                     case "/": # /*...*/
-                        yield Range(start,i+1), _get_style_by_start_delimiter(code, BLOCK_INLINE_STYLES, start)
+                        yield Range(comment_start,i+1), _get_style_by_start_delimiter(code, BLOCK_INLINE_STYLES, comment_start)
                         state = _State.START
                     case "\n": # /*...*\n
                         state = _State.BLOCK
@@ -89,7 +109,7 @@ def find_comments(code: str) -> Iterator[tuple[Range, CommentStyle]]:
             case _State.BLOCK_ASTERISK:
                 match x:
                     case "/": # /*...\n...*/
-                        yield Range(start,i+1), _get_style_by_start_delimiter(code, BLOCK_STYLES, start)
+                        yield Range(comment_start,i+1), _get_style_by_start_delimiter(code, BLOCK_STYLES, comment_start)
                         state = _State.START
                     case str(): # /*...\n...*...
                         pass
@@ -97,16 +117,20 @@ def find_comments(code: str) -> Iterator[tuple[Range, CommentStyle]]:
     # Handle last line or block comment that has not ended by \n or */ respectively
     match state:
         case _State.LINE:
-            yield Range(start, len(code)), _get_style_by_start_delimiter(code, LINE_STYLES, start)
+            yield Range(comment_start, end.__index__()), _get_style_by_start_delimiter(code, LINE_STYLES, comment_start)
         case _State.BLOCK_INLINE | _State.BLOCK_INLINE_ASTERISK:
-            yield Range(start, len(code)), _get_style_by_start_delimiter(code, BLOCK_INLINE_STYLES, start)
+            yield Range(comment_start, end.__index__()), _get_style_by_start_delimiter(code, BLOCK_INLINE_STYLES, comment_start)
         case _State.BLOCK | _State.BLOCK_ASTERISK:
-            yield Range(start, len(code)), _get_style_by_start_delimiter(code, BLOCK_STYLES, start)
+            yield Range(comment_start, end.__index__()), _get_style_by_start_delimiter(code, BLOCK_STYLES, comment_start)
         case _:
             pass
 
 
-def find_comments_combined(code: str) -> Iterator[tuple[Sequence[Range], CommentStyle]]:
+def find_comments_connected_with_ranges(
+        code: str,
+        start: SupportsIndex | None = None,
+        end: SupportsIndex | None = None
+    ) -> Iterator[tuple[Sequence[Range], CommentStyle]]:
     """
     Returns the range and style of C comments in `code` in ascending order.
 
@@ -116,54 +140,90 @@ def find_comments_combined(code: str) -> Iterator[tuple[Sequence[Range], Comment
     - the comments are either both line style or block inline style
     - Then the least specific style is chosen
 
+    The ranges determine the ranges of individual comment pieces.
+
     Parameters
     ----------
     code: str
         The code.
+    start: SupportsIndex | None, optional
+        The start index to search, by default `0`.
+    end: SupportsIndex | None, optional
+        The end index to search, by default `len(code`).
 
     Yields
     ------
     Iterator[tuple[Sequence[Range], CommentStyle]]
     """
     ranges: list[Range] = []
-    styles: set[CommentStyle] = set()
-    last_style_type: Sequence[CommentStyle] | None = None
-    for range, style in find_comments(code):
-        if last_style_type is None: # Init: There is no previous comment to combine
+    last_style: CommentStyle | None = None
+    for range, style in find_comments(code, start, end):
+        if last_style is None: # Init: There is no previous comment to combine
             ranges.append(range)
-            styles.add(style)
-            last_style_type = _get_style_type(style)
+            last_style = style
         # Current comment must not have a block style and previous and current comment both must be either line or block inline style
-        elif style in BLOCK_STYLES or not style in last_style_type:
-            yield ranges, _get_least_specific_style(styles, last_style_type)
+        elif style in BLOCK_STYLES or not _has_same_style_type(style, last_style):
+            yield ranges, last_style
             ranges = [range]
-            styles = {style}
-            last_style_type = _get_style_type(style)
+            last_style = style
         else:
             # Between previous and current comment are only whitespaces and at most 2 newline characters
             if ranges and (not (between := code[ranges[-1].end:range.start]) or not between.isspace() or between.count("\n") > 1):
-                yield ranges, _get_least_specific_style(styles, last_style_type)
+                yield ranges, last_style
                 ranges = [range]
-                styles = {style}
-                last_style_type = _get_style_type(style)
+                last_style = style
             else:
                 ranges.append(range)
-                styles.add(style)
+                last_style = _use_less_specific_style(last_style, style)
     
-    if last_style_type is not None:
-        yield ranges, _get_least_specific_style(styles, last_style_type)
+    if last_style is not None:
+        yield ranges, last_style
 
 
-def _get_style_type(style: CommentStyle) -> Sequence[CommentStyle]:
-    for candidate in (LINE_STYLES, BLOCK_STYLES, BLOCK_INLINE_STYLES):
-        if style in candidate:
-            return candidate
-    raise RuntimeError
+def _has_same_style_type(current_style: CommentStyle, other_style: CommentStyle) -> bool:
+    current_type = current_style.value
+    other_type = other_style.value
+    if type(current_type) == BlockComment and type(other_type) == BlockComment:
+        return current_type.is_inline == other_type.is_inline
+    return type(current_type) == type(other_type)
 
 
-def _get_least_specific_style(styles: set[CommentStyle], most_specific_first: Sequence[CommentStyle]) -> CommentStyle:
-    for e in reversed(most_specific_first):
-        for style in styles:
-            if style is e:
-                return style
-    raise ValueError
+def _use_less_specific_style(current_style: CommentStyle, other_style: CommentStyle) -> CommentStyle:
+    if current_style.value.start_delimiter.startswith(other_style.value.start_delimiter):
+        return other_style
+    elif other_style.value.start_delimiter.startswith(current_style.value.start_delimiter):
+        return current_style
+    else:
+        match current_style.value:
+            case LineComment():
+                return CommentStyle.C_LINE
+            case BlockComment() as b if b.is_inline:
+                return CommentStyle.C_BLOCK_INLINE
+            case _:
+                raise RuntimeError
+
+
+def find_comments_connected(
+        code: str,
+        start: SupportsIndex | None = None,
+        end: SupportsIndex | None = None
+    ) -> Iterator[tuple[Range, CommentStyle]]:
+    """
+    Returns the range and style of C comments in `code` in ascending order.
+
+    Like `find_comments_combined_with_ranges`, but the ranges are combined into one.
+
+    Parameters
+    ----------
+    code: str
+        The code.
+    start: SupportsIndex | None, optional
+        The start index to search, by default `0`.
+    end: SupportsIndex | None, optional
+        The end index to search, by default `len(code`).
+
+    Yields
+    ------
+    Iterator[tuple[Range, CommentStyle]]
+    """
+    return ((Range(ranges[0].start, ranges[-1].end), style) for ranges, style in find_comments_connected_with_ranges(code, start, end))

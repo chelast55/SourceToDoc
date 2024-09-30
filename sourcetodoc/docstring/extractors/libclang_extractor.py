@@ -5,6 +5,7 @@ from clang.cindex import Cursor, TranslationUnit
 from ...common.helpers import IndexFinder
 from ...libclang_util import (clang_get_comment_range,
                               walk_preorder_only_main_file)
+from ..comment_parsing import find_comments_connected
 from ..extractor import Comment, Extractor
 from ..range import Range
 
@@ -94,9 +95,16 @@ class LibclangExtractor[T](Extractor[T]):
                       f"\n\"{comment_text}\" (getting the comment with libclang directly)"
                       f"\n!=\n\"{comment_text_by_range}\" (getting the comment with indices: {comment_range}")
 
+            # Get only the last connected comment
+            found_comments = tuple(find_comments_connected(code, comment_start, comment_end))
+            if not found_comments:
+                raise RuntimeError("The comment cannot be parsed")
+            last_comment_range, _ = found_comments[-1]
+            last_comment_text = code[last_comment_range.start:last_comment_range.end]
+
             comment = Comment(
-                comment_text,
-                comment_range,
+                last_comment_text,
+                last_comment_range,
                 symbol_text,
                 symbol_range,
                 symbol_type,
