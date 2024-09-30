@@ -6,6 +6,8 @@ python main.py \
   --generate_uml_diagrams \
   --uml_compilation_db_dir <dir_with_compile_commands.json>
 ```
+- Ensure the project was built successfully (either manually or bei running Test Coverage Evaluation)
+- `--uml_compilation_db_dir` is usually the `build` directory and `compile_commands.json` should be in there, after a successful build
 - A `default-clang-uml.yaml` file will be created in `project_path`
 - If `--uml_sequence_diagrams` is specified, `clang-uml-sequence-diagrams.yaml` will be created
   - Qualified names of functions and methods will extracted and included in `clang-uml-sequence-diagrams.yaml`
