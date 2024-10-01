@@ -33,13 +33,11 @@ Currently, the toolchain consists of three "major tools":
 ## Compatibility and Known Limitations
 - Generating the dot-tool-based graphics in the API documentation can increase the runtime massively, but as long as the runtime appears to be finite, they may still be worth it :)
 - The "additional" PlantUML-based graphics are still in a more "proof of concept" state, meaning they are not included in the documentation as neatly as the dot-tool-based graphics and could potentially be bloated due to including dependencie relations transcending the projects' source files 
-- Test Coverage Evaluation supported for projects based on the following build systems:
-  - meson
-  - CMake?
-  - Make?
-- Because of the more "open" nature of build systems like CMake or Make, they are nigh impossible to automatize reliably for arbitrary software projects and the user may have to manually interfere more than desirable:
-  - For CMake and Make projects with already existing test(coverage) configurations, the user has to find out the proper arguments/"name" to run them in this way and provide them to toolchain as argument
+- Automated Test Coverage Evaluation supported for meson and cmake (in certain cases) projects
+- Because of the more "open" nature of build systems like Make or CMake, they are nigh impossible to fully automate reliably for arbitrary software projects and the user may have to manually interfere more than desirable:
+  - For CMake projects with already existing test(coverage) configurations, the user has to find out the proper arguments/"name" to run them in this way and provide them to toolchain as argument
   - For CMake and Make projects with no existing configuration for tests/testcoverage, the user unfortunately may have to do some modifications to the CMakeList.txt/MAKEFILE
+- Test Coverage Evaluation is only possible, if a (standard) configuration for running tests already exists
 - Interlinking of generated API documentation and test coverage reports may fail for files/directories with duplicate names (i.e. multiple `src`directories when using subprojects). however, this likely only affects interlinking of the affected files, as linking of other files, including the index pages, should still work
 - We have no known setup where interlinking of API documentation and test coverage reports work for meson projects when running on Windows
   - issue of getting ninja recognizing a "lcov installation" on Windows
