@@ -153,6 +153,7 @@ an OpenAI-API-compatible Large Language Model (LLM) can be used to preprocess do
 ```commandline
 python main.py --project_name test --project_path <path> --converter function_comment_llm --cc_openai_base_url <url> --cc_openai_api_key <key> --cc_llm_model <model>
 ```
+For more details about the comment converter tool's capabilities, see [UsageConverter.md](doc/UsageConverter.md), [AboutExtractor.md](doc/AboutExtractor.md), [AboutCommentStyleConverter.md](doc/AboutCommentStyleConverter.md) and [ArchitectureConverter.md](doc/ArchitectureConverter.md).
 
 If desired, all components of the toolchain can be disabled individually (`disable_doc_gen`for *documentation generation* and `disable_test_cov` for *test coverage evaluation*).  
 Some recommended additional options would be `--project_number` and `--project_brief`.  
